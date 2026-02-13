@@ -55,15 +55,20 @@
         <li>Doing things out of order — exporting too early, creating drawings before the model is ready, etc.</li>
         <li>Endless cycles of printing → checking → fixing → reprinting.</li>
         <li>Sending the folder too early with missing items or mistakes — creates confusion and stress for both the detailer and the fabricator.</li>
+        <li>The process of exporting the fabrication folder can be <a href="#our-tool-short-mention" style="color:#22d3ee;">greatly automated</a>. Below is the process description, or you can <a href="#our-tool-short-mention" style="color:#22d3ee;">skip ahead to the automation</a> to see our solution.</li>
       </ul>
       <h2 class="lang lang-he" dir="rtl" style="display:none;">מלכודות נפוצות</h2>
       <ul class="lang lang-he" dir="rtl" style="display:none;">
-        <li>לא להשתמש ב<strong>פאזות</strong> להפרדת חבילות לייצור — מקשה על סינון, בחירה, בדיקה ונעילה.</li>
+        <li> להשתמש ב<strong>פאזות</strong> (Phases) — מקל על סינון, בחירה, בדיקה ונעילה.</li>
         <li>ביצוע פעולות בסדר שגוי — ייצוא מוקדם מדי, שרטוטים לפני שהמודל מוכן.</li>
-        <li>לופים אינסופיים של הדפסה ← בדיקה ← תיקון ← הדפסה מחדש.</li>
-        <li>שליחת התיק מוקדם מידי עם חוסרים או טעויות — יוצר בלבול ומתח גם אצל הדיטיילר וגם במפעל.</li>
+        <li>לופים של הדפסה ← בדיקה ← תיקון ← הדפסה מחדש.</li>
+        <li>שליחת התיק עם חוסרים או טעויות — יוצר בלבול ומתח גם אצל הדיטיילר וגם במפעל.</li>
       </ul>
-
+      <div class="lang lang-he" dir="rtl" style="display:none; margin-bottom:1em;">
+        את תהליך ייצוא התיק המלא אפשר להפוך לאוטומטי.<br>
+        למטה תמצאו את תיאור תהליך הייצוא, או שאפשר <a href="#our-tool-short-mention-he" style="color:#22d3ee;">לקפוץ ישר לאוטומציה</a>.
+      </div>
+      </ul>
       <h2 class="lang lang-en">Reports</h2>
       <p class="lang lang-en">
         Reports are the <strong>first output</strong>. They’re the fastest way to catch mistakes that would make it into the fabrication folder.
@@ -80,20 +85,11 @@
 
       <h2 class="lang lang-en">Drawings</h2>
       <p class="lang lang-en">
-        Don’t create drawings until the model is ready — it saves rework. Start with <strong>part drawings</strong> and
-        check them, they’re easier to batch‑automate and tweak before proceeding. <strong>Assembly drawings</strong> are
-        heavier to produce and review, but you can still save a lot of time with the right rules and tooling. See our post on
-        <a data-dimensioning-post style="color:#22d3ee;">automating marking and dimensioning</a>.
-        Before issuing, verify that every assembly and every part has a drawing. Missing drawings = last‑minute panic from the shop.
-        Run a <em>missing‑drawing</em> check as a standard step.
+        It’s best to group finished drawings for printing by sheet size to save time and avoid manual sorting. You can also pre‑separate drawings with or without welding, or by any other rule important for your shop’s organization. Drawings should only be created when the model is ready and stable. For more on <a data-drawing-automation style="color:#22d3ee; text-decoration:underline;">automating drawing creation</a>, see our separate post.
       </p>
       <h2 class="lang lang-he" dir="rtl" style="display:none;">שרטוטים</h2>
       <p class="lang lang-he" dir="rtl" style="display:none;">
-        אל תיצרו שרטוטים לפני שהמודל מוכן — זה חוסך חזרה לאחור. התחילו ב<strong>שרטוטי חלק</strong> ובדקו אותם, קל יותר
-        להכין אותם בכמויות בצורה אוטומטית ולשנות משהו אם צריך לפני שממשיכים. <strong>שרטוטי הרכבה</strong> כבדים יותר להפקה ולבדיקה, אבל עדיין אפשר לחסוך זמן רב עם כללים
-        וכלים מתאימים. ראו את הפוסט על <a data-dimensioning-post style="color:#22d3ee;">אוטומציה של סימון ומידות</a>.
-        לפני הנפקה בדקו שכל הרכבה וכל חלק קיבלו שרטוט. שרטוט חסר = פאניקה של הרגע האחרון מהמפעל. הריצו בדיקת
-        <em>שרטוטים חסרים</em> כשלב קבוע.
+        את השרטוטים המוכנים רצוי לקבץ להדפסה לפי גודל גיליון, כדי לחסוך זמן וסידור ידני. ניתן גם להפריד מראש שרטוטים עם ריתוך או בלי או חוקיות אחרת שחשובה לארגון. יצירת שרטוטים צריכה להיעשות כשהמודל מוכן ויציב. לעוד על <a data-drawing-automation style="color:#22d3ee; text-decoration:underline;">אוטומציה ביצירת שרטוטים</a> אפשר לקרוא בפוסט נפרד.
       </p>
 
       <h2 class="lang lang-en">Fabrication Files</h2>
@@ -151,17 +147,17 @@
         שכולם יודעים בדיוק מה יצא. ואם קרה שצריך <a data-hold-uda style="color:#22d3ee;">לשים חלקים ב-HOLD</a> גם לכך יש את הדרך לעשות זאת בבטחון.
       </p>
 
-      <h2 class="lang lang-en">Our Tool (Short Mention)</h2>
+      <h2 class="lang lang-en" id="our-tool-short-mention">Our Tool (Short Mention)</h2>
       <p class="lang lang-en">
         We built a helper called <a data-fabrication-packager style="color:#22d3ee;" href="#" onclick="openPluginModal('fabpackager');return false;" data-fabpackager-modal>Fabrication Packager</a> that checks for missing drawings, saves preliminary
         marks, and exports reports, drawings, and DSTV/DXF into neatly structured folders — minutes instead of hours.
         Even if you still iterate (printing → checking → fixing → reprinting), it turns into a few clicks instead of a painful workday.
       </p>
-      <h2 class="lang lang-he" dir="rtl" style="display:none;">הפתרון שלנו לייצוא תיק ייצור</h2>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;" id="our-tool-short-mention-he">הפתרון שלנו לייצוא תיק ייצור</h2>
       <p class="lang lang-he" dir="rtl" style="display:none;">
         פיתחנו כלי בשם <a data-fabrication-packager style="color:#22d3ee;" href="#" onclick="openPluginModal('fabpackager');return false;" data-fabpackager-modal>Fabrication Packager</a> שמבצע בדיקת שרטוטים חסרים, שומר שמות חלקים ומייצא דוחות,
-        שרטוטים וקבצים לתיקיות מסודרות — דקות במקום שעות. גם אם ממשיכים במחזוריות (הדפסה ← בדיקה ← תיקון ← הדפסה
-        מחדש) — זה הופך לכמה קליקים במקום מסע מייגע שיכול לגזול יום.
+        שרטוטים וקבצים לתיקיות מסודרות — בדקות במקום שעות. גם אם ממשיכים במחזוריות (הדפסה ← בדיקה ← תיקון ← הדפסה
+        מחדש) — זה הופך לכמה קליקים במקום השלבים שתוארו מעל.
       </p>
 
       <h2 class="lang lang-en">Conclusion</h2>
@@ -218,12 +214,14 @@
     (function(){
       var links = {
         dimensioningPost: '2023-11-30-automatically-dimensioning-assemblies.html',
+        drawingAutomation: '#',
         trimbleConnect: 'https://web.connect.trimble.com/projects',
         advancedScribing: '#', // future post
         fabricationPackager: '#', // teaser to a future dedicated post
         holdUDA: '#'
       };
       document.querySelectorAll('[data-dimensioning-post]').forEach(function(a){ a.setAttribute('href', links.dimensioningPost); });
+      document.querySelectorAll('[data-drawing-automation]').forEach(function(a){ a.setAttribute('href', links.drawingAutomation); });
       document.querySelectorAll('[data-trimble-connect]').forEach(function(a){ a.setAttribute('href', links.trimbleConnect); });
       document.querySelectorAll('[data-advanced-scribing]').forEach(function(a){ a.setAttribute('href', links.advancedScribing); });
       document.querySelectorAll('[data-fabrication-packager]:not([data-fabpackager-modal])').forEach(function(a){ a.setAttribute('href', links.fabricationPackager); });

@@ -176,6 +176,7 @@ body { padding-top: 3vw; }
 .post-content { padding: 1.25rem; line-height: 1.75; text-align: start; }
 .post-content img { display: block; margin: .5rem 0; max-width: 100%; height: auto; }
 .post-content h2, .post-content h3 {font-size: 1.5rem; text-decoration: underline; margin-top: 1.5rem; }
+.post-content h2[id], .post-content h3[id] { scroll-margin-top: clamp(60px, 6vw, 110px); }
 .post-content a { color: var(--brand); }
 .post-content code { background: #0b1220; border: 1px solid var(--border); padding: .12rem .35rem; border-radius: 6px; }
 .post-content pre { background: #0b1220; border: 1px solid var(--border); padding: 1rem; border-radius: 10px; overflow: auto; }

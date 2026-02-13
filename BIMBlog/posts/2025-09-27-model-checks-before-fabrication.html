@@ -16,6 +16,7 @@
   <meta name="robots" content="index,follow" />
   <meta name="author" content="BIMbee" />
   <meta name="date" content="2025-09-27" />
+  <link href="../../styles/videos.css" rel="stylesheet" />
 </head>
 <body>
   <site-navbar data-root="../../"></site-navbar>
@@ -201,14 +202,14 @@
         At minimum, use Tekla’s built in Organizer tool to view the model as a dynamic list and handle issues more systematically than by eye. Still, it’s manual, doesn’t cover all needs, and has a learning curve.
       </p>
       <p class="lang lang-en">
-        That’s why we built BIMChecker: one dashboard for the four chack families—clashes in red, groupable similar parts in orange, and focused lists for bolts, holes, and stock issues. It also helps managers who oversee external detailers review, distribute findings, and stay in control of quality.
+        That’s why we built <a data-bimchecker style="color:#22d3ee; text-decoration:underline;" href="#" onclick="openPluginModal('bimchecker');return false;" data-bimchecker-modal>BIMChecker</a>: one dashboard for the four chack families—clashes in red, groupable similar parts in orange, and focused lists for bolts, holes, and stock issues. It also helps managers who oversee external detailers review, distribute findings, and stay in control of quality.
       </p>
 
       <h2 class="lang lang-he" dir="rtl" style="display:none;">איך האוטומציה עוזרת</h2>
       <p class="lang lang-he" dir="rtl" style="display:none;">
         לכל הפחות כדאי להכיר ולהיעזר בכלי המובנה של Tekla שנקרא ה-Organizer. הוא מציג את המודל כרשימה דינמית ומאפשר לאתר ולטפל בבעיות בצורה מסודרת יותר מאשר הסתמכות על העין בלבד. 
            אם כי העבודה איתו עדיין ידנית למדי, הוא לא מכסה את כל הצרכים שפירטנו מעל, ויש לו עקומת למידה מסוימת.
-        לכן פיתחנו כלי משלים —BIMChecker— שמרכז את ארבע הקטגוריות במקום אחד: התנגשויות מודל מסומנות באדום, חלקים שניתן לצמצם מודגשים בכתום, ובדיקות ברגים, חורים
+        לכן פיתחנו כלי משלים —<a data-bimchecker style="color:#22d3ee; text-decoration:underline;" href="#" onclick="openPluginModal('bimchecker');return false;" data-bimchecker-modal>BIMChecker</a>— שמרכז את ארבע הקטגוריות במקום אחד: התנגשויות מודל מסומנות באדום, חלקים שניתן לצמצם מודגשים בכתום, ובדיקות ברגים, חורים
         וחומר גלם מוצגות ברשימות ממוקדות,
         הכלי מאפשר גם למי שמנהל דיטיילרים חיצוניים לבדוק ולהפיץ את הממצאים, ובכך להיות בשליטה על בקרת האיכות.
       </p>
@@ -244,11 +245,30 @@
     </section>
   </article>
 
+  <!-- Modal Structure (shared with landing page videos.js) -->
+  <div id="video-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 id="modal-title"></h4>
+        <span class="close-button" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-video-wrap">
+        <video id="modal-video" controls></video>
+        <div class="modal-actions">
+          <button id="modal-next" type="button" class="modal-next-button" style="display:none;"></button>
+          <button id="modal-contact" type="button" class="modal-next-button" style="display:none;"></button>
+        </div>
+      </div>
+      <div id="modal-description" class="modal-description"></div>
+    </div>
+  </div>
+
   <footer class="blog-footer">
      <p>&copy; <span id="year"></span> BIMbee</p>
   </footer>
 
   <script defer src="../../scripts/navbar.js"></script>
   <script defer src="../../scripts/main.js"></script>
+  <script defer src="../../scripts/videos.js"></script>
 </body>
 </html>

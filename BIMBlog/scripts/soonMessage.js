@@ -46,6 +46,7 @@
   }
   window.soonMsgInit = function() {
     addSoonMsgToLinks('[data-dimensioning-post]');
+    addSoonMsgToLinks('[data-drawing-automation]');
     addSoonMsgToLinks('[data-advanced-scribing]');
     addSoonMsgToLinks('[data-fabrication-packager]');
     addSoonMsgToLinks('[data-hold-uda]');
