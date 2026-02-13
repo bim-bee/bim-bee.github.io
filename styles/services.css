@@ -1,0 +1,134 @@
+/* Make contact-link visually clickable on all devices */
+/* Smaller, but still bold and button-like contact-link */
+.contact-link {
+    color: #111;
+    text-decoration: none;
+    font-weight: bold;
+    background: #f2f2f2;
+    border-radius: 0.4em;
+    padding: 0.2em 0.3em;
+    font-size: 0.85em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: background 0.2s, box-shadow 0.2s;
+    display: inline-block;
+    line-height: 1.2;
+}
+.contact-link:active {
+  background: #e0e0e0;
+}
+.contact-link:focus {
+  outline: 2px solid #333;
+}
+@media (hover: hover) {
+  .contact-link:hover {
+    background: #e0e0e0;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+}
+
+
+
+
+.plugin-block:first-of-type {
+    margin-top: 0vw; /* More space above first block on mobile, adjust as needed */
+}
+.plugin-block {
+    position: relative;
+    margin-left: -40vw; /* Mobile: move block off center, adjust as needed */
+}
+.plugin-title,
+.plugin h3 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;   
+}
+
+.plugin-title.fabpackager.lang-en { top: 1vw;  }
+h3.fabpackager.lang-en { top: 7vw;  }
+
+.plugin-title.fabpackager.lang-he { top: -1vw;  }
+h3.fabpackager.lang-he { top: 7vw;  }
+
+.plugin-title.bimchecker.lang-en { top: 2vw; }
+h3.bimchecker.lang-en { top: 8vw;  }
+
+.plugin-title.bimchecker.lang-he { top: 2vw;  }
+h3.bimchecker.lang-he { top: 7vw;  }
+
+.plugin-title.drawingcreator.lang-en { top: 0vw;  }
+h3.drawingcreator.lang-en { top: 6vw;  }
+
+.plugin-title.drawingcreator.lang-he { top: 1vw;  }
+h3.drawingcreator.lang-he { top: 6vw;  }
+
+
+.plugin-title {
+    top: -4vw; /* Move title down or up, adjust value as needed */
+    line-height: 0.9;
+    font-size: 3.2vw;
+}
+.plugin h3 {
+    top: 2.5vw; /* Move h3 down or up, adjust value as needed */
+    line-height: 1.3;
+    font-size: 2vw; /* smaller than the 3vw title */
+    
+}
+.plugin img {
+    width: 38vw;   /* Mobile image width control */
+   
+}
+
+
+/* Mobile-only size tweak for the overlay text; keeps position unchanged */
+@media (max-width: 1025px) {
+    .plugin-block:first-of-type {
+        margin-top: -2vw; /* More space above first block on mobile, adjust as needed */
+    }
+    .plugin-block {
+        margin-left: -22vw; /* Mobile: move block off center, adjust as needed */
+    }
+    .plugin h3 {
+        font-size: 4vw; /* smaller than the 3vw title */
+    }
+    .plugin-title {
+        font-size: 6.4vw;
+    }
+    .plugin h3.lang-en {
+        top: 5vw; /* English position */
+    }
+    .plugin h3.lang-he {
+        top: 5vw; /* Hebrew position, adjust as needed */
+    }
+    .plugin-title.lang-en {
+        top: -10vw;
+    }
+      .plugin-title.lang-he {
+        top: -10vw;
+    }
+    .plugin img {
+        width: 70vw;   /* Mobile image width control */
+    }
+
+    .plugin-title.fabpackager.lang-en { top: 1vw;  }
+    h3.fabpackager.lang-en { top: 12vw;  }
+
+    .plugin-title.fabpackager.lang-he { top: -4vw;  }
+    h3.fabpackager.lang-he { top: 12vw;  }
+
+    .plugin-title.bimchecker.lang-en { top: 2vw; }
+    h3.bimchecker.lang-en { top: 13vw;  }
+
+    .plugin-title.bimchecker.lang-he { top: 4vw;  }
+    h3.bimchecker.lang-he { top: 14vw;  }
+
+    .plugin-title.drawingcreator.lang-en { top: 0vw;  }
+    h3.drawingcreator.lang-en { top: 10vw;  }
+
+    .plugin-title.drawingcreator.lang-he { top: 2vw;  }
+    h3.drawingcreator.lang-he { top: 12vw;  }
+
+
+   
+}

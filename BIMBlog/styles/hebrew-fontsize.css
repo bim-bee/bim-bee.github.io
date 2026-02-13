@@ -1,0 +1,37 @@
+
+/* =============================
+   BIMBlog Hebrew Font Sizes
+   Purpose: ensure Hebrew text scales consistently with English.
+   Notes:
+   - Keep base sizing equal to English unless there's a visual reason to differ.
+   - Use em units to track browser defaults for headings.
+   ============================= */
+
+/* 1) Main Hebrew body text (same as English) */
+.lang.lang-he {
+  font-size: 1.15em !important; /* align with English body */
+}
+
+/* 2) Subtitle under post title (.post-sub) */
+/* English subtitle uses default paragraph size (~1rem); match that. */
+.lang.lang-he.post-sub {
+  font-size: 1.15rem !important; /* match English subtitle size */
+}
+
+/* 3) Post header H1 (main title) in Hebrew */
+/* Match typical UA H1 sizing (~2em) so it matches English which relies on defaults. */
+.post-header h1.lang.lang-he[dir="rtl"] {
+  font-size: 2em !important;
+}
+
+/* 4) Post content H2 in Hebrew */
+/* Match typical UA H2 sizing (~1.5em) for parity with English. */
+.post-content h2.lang.lang-he[dir="rtl"] {
+  font-size: 1.7em !important;
+}
+
+/* 5) "Back to BIMblog" link in Hebrew */
+/* English is set to .9rem in blog.css; mirror that here. */
+a.post-back.lang.lang-he {
+  font-size: .9rem !important;
+}

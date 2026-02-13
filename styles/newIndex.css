@@ -1,0 +1,37 @@
+html, body {
+        width: 100vw;
+        overflow-x: hidden;
+        padding: 0;
+        margin: 0;
+    }
+
+body {
+    margin: 0;
+    font-family: 'Alef', Arial, sans-serif;
+    scroll-behavior: smooth;
+    
+}
+
+.image-container {
+    position: absolute;
+    z-index: -1;
+    top: 60px;
+    left: 50%; /* Moves the left edge to the middle */
+    transform: translateX(-50%); /* Centers it horizontally */
+    width: 100vw; /* Ensures it spans the full viewport width */
+    /* outline: 1px solid red; */
+}
+
+.image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    
+}
+
+footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+}

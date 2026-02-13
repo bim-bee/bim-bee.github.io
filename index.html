@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIMbee - Home</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="stylesheet" href="styles/newIndex.css">
+    <link rel="stylesheet" href="styles/services.css">
+
+    <link rel="stylesheet" href="styles/responsiveTextOverlay.css">
+    <link rel="stylesheet" href="styles/responsiveTextOverlayMobile.css">
+    <link rel="stylesheet" href="styles/navbar.css">
+    <link rel="stylesheet" href="styles/noFlexSections.css">
+    <link rel="stylesheet" href="styles/contactSection.css">
+    <link rel="stylesheet" href="styles/contactControls.css">
+    <link rel="stylesheet" href="styles/videos.css">
+    <link rel="stylesheet" href="styles/landing-section.css">
+
+    <script defer src="scripts/newIndex.js"></script>
+    <script defer src="scripts/main.js"></script>
+    <script defer src="scripts/videos.js"></script>
+    <script defer src="scripts/contact.js"></script>
+    <script defer src="scripts/scrollToServices.js"></script>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+      (function () {
+        let saved = null;
+        try {
+          saved = localStorage.getItem('preferredLanguage') || localStorage.getItem('bimbee_lang');
+        } catch {}
+        if (!saved) {
+          const m = document.cookie.match(/(?:^|;\s*)preferredLanguage=([^;]+)/);
+          if (m) saved = decodeURIComponent(m[1]);
+        }
+        if (saved) {
+          document.documentElement.setAttribute('lang', saved);
+          window.startLang = saved;
+        }
+        window.defaultLang = 'en';
+      })();
+    </script>
+</head>
+<body>
+
+    <!-- Navigation Panel -->
+    <nav id="navbar">
+        <div class="logo">
+            <img src="images/bimbee-logo.png" alt="BIMbee Logo">
+        </div>
+        <ul class="nav-links" id="nav-list">
+            <li><a href="index.html" class="nav-link lang lang-en">Home</a></li>
+            <li><a href="index.html" class="nav-link lang lang-he" dir="rtl" style="display:none;">
+
+
+                דף הבית</a></li>
+
+            <li><a href="#about-us" class="nav-link lang lang-en">About Us</a></li>
+            <li><a href="#about-us" class="nav-link lang lang-he" dir="rtl" style="display:none;">
+                אודותינו</a></li>
+
+            <li><a href="#services" class="nav-link lang lang-en">Services</a></li>
+            <li><a href="#services" class="nav-link lang lang-he" dir="rtl" style="display:none;">
+                פתרונות לBIM</a></li>
+
+           <!--  <li><a href="#future-roadmap" class="nav-link lang lang-en">And More</a></li>
+            <li><a href="#future-roadmap" class="nav-link lang lang-he" dir="rtl" style="display:none;">ועוד</a></li> -->
+
+            <li><a href="#contact" class="nav-link lang lang-en">Contact</a></li>
+            <li><a href="#contact" class="nav-link lang lang-he" dir="rtl" style="display:none;">
+                צור קשר</a></li>
+
+            <li><a href="BIMBlog/blog.html" class="nav-link lang lang-en">BIMblog</a></li>
+            <li><a href="BIMBlog/blog.html" class="nav-link lang lang-he" dir="rtl" style="display:none;">
+                בימ-בלוג</a></li>
+        </ul>
+
+        <!-- Language Switcher - Placed outside the ul -->
+        <div class="language-switcher">
+            <a href="#" id="lang-en">English</a>|<a href="#" id="lang-he">עברית</a>
+        </div>
+
+        <!-- Hamburger Menu for Mobile -->
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Background Images -->
+    <div class="image-container">
+        <!-- Images loaded by script -->
+    </div>
+     <!--
+
+
+     &lt;!-- Content Sections --&gt;
+     -->
+        <div class="content">
+             <!--
+                &lt;!-- Sections loaded by script --&gt;
+                -->
+
+
+                <!-- Video Modal Structure -->
+                <div id="video-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 id="modal-title"></h4>
+                            <span class="close-button" onclick="closeModal()">&times;</span>
+                        </div>
+                        <div class="modal-video-wrap">
+                            <video id="modal-video" controls></video>
+                            <div class="modal-actions">
+                                <button id="modal-next" type="button" class="modal-next-button" style="display:none;"></button>
+                                <button id="modal-contact" type="button" class="modal-next-button" style="display:none;"></button>
+                            </div>
+                        </div>
+                        <div id="modal-description" class="modal-description"></div>
+                    </div>
+                </div>
+
+        </div>
+
+     <!-- Footer
+     <footer>
+        <p>&copy; 2023 BIMbee</p>
+    </footer>-->
+</body>
+</html>

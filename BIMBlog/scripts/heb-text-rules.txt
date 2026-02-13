@@ -1,0 +1,74 @@
+**INSIGHT:**
+You want a compact, practical checklist your collaborator can follow.
+
+**DATA (short instructional):**
+
+**How to format Hebrew correctly on the site**
+
+1. **Wrap Hebrew blocks like this:**
+
+   ```html
+   <div dir="rtl" style="unicode-bidi:bidi-override;">
+   ```
+
+   This forces proper RTL flow. Toggle visibility with `display:none` if needed.
+
+2. **For English inside a Hebrew sentence**, wrap it with:
+
+   ```html
+   <span dir="ltr" style="unicode-bidi:isolate;">NC/DXF</span>
+   ```
+
+   This keeps English left-to-right and prevents text flipping.
+
+3. **Keep punctuation on the correct side** by adding:
+
+   ```html
+   &#8207;
+   ```
+
+   at the end of each Hebrew sentence (before `<br>`).
+
+Use these three rules for every Hebrew text block across the site.
+
+
+**FOR JS**
+a guide when inserting Hebrew into JS data:
+
+**DATA (short instructional for JS Hebrew handling):**
+
+**How to handle Hebrew text inside JavaScript (posts.js)**
+
+1. **Use plain Hebrew text normally** — JS supports UTF-8 strings directly:
+
+   ```js
+   title_he: "ברוכים הבאים לבימבלוג",
+   ```
+
+2. **If punctuation jumps to the wrong side**, add an RTL mark using the JS escape:
+
+   ```js
+   excerpt_he: "פתיחה: למה פבריקציה חשובה.\u200F"
+   ```
+
+   (`\u200F` = RTL mark; JS does *not* understand `&#8207;`).
+
+3. **If English appears inside a Hebrew string**, do **not** try to fix it inside JS.
+   Instead, handle it in the HTML render using spans + `innerHTML`:
+
+   ```js
+   excerptHe.innerHTML =
+     'פבריקציה ב- <span dir="ltr" style="unicode-bidi:isolate;">Tekla</span>.\u200F';
+   ```
+
+4. **In the HTML template**, always wrap Hebrew containers with:
+
+   ```html
+   dir="rtl" style="unicode-bidi:bidi-override;"
+   ```
+
+That’s it:
+
+* Hebrew text is fine in JS as-is.
+* Use `\u200F` only for punctuation stability.
+* Handle inline English *when rendering*, not inside the JS string.

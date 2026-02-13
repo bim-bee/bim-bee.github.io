@@ -1,0 +1,148 @@
+/* Navbar Styles */
+#navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5vw 2vw;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+    #navbar .logo {
+        flex: 1;
+    }
+
+        #navbar .logo img {
+            max-width: 12vw;
+            height: auto;
+        }
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+    .nav-links li {
+        margin: 0 15vw;
+    }
+
+    .nav-links a {
+        text-decoration: none;
+        color: #333;
+        font-weight: bold;
+    }
+
+.language-switcher {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    font-size: 4vw;
+}
+
+    .language-switcher a {
+        text-decoration: none;
+        color: #333;
+        margin: 0 4vw;
+        font-size: 4vw;
+    }
+
+/* Hamburger Menu */
+.hamburger {
+    position: fixed;      /* Always in the same spot on the viewport */
+    top: 2.1vw;            /* Adjust as needed */
+    right: 3vw;          /* Adjust as needed */
+    z-index: 2000;        /* Above everything else */
+    display: none;        /* Hidden by default, shown on mobile */
+    flex-direction: column;
+    cursor: pointer;
+    padding: 0;
+}
+    .hamburger span {
+        height: 0.6vw;
+        background: #333;
+        margin: 0.7vw 0;
+        width: 5vw;
+    }
+
+/* Desktop Navbar Improvements */
+@media (min-width: 1025px) {
+     #navbar {
+        padding: 0.8vw 0vw; /* Tighter top/bottom, more left/right */
+    }
+    .nav-links li {
+        margin: 0 1.3vw; /* Less space between links */
+    }
+    .nav-links a {
+        font-size: 1.2vw; /* More reasonable font size */
+    }
+    #navbar .logo img {
+        max-width: 3.5vw; /* Slightly smaller logo */
+    }
+    .language-switcher {
+        font-size: 1.5vw; /* Smaller language switcher */
+        justify-content: flex-start;
+    }
+    .language-switcher a {
+        font-size: 1.5vw;
+        margin: 0 1vw;
+    }
+}
+
+/* Responsive Navbar Styles */
+@media (max-width: 1025px) {
+    .nav-links {
+        display: none;
+        position: fixed;
+        right: 0;
+        /* Full viewport height for slide-out panel */
+        height: 100vh; /* fallback */
+        height: 100dvh; /* modern browsers: dynamic viewport */
+        top: 0;
+        flex-direction: column;
+        background-color: #ffffff;
+        width: 40vw;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        justify-content: flex-start; /* Start then use gap for consistent spacing */
+        gap: clamp(1rem, 2.8vh, 2.2rem);
+        padding-top: 12vh; /* Top breathing space */
+        padding-bottom: 18vh; /* Slight bottom padding without shrinking panel */
+        box-sizing: border-box;
+        z-index: 1001;
+    }
+    .nav-links a {
+        font-size: 5.2vw; /* Change text size */
+        padding: 1vh 0;   /* Add vertical padding */
+        display: block;    /* Stack links vertically */
+    }
+    .nav-links li { margin: 0; }
+      
+
+        .nav-links.active {
+            display: flex;
+            transform: translateX(0%);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15); /* Add vertical shadow */
+        }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .language-switcher {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        justify-content: center;
+        z-index: 1000;
+    }
+}

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Components</title>
+  <link rel="icon" type="image/png" href="../../favicon.png">
+  <link href="../../styles/global.css" rel="stylesheet" />
+  <link href="../../styles/navbar.css" rel="stylesheet" />
+  <link href="../styles/blog.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Alef&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="../styles/hebrew-fontsize.css" rel="stylesheet" />
+  <script>window.defaultLang = 'en';</script>
+  <meta name="description" content="Why custom components are essential for accurate, consistent, and future‑proof Tekla models — and practical tips to build them well." />
+</head>
+<body>
+  <!-- When this file lives under BIMBlog/posts/, data-root should be ../../ -->
+  <site-navbar data-root="../../"></site-navbar>
+
+  <article class="post-page">
+    <header class="post-header">
+      <br />
+      <div class="post-backbar">
+        <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+        <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">חזרה לבימבלוג ← </a>
+      </div>
+      <h1 class="lang lang-en">Custom Components in Tekla — Build Once, Reuse Everywhere</h1>
+      <p class="post-sub lang lang-en">September 23, 2025 • 6 min read</p>
+      <h1 class="lang lang-he" dir="rtl" style="display:none;">קומפוננטים ב‑Tekla — בונים פעם וממחזרים</h1>
+      <p class="post-sub lang lang-he" dir="rtl" style="display:none;">23 בספטמבר 2025 • קריאה של 6 דק׳</p>
+    </header>
+
+    <section class="post-content">
+      <h2 class="lang lang-en">Introduction</h2>
+      <p class="lang lang-en">
+        Tekla’s ready‑made components are great for common scenarios. When your design deviates, those presets stop
+        fitting. That’s the moment to create a <strong>custom component</strong>—so behavior follows your design instead of
+        the other way around.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הקדמה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        הקומפוננטים המובנים של Tekla מתאימים למקרים נפוצים. כשעיצוב הפרויקט סוטה מהם, ההגדרות המוכנות כבר לא מתאימות.
+        זה בדיוק הזמן ליצור <strong>Custom Component</strong> — כך שהמודל יתנהג ויתאים לעיצוב שלכם ולא להפך.
+      </p>
+
+      <h2 class="lang lang-en">The Problem</h2>
+      <p class="lang lang-en">
+        Manual detailing is slow and error‑prone. Future changes become tedious because bolts, welds, holes, and plates
+        aren’t linked. In a robust model, <em>all</em> these elements should live inside a component. Otherwise, tiny
+        deviations creep in and similar parts end up with different position numbers. And when change inevitably comes,
+        manual modeling turns cumbersome and complex, whereas a single update inside the component happens in one place
+        and instantly reflects across every instance.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הבעיה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        מידול ידני הוא איטי ומועד לטעויות. שינויים עתידיים הופכים למסורבלים כי ברגים, ריתוכים, חורים ופלטות אינם מקושרים.
+        במודל חכם <em>כל</em> האלמנטים הללו צריכים לחיות בתוך קומפוננט. אחרת נכנסות סטיות קטנות וחלקים דומים מקבלים מספרי
+        מיקום שונים. במקרה הבלתי נמנע שבו נדרש שינוי, תהליך המידול הידני עלול להפוך למסורבל ומורכב, בעוד ששינוי בקומפוננט מתבצע בנקודה אחת בלבד ומשתקף באופן מיידי בכל המופעים.
+      </p>
+
+      <h2 class="lang lang-en">The Knowledge Gap That Pushes Detailers Away</h2>
+      <p class="lang lang-en">
+        Despite the clear benefits — change once and everything updates, numbering remains
+        accurate, the model stays clean and reliable for drawings and fabrication — many users quit halfway because the
+        learning curve feels intimidating. Missing fundamentals like <a data-tekla-pos-types style="color:#22d3ee;">component types and position types</a>,
+        or the use of <a data-tekla-parametric style="color:#22d3ee;">parametric modeling with formulas and variables</a>, often means the component doesn’t work across the
+        whole model. Some end up creating multiple versions of the same detail just to “make it work” — which defeats the
+        purpose and frankly feels silly. Others abandon components entirely and model bolts, plates, and welds by hand,
+        convinced components are a gimmick that doesn’t really save work.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הפער בידע שמרחיק דיטיילרים</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        למרות היתרונות הברורים — משנים פעם אחת והכול מתעדכן, חלקים נשארים זהים, המספור מדויק, והמודל נשאר נקי ואמין יותר לשרטוטים
+        ולייצור — משתמשים רבים מוותרים באמצע הדרך כי עקומת הלמידה מאיימת. חוסר היכרות עם <a data-tekla-pos-types style="color:#22d3ee;">סוגי הקומפוננטים וה‑Position Types</a>,
+        או הבנה של <a data-tekla-parametric style="color:#22d3ee;">מידול פרמטרי עם נוסחאות ומשתנים</a>, מוביל לכך שהקומפוננט פשוט לא עובד בכל רחבי המודל. לעיתים יוצרים כמה גרסאות לאותו פרט רק כדי ש"יעבוד" — מה שמביס את המטרה ומרגיש דבילי. אחרים מוותרים לגמרי ומעדיפים למדל ברגים, פלטות וריתוכים ידנית, מתוך תחושה שקומפוננטים הם גימיק שלא באמת חוסך עבודה.
+      </p>
+
+      <h2 class="lang lang-en">Tricks for Success</h2>
+      <p class="lang lang-en">
+        • Use <strong>AutoBolt</strong> to make your details flex and connect cleanly to what’s around them.<br/>
+        • Add <code>if</code> conditions to flip or rotate details — so one component works in multiple placements.<br/>
+        • Leverage <strong>nested components</strong> (a component inside a component) to build large, complex details without breaking.<br/>
+        • Remember: well‑built components are reusable — save them to your <a data-firm-folder style="color:#22d3ee;">firm folder</a> and apply across projects.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">טיפים להצלחה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        • השתמשו ב‑<strong>AutoBolt</strong> כדי לחבר להפוך פרטים לגמישים יותר שמתחברים למה שבסביבתם.<br/>
+        • הוסיפו תנאי <code>if</code> כדי לסובב פרטים — כך אותו קומפוננט יעבוד במספר מיקומים.<br/>
+        • נצלו <strong>קומפוננטים מקוננים</strong> (קומפוננט בתוך קומפוננט) כדי לבנות פרטים גדולים ומסובכים מבלי שישברו.<br/>
+        • זכרו: קומפוננט שבנוי נכון הוא נכס חוזר — שימרו אותו ב‑<a data-firm-folder style="color:#22d3ee;">תיקיית ה‑Firm</a> והשתמשו בו בין פרויקטים.
+      </p>
+
+      <h2 class="lang lang-en">Personal Guidance</h2>
+      <p class="lang lang-en">
+        With the right setup, components stop being a hassle and become a stable, reliable system. We believe the real
+        power isn’t in outsourcing the work but in embedding the know‑how inside your team. We can absolutely build
+        components for you — yet the highest value is empowering you to control them yourselves. That’s why we offer
+        1:1 and team courses for all levels: from beginners with zero experience to focused consulting for advanced users
+        who got stuck on a complex detail or want to turn a one‑off fix into a smart, flexible, reusable tool. Want to
+        hear more? <a href="../../index.html#contact">Talk to us</a> and we’ll point you to the most precise path.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">ליווי אישי</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        עם ההגדרות הנכונות, קומפוננטים מפסיקים להיות מטרד והופכים למערכת יציבה ואמינה. אנחנו מאמינים שהכוח האמיתי לא נמצא במיקור חוץ אלא בהטמעת הידע אצלכם. 
+        אמנם נוכל לבנות קומפוננטים עבורכם, אך הערך הגבוה ביותר הוא ביכולת לשלוט בהם בעצמכם. 
+        לכן אנו מציעים קורסים אישיים וצוותיים לכל הרמות — ממתחילים ללא ניסיון ועד ייעוץ ממוקד למשתמשים מתקדמים שנתקעו בפרט מורכב או שרוצים להפוך פתרון נקודתי לכלי חכם וגמיש לשימוש חוזר. 
+        <a href="../../index.html#contact">דברו איתנו</a> ונשמח לכוון אתכם למסלול המדויק ביותר.
+      </p>
+
+      <h2 class="lang lang-en">Conclusion</h2>
+      <p class="lang lang-en">
+        Custom components are the key to a smart Tekla model that stands up to change and leads to accurate fabrication.
+        Mastering them does require a learning curve and a shift in mindset, but the benefits are invaluable.
+        Detailers and firms who invest in understanding this built‑in tool will deliver better service to designers and
+        higher‑quality output for fabrication shops.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">סיכום</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+       קומפוננטים מותאמים אישית הם המפתח למודל חכם שעמיד לשינויים ומוביל לייצור מדוייק. 
+       אמנם השליטה בהם דורשת עקומת למידה ושינוי תפיסתי, אך היתרונות שמגיעים עם הכישורים הללו הם יקרי ערך. 
+       דיטיילרים וחברות שישקיעו בהבנת הכלי המובנה הזה יוכלו לספק שירות טוב יותר למתכננים ותוצר איכותי יותר למפעלי הייצור.
+      </p>
+           
+    <br />
+      <p class="lang lang-en">
+        Feel free to <a href="../../index.html#contact">contact us</a> — we are available for any inquiry.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        רוצה מענה?
+        אפשר <a href="../../index.html#contact">ליצור קשר</a> בחופשיות - אנו זמינים לכל פנייה.
+      </p>
+    </section>
+  </article>
+
+  <footer class="blog-footer">
+    <p>&copy; <span id="year"></span> BIMbee</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    // Hydrate shared external links once for all languages
+    (function(){
+      var links = {
+        teklaPosTypes: 'https://support.tekla.com/doc/tekla-structures/2021/det_cc_custom_component_wizard_properties',
+        teklaParametric: 'https://support.tekla.com/doc/tekla-structures/2026/det_functions_in_variable_formulas',
+        firmFolder: '2025-09-21-tekla-firm-folder.html'
+      };
+      document.querySelectorAll('[data-tekla-pos-types]').forEach(function(a){
+        a.setAttribute('href', links.teklaPosTypes);
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+      document.querySelectorAll('[data-tekla-parametric]').forEach(function(a){
+        a.setAttribute('href', links.teklaParametric);
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+      document.querySelectorAll('[data-firm-folder]').forEach(function(a){
+        a.setAttribute('href', links.firmFolder);
+      });
+    })();
+  </script>
+  <script defer src="../../scripts/navbar.js"></script>
+  <script defer src="../../scripts/main.js"></script>
+</body>
+</html>

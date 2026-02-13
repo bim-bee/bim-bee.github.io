@@ -1,0 +1,15 @@
+/* soonMessage.css */
+.soon-msg-popup {
+  position: fixed;
+  z-index: 9999;
+  background: #222;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  pointer-events: none;
+  transition: opacity 0.3s;
+  opacity: 1;
+  direction: initial;
+}

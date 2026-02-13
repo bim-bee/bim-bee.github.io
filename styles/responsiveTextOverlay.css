@@ -1,0 +1,49 @@
+.text-overlay {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    color: black;
+    font-size: 2vw;
+    text-align: center;
+}
+
+#landing-page {
+    top: max(23vw, 190px); /* Use the larger of 20vw or 80px */
+    width: 40%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+#metaphor-section {
+    top: 50vw; /* Adjust as needed */
+    width: 28%;
+}
+
+#about-us {
+    top: 67vw; /* Adjust as needed */
+    width: 90%;
+}
+
+
+#services {
+    top: 120vw; /* Adjust as needed */
+    width: 80%;
+    
+}
+
+#future-roadmap {
+    top: 290vw; /* Adjust as needed */
+    width: 50%;
+}
+    
+
+#custom-plugin {
+    top: 318vw; /* Adjust as needed */
+    width: 50%;
+}
+    
+#contact {
+top: 340vw; /* Adjust as needed */
+width: 35%;
+}

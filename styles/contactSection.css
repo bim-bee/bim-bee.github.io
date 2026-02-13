@@ -1,0 +1,98 @@
+#contact {
+    width: 100%;
+    padding: 80px 20px;
+    max-width: 2000px;
+    margin: 0 auto;
+    text-align: center;
+}
+#contact h2 { font-size: 2em; margin-bottom: 20px; color:#333; }
+#contact p {
+    color:#555; line-height:1.6; margin-bottom:20px;
+    text-align:center; width:55%; margin:0 auto 20px;
+}
+#contact-form { max-width:600px; margin:0 auto; }
+#contact-form label { display:block; margin-bottom:5px; font-weight:bold; }
+#contact-form input[type="text"],
+#contact-form input[type="email"],
+#contact-form input[type="tel"],
+#contact-form textarea {
+    width:30vw; padding:10px; margin-bottom:15px; border:1px solid #ccc;
+}
+#contact-form textarea { resize:none; }
+#contact-form input[type="checkbox"] { width:auto; margin-right:.5em; margin-bottom:0; }
+.checkbox-group {
+    display:grid; gap:0 1em; justify-content:center; justify-items:start;
+    grid-template-columns:max-content;
+}
+.checkbox-group label { display:flex; align-items:center; }
+@media (min-width:1025px) {
+    .checkbox-group { grid-template-columns:repeat(2, max-content); }
+}
+@media (max-width: 1025px) {
+    .mobile-contact-trigger {
+        display:inline-block; padding:15px 30px; font-size:1.1em;
+        background:#FFC107; color:#333; border:none; border-radius:5px;
+        cursor:pointer; margin:20px auto; font-weight:bold;
+        transition:background .3s;
+    }
+    .mobile-contact-trigger:hover { background:#FFB300; }
+    #contact-form { display:none; }
+    .contact-modal-overlay.is-open #contact-form {
+        display:block; max-width:100%;
+    }
+    .contact-modal-overlay.is-open #contact-form input[type="text"],
+    .contact-modal-overlay.is-open #contact-form input[type="email"],
+    .contact-modal-overlay.is-open #contact-form input[type="tel"],
+    .contact-modal-overlay.is-open #contact-form textarea {
+        width:100%; box-sizing:border-box;
+    }
+}
+
+/* Desktop keeps inline form */
+@media (min-width:1025px) {
+    .mobile-contact-trigger { display:none; }
+    .contact-modal-overlay { display:none !important; }
+    #contact-form { display:block; }
+}
+/* Ensure the close button sits above the content line of the first label */
+.contact-modal-dialog {
+    padding-top: 56px; /* reserve space for the X */
+}
+
+/* Simple top-right X (no border, no background) */
+.contact-modal-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+    width: auto;
+    height: auto;
+    display: inline-block;
+    padding: 4px;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.contact-modal-close:hover {
+    color: #000;
+}
+
+.contact-modal-close:active {
+    transform: none;
+}
+
+.contact-modal-close:focus-visible {
+    outline: 2px solid #FFC107;
+    outline-offset: 2px;
+}
+
+#contact-form label.required::before {
+  content: "* ";
+  color: red;
+}

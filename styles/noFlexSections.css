@@ -1,0 +1,182 @@
+/* Hero Section */
+.hero {
+    height: 100vh;
+    background: none;
+    background-size: cover;
+    background-position: center;
+    text-align: center;
+    padding: 0 0px;
+}
+
+    .hero h1 {
+        font-size: 1.0em;
+        color: #333;
+    }
+
+    .hero p {
+        font-size: 0.8em;
+        color: #666;
+        margin-top: 20px;
+    }
+
+@media (max-width: 1025px) {
+    .hero h1 {
+        font-size: 2.0em;
+    }
+
+    .hero p {
+        font-size: 1.2em;
+    }
+}
+
+#landing-page .hero h2 {
+    /*background-color: rgba(255, 255, 255, 0.8);  Default white with transparency */
+    width: 60%; /* Adjust width as needed */
+    border-radius: 10px; /* Round the corners, adjust value for more/less rounding */
+    text-align: center;
+    display: block;
+    margin: 0 auto; /* Center horizontally */
+}
+
+#landing-page .hero h1 {
+    width: 100%; /* Adjust width as needed */
+   
+}
+
+/* Metaphor Section */
+.metaphor-section {
+    margin: 50px auto;
+    max-width: 800px;
+    text-align: center;
+    font-size: 0.8em;
+    color: #555;
+    padding: 0 20px;
+}
+
+/* General Section Styles */
+section {
+    padding: 80px 20px;
+    max-width: 2000px;
+    margin: 0 auto;
+    z-index: 0;
+}
+
+    section h2 {
+        font-size: 2em;
+        margin-bottom: 20px;
+        color: #333;
+        text-align: center;
+    }
+
+    section p {
+        font-size: 1.1em;
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    section ul {
+        list-style-type: disc;
+        padding-left: 40px;
+    }
+
+        section ul li {
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+    section img {
+        display: block;
+        width: 25vw;
+        height: auto;
+        margin: 2ch auto;
+    }
+
+
+/* Video Placeholder */
+.video-placeholder {
+    background-color: #f0f0f0;
+    height: 300px;
+    text-align: center;
+    line-height: 300px;
+}
+
+    .video-placeholder p {
+        font-size: 1.2em;
+        color: #777;
+        line-height: normal;
+    }
+
+/* Button Styles */
+button {
+    background-color: #333;
+    color: #fff;
+    padding: 15px 25px;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    margin: 20px auto;
+    display: block;
+}
+
+    button:hover {
+        background-color: #555;
+    }
+
+/* Contact Form 
+#contact-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+    #contact-form label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    #contact-form input,
+    #contact-form textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+
+    #contact-form button {
+        width: 100%;
+    }*/
+
+/* Footer */
+/* The footer is commented out in the original, maintaining the same here */
+/*
+footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+}
+*/
+
+/* Background images for specific sections */
+.landing-hero {
+    background-image: url('images/landing-background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 100vw;
+    height: 100vh;
+    text-align: center;
+    padding: 1px;
+}
+
+#about-us, #services {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 60vw;
+    padding: 80px 20px;
+    margin: 0 auto;
+    text-align: center;
+}

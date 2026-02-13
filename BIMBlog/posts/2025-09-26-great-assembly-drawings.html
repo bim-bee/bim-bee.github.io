@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Great Assembly Drawings</title>
+  <link rel="icon" type="image/png" href="../../favicon.png">
+  <link href="../../styles/global.css" rel="stylesheet" />
+  <link href="../../styles/navbar.css" rel="stylesheet" />
+  <link href="../styles/blog.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Alef&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="../styles/hebrew-fontsize.css" rel="stylesheet" />
+  <link href="../../styles/videos.css" rel="stylesheet" />
+  <script>window.defaultLang = 'en';</script>
+  <meta name="description" content="How to move from manual assembly drafting to confident reviewing using clear rules and API-driven automation in Tekla." />
+  <meta name="robots" content="index,follow" />
+  <meta name="author" content="BIMbee" />
+  <meta name="date" content="2025-09-26" />
+</head>
+<body>
+  <!-- When this file lives under BIMBlog/posts/, data-root should be ../../ -->
+  <site-navbar data-root="../../"></site-navbar>
+
+  <article class="post-page">
+    <header class="post-header">
+      <br />
+      <div class="post-backbar">
+        <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+        <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">חזרה לבימבלוג ← </a>
+      </div>
+      <h1 class="lang lang-en">Great Assembly Drawings: Shift From Manual Drafting to Confident Reviewing</h1>
+      <p class="post-sub lang lang-en">September 26, 2025 • 7 min read</p>
+      <h1 class="lang lang-he" dir="rtl" style="display:none;">שרטוטי הרכבה מעולים: המעבר משרטוט ידני לבקרת איכות</h1>
+      <p class="post-sub lang lang-he" dir="rtl" style="display:none;">26 בספטמבר 2025 • קריאה של 7 דק׳</p>
+    </header>
+
+    <section class="post-content">
+      <h2 class="lang lang-en">Introduction</h2>
+      <p class="lang lang-en">
+        Despite the construction world moving toward 3D modeling, digital coordination, and information-rich workflows,
+        fabrication still relies heavily on 2D drawings. Steel shops work primarily from printed assembly and part
+        drawings because they remain the most practical, universally understood medium on the fabrication floor.
+        Even though 2D drawings feel like a shout-out to the "old school" era of detailing, it doesn’t mean they need
+        to be created the old-fashioned way. Today’s tools allow us to produce these drawings in smarter, faster, and
+        far more consistent ways than traditional manual drafting.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הקדמה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        למרות שעולם הבנייה מתקדם למידול תלת־ממדי, תיאום דיגיטלי ותהליכי עבודה עתירי מידע,
+        הייצור במפעל עדיין נשען במידה רבה על שרטוטי 2D.
+        סדנאות פלדה עובדות בעיקר עם שרטוטי חלק והרכבה מודפסים,
+        כי זה עדיין הכלי הפרקטי והברור ביותר על רצפת הייצור.
+        גם אם שרטוטי 2D מרגישים לפעמים כמו מחווה ל"תקופת השרטוט הידני",
+        זה לא אומר שצריך להמשיך ליצור אותם באותן שיטות ישנות.
+        הכלים של היום מאפשרים לנו להפיק את אותם שרטוטים בצורה חכמה, מהירה ועקבית בהרבה מאשר שרטוט ידני מסורתי.
+      </p>   
+      <h2 class="lang lang-en">The Reality on the Fabrication Floor</h2>
+      <p class="lang lang-en">
+        In most modern shops, <strong>part fabrication</strong> is already close to fully automated.
+        Stock steel goes into machines, gets cut, drilled, milled, and prepared with minimal human intervention.
+        The machine reads the file, performs the operations, and the operator mainly supervises the process.
+        Because of this, <strong>part drawings</strong> are relatively easy to automate.
+        Tekla’s built-in dimensioning rules can handle the majority of typical cases,
+        and in many factories the part drawings are used more as confirmation and reference than as the primary fabrication instruction.
+      </p>
+      <p class="lang lang-en">
+        <strong>Assembly fabrication</strong> is very different.
+        Welding parts into assemblies is still done by people,
+        and that work depends on understanding, clarity, and precise graphical communication.
+        Assembly drawings must be correct, complete, and readable to avoid delays, rework, or mistakes in the shop. 
+        Which is why automating <strong>assembly drawings</strong> is a much bigger challenge.
+        Many detailers give up on automation because they need reliable, fast results and don’t have time to wrestle with tools
+        that feel incomplete or unstable at first glance.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">המציאות ברצפת הייצור</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        ברוב המפעלים המודרניים, <strong>ייצור החלקים</strong> כבר קרוב לאוטומטי לחלוטין.
+        פרופילים ופלטות נכנסים למכונות, נחתכים, נקדחים, נחרצים ומוכנים — עם מינימום התערבות ידנית.
+        המכונה קוראת את הקובץ, מבצעת את הפעולות,
+        והמפעיל בעיקר מפקח שהכול רץ כמו שצריך.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לכן גם <strong>שרטוטי החלק</strong> יחסית קלים לאוטומציה.
+        כללי המידות המובנים של Tekla יודעים להתמודד עם רוב המצבים הטיפוסיים,
+        וברוב המפעלים שרטוטי החלק משמשים יותר לבדיקה ולהשוואה מאשר כהוראות ייצור.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        <strong>ייצור הרכבות</strong> הוא סיפור אחר לגמרי.
+        ריתוך חלקים להרכבות נעשה על ידי בני אדם,
+        והעבודה הזו תלויה בהבנה, בהירות ובתקשורת גרפית מדויקת.
+        שרטוטי הרכבה חייבים להיות מדויקים, שלמים וברורים כדי למנוע עיכובים,
+        עבודת תיקונים או טעויות במפעל.
+      </p>
+       <p class="lang lang-he" dir="rtl" style="display:none;">
+        לכן גם אוטומציה של <strong>שרטוטי הרכבה</strong> היא אתגר גדול בהרבה.
+      הרוב מוותרים על האפשרות, כי הם חייבים לספק תוצאות אמינות ומהירות, ולא יכולים להתעסק גם בכלים המובנים שאינם שלמים או נראים לא יציבים במבט ראשון.  
+      </p>
+
+      <h2 class="lang lang-en">What Proper Assembly Drawings Should Look Like</h2>
+      <p class="lang lang-en">
+        Before talking about automation, it’s important to define what a good assembly drawing actually looks like.
+        Without a clear standard, even the an advanced tool will produce average results.
+        Here are a few foundational practices we treat as non‑negotiable:
+      </p>
+      <ul class="lang lang-en">
+        <li><strong>Correctly identify the main part</strong> — everything else builds on that choice.</li>
+        <li><strong>Part marks must be large, clear, and readable</strong> on a noisy, dusty fab floor.</li>
+        <li><strong>Show only the dimensions that are truly necessary</strong> for doing the work.</li>
+        <li><strong>All dimensions originate from the main part</strong> and run toward the secondaries.</li>
+        <li><strong>Hole dimensions appear only when the hole faces the view</strong> — not when seen from the side.</li>
+        <li><strong>Direct dimensions to a secondary part</strong> are allowed only if that part has no holes.</li>
+        <li><strong>Geometry or hole placement unrelated to fab</strong> belongs in part drawings, not in the assembly drawing.</li>
+      </ul>
+      <p class="lang lang-en">
+        With rules defined up front, assembly drawings become consistent, predictable, and easy to read.
+        Set the standard for whats good, then build automation that reproduces it across thousands of drawings.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">איך צריך להיראות שרטוט הרכבה טוב</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לפני שנעמיק בנושא האוטומציה צריך להגדיר איך נראה שרטוט הרכבה טוב.
+        בלי סטנדרט ברור, גם כלי מתקדם יוציא תוצאה בינונית.
+        אלה כמה עקרונות בסיס שאנחנו רואים כחובה:
+      </p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li><strong>הגדרה נכונה של החלק הראשי</strong> — כל השאר בנוי עליו.</li>
+        <li><strong>סימוני חלקים גדולים וברורים</strong> — קריאים גם על רצפה רועשת ומלוכלכת.</li>
+        <li><strong>מידות נחוצות בלבד</strong> — להציג רק את המידות החיוניות לביצוע העבודה.</li>
+        <li><strong>כל המידות יוצאות מהחלק הראשי</strong> — לעבר החלקים המשניים.</li>
+        <li><strong>מידות רק לחורים הפונים לכיוון המבט</strong> — לא כשרואים את החור מהצד.</li>
+        <li><strong>מידות ישירות לחלק משני</strong> — מותרות רק אם לחלק הזה אין חורים.</li>
+        <li><strong>גיאומטריה או חורים אחרים</strong> — שייכים לשרטוטי חלק, לא לשרטוט ההרכבה.</li>
+      </ul>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        ברגע שהכללים ברורים, שרטוטי ההרכבה נראים עקביים וצפויים ומקלים משמעותית על הקריאה והבקרה.
+        ועכשיו נשתמש באוטומציה כדי ליישם אותם באלפי שרטוטים.
+      </p>
+
+      <h2 class="lang lang-en">Why Assembly Drawings Are So Hard to Automate</h2>
+      <p class="lang lang-en">
+        Tekla offers two main systems for automated dimensioning:
+        <strong>Integrated Dimensions</strong> and <strong>Filter Dimensions</strong>.
+      </p>
+      <p class="lang lang-en">
+       <strong>Integrated Dimensions</strong> work in many cases but feel like a black box:
+        one setting can change multiple behaviors, and small tweaks can have unexpected side effects.
+        Most detailers tune them to a comfortable balance and then try not to touch them again.
+      </p>
+      <p class="lang lang-en">
+        <strong>Filter Dimensions</strong> are powerful but demand serious preparation:
+        well-planned filters, consistent naming, and a model structured for this approach.
+        When set correctly, they produce great output — getting there takes time, planning,
+        and a strong grasp of Tekla’s property logic.
+      </p>
+      <p class="lang lang-en">
+        Because both systems rely on configuration and model discipline, detailers still spend time adjusting dimensions manually.
+        Many revert to manual work simply because it feels faster and clearer in the moment.
+      </p>
+      <p class="lang lang-en">
+        Without structure, planning, and know‑how, automated output demands more tweaking than expected
+        and nudges detailers back to manual effort.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">למה כל כך קשה ליצור שרטוט הרכבה אוטומטי</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        ב‑Tekla קיימות שתי מערכות עיקריות לאוטומציה של מידות בשרטוטים:
+        <strong>Integrated Dimensions</strong> ו‑<strong>Filter</strong>.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        <strong>Integrated Dimensions</strong> עובדות בהרבה מצבים,
+        אבל מרגישות כסוג של "קופסה שחורה".
+        שינוי קטן בהגדרה אחת יכול להשפיע על כמה התנהגויות אחרות,
+        ולא תמיד ברור מראש מה יקרה.
+        לכן דיטיילרים רבים מכוונים אותן פעם אחת לנקודת איזון סבירה,
+        ומעדיפים לא לגעת בהגדרות יותר מדי.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        <strong>Filter Dimensions</strong> זה כלי חזק,
+        אך דורש הכנה מסודרת: פילטרים מתוכננים היטב,
+        שמות עקביים ומודל שבנוי מראש למטרה זו.
+        כשהכול מוגדר כמו שצריך אפשר להגיע לתוצאות יפות —
+        אבל ההגעה לשם דורשת זמן, תכנון והיכרות מעמיקה עם מאפייני Tekla.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        מכיוון ששתי המערכות נשענות על הגדרות ומשמעת במודל,
+        דיטיילרים רבים עדיין מבלים זמן בתיקון והתאמת המידות.
+        לא מעט פעמים חוזרים לשרטוט ידני פשוט כי זה מרגיש מהיר וברור יותר כרגע.
+      </p>
+
+      <h2 class="lang lang-en">A Hidden Third Option: Code-Driven Automated Drawings</h2>
+      <p class="lang lang-en">
+        Most detailers are familiar with two approaches: use Tekla’s built‑in tools, or do everything manually.
+        But there is a third option that many people don’t realize exists.
+      </p>
+      <p class="lang lang-en">
+        Tekla allows developers to place dimensions and marks by using code directly into drawings — exactly as if a detailer added them by hand.
+        When defining explicit rules: where dimensions go, what they reference, and how parts are marked, these can be applied automatically and consistently across all relevant drawings.
+      </p>
+      <p class="lang lang-en">
+        Tekla still treats these as <em>manual dimensions</em>, so you can use Tekla’s regular tools on top to handle special cases.
+        You get manual-quality behavior with automated speed. In practice: manual-grade results without spending hours drafting your assemblies.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">האפשרות השלישית: אוטומציה מבוססת כתיבת קוד</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        רוב הדיטיילרים מכירים שתי גישות: להשתמש בכלים המובנים של Tekla,
+        או לבצע את כל המידות ידנית.
+        אבל קיימת אפשרות שלישית שרבים כלל לא מכירים.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        Tekla מאפשרת לכתוב קוד שמניח בשרטוטים מידות וסימונים
+        בדיוק כמו שדיטיילר היה עושה ידנית.
+        כך אפשר לקבוע חוקים ברורים: איפה תהיה כל מידה,
+        למה היא נמדדת, איך החלקים יסומנו ועוד.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        מבחינת Tekla אלה עדיין <em>מידות ידניות</em>,
+        ולכן אפשר להשתמש על גביהן בכלים המובנים של Tekla לטיפול במקרי קצה מיוחדים.
+        וכך מתקבלת אוטומציה הנותנת תוצאה שמתנהגת כמו שרטוט ידני,
+        אבל נוצרת הרבה יותר מהר. יש דרך לקבל איכות של שרטוט ידני — בלי להקדיש שעות לשרטוט ידני של כל הרכבה.
+       
+      </p>
+     
+
+      <h2 class="lang lang-en">Our Solution: DrawingCreator</h2>
+      <p class="lang lang-en">
+        With us as your partner, you don’t need to write or understand code.
+        We embed the required rules, and you select assemblies and click a button to generate drawings with dimensions placed.
+        We already developed a readymade solution, the <a href="#" onclick="openPluginModal('drawingcreator');return false;" style="color:#22d3ee;" data-drawingcreator-modal>DrawingCreator</a>. It ships with hard-coded, field-tested rules for typical cases we encounter daily,
+        producing clear, consistent assembly drawings without micromanaging settings.
+      </p>
+      <p class="lang lang-en">
+        The same method extends to your specific drawing scenarios.
+        The detailer’s role can shift from mechanical line placement to review, understanding, and quality control.
+        The result: consistent, predictable output aligned with shop workflows.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הפתרון שלנו: DrawingCreator</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        איתנו כשותפים אתם לא צריכים לדעת לכתוב או להבין קוד. אנו מטמיעים את הכללים הדרושים, ואתם בוחרים את ההרכבות ובלחיצת כפתור יוצרים שרטוטים עם המידות בפנים. 
+        הכנו מראש פתרון מדף בשם <a href="#" onclick="openPluginModal('drawingcreator');return false;" style="color:#22d3ee;" data-drawingcreator-modal>DrawingCreator</a> המגיע עם סט חוקים קשיחים שעברו ניסיון בשטח, ומייצר שרטוטים עקביים וברורים עבור מקרים טיפוסיים שאנחנו מכירים מעבודה יומיומית. 
+       באותה גישה ניתן להרחיב את השימוש גם למקרה הספציפי שלך. כך תפקיד הדיטיילר עובר מעבודה מכנית של הוספת קווים ידנית - לבקרה, הבנה ושיפור איכות התוצר. 
+       התוצאה בפועל: פלט עקבי, צפוי ובקו אחד עם תהליכי העבודה במפעל.
+      </p>
+      <h2 class="lang lang-en">When Automation Makes Its Biggest Impact</h2>
+      <p class="lang lang-en">
+        Not every assembly needs custom automation, but some situations benefit dramatically:
+      </p>
+      <ul class="lang lang-en">
+        <li>Assemblies repeated tens of times across projects — like typical railings, frames, trusses and connections.</li>
+        <li>Complex assemblies where dimensioning mistakes or missing critical info are common.</li>
+        <li>When schedules are tight and uniform, predictable drawing output is needed.</li>
+        <li>Teams where seniors spend energy and time fixing drawings or repeating explanations.</li>
+      </ul>
+      <p class="lang lang-en">
+        In these cases, automation doesn’t replace detailers — it strengthens them. 
+        It removes the repetitive, mechanical drafting work and frees them to focus on what truly matters: 
+        understanding the drawing, verifying it, and ensuring the assembly is fabricated properly.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">איפה האוטומציה עושה את ההבדל הכי גדול</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לא כל הרכבה חייבת אוטומציה מותאמת אישית,
+        אבל יש מצבים שבהם הערך קופץ מדרגה:
+      </p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li>הרכבות שחוזרות עשרות פעמים בכל פרויקט — כמו מעקות, מסגרות, מסבכים או פרטים טיפוסיים.</li>
+        <li>הרכבות מורכבות שבהן דיטיילרים נוטים לפספס מידות או לסמן דברים בצורה לא עקבית.</li>
+        <li>כאשר לוחות הזמנים צפופים, וזקוקים לפלט שרטוטים מהיר אחיד וצפוי.</li>
+        <li>צוותים שבהם בכירים מבזבזים זמן על תיקון שרטוטים או על הסברים חוזרים.</li>
+      </ul>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        במקרים האלה האוטומציה לא מחליפה את הדיטיילר — היא מעצימה אותו.
+        היא מסירה את העבודה החוזרת והטכנית,
+        ומשאירה את מה שבאמת חשוב: להבין, לבדוק ולהבטיח שההרכבה תיוצר כמו שצריך.
+      </p>
+
+      <h2 class="lang lang-en">Conclusion</h2>
+      <p class="lang lang-en">
+        Rethinking how assembly drawings are created reduces repetitive manual work, improves consistency,
+        and gives clearer control over drawing quality. When the foundations are set — clear rules embedded consistently
+        with the right automation — the process becomes smoother and predictable.
+        Instead of racing to finish dimensions, detailers focus where it matters:
+        reviewing, checking, and ensuring the assembly will be fabricated correctly.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">סיכום</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כשחושבים מחדש על האופן שבו יוצרים שרטוטי הרכבה,
+        אפשר לצמצם עבודה ידנית חוזרת, לשפר עקביות ולהשיג שליטה טובה יותר על איכות השרטוטים.
+        כשמגדירים נכון את היסודות — כללים ברורים שניתן להטמיע בעקביות —
+        תהליך הפקת השרטוטים נהיה חלק וצפוי יותר.
+        במקום לרדוף אחרי השלמת מידות, הדיטיילר יכול להשקיע את זמנו במקום שבו יש לו הכי הרבה ערך:
+        לעבור על השרטוטים, לבדוק אותם כדי להבטיח שההרכבה תבוצע כראוי.
+      </p>
+              
+    <br />
+      <p class="lang lang-en">
+        Feel free to <a href="../../index.html#contact">contact us</a> — we are available for any inquiry.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        רוצה מענה?
+        אפשר <a href="../../index.html#contact">ליצור קשר</a> בחופשיות - אנו זמינים לכל פנייה.
+      </p>
+    </section>
+  </article>
+
+  <!-- Modal Structure (shared with landing page videos.js) -->
+  <div id="video-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 id="modal-title"></h4>
+        <span class="close-button" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-video-wrap">
+        <video id="modal-video" controls></video>
+        <div class="modal-actions">
+          <button id="modal-next" type="button" class="modal-next-button" style="display:none;"></button>
+          <button id="modal-contact" type="button" class="modal-next-button" style="display:none;"></button>
+        </div>
+      </div>
+      <div id="modal-description" class="modal-description"></div>
+    </div>
+  </div>
+
+  <footer class="blog-footer">
+    <p>&copy; <span id="year"></span> BIMbee</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+  <script defer src="../../scripts/videos.js"></script>
+  <script defer src="../../scripts/navbar.js"></script>
+  <script defer src="../../scripts/main.js"></script>
+</body>
+<!--
+Contract:
+- Inputs: none. This is a static HTML blog post with bilingual content using classes `lang lang-en` and `lang lang-he`.
+- Outputs: Renders a post page styled by blog.css.
+- Success: Appears in BIMBlog/blog.html list after registering in posts.js; language toggle works; relative links resolve.
+-->
+</html>

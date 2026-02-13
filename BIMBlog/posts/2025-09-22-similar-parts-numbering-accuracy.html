@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Similar Parts</title>
+  <link rel="icon" type="image/png" href="../../favicon.png">
+  <link href="../../styles/global.css" rel="stylesheet" />
+  <link href="../../styles/navbar.css" rel="stylesheet" />
+  <link href="../styles/blog.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Alef&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="../styles/hebrew-fontsize.css" rel="stylesheet" />
+  <link href="../../styles/videos.css" rel="stylesheet" />
+  <script>window.defaultLang = 'en';</script>
+  <meta name="description" content="How precise modeling keeps parts sharing the same position number, saving time in drawings, fabrication, and erection." />
+</head>
+<body>
+  <!-- When this file lives under BIMBlog/posts/, data-root should be ../../ -->
+  <site-navbar data-root="../../"></site-navbar>
+
+  <article class="post-page">
+    <header class="post-header">
+      <br />
+      <div class="post-backbar">
+        <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+        <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">חזרה לבימבלוג ← </a>
+      </div>
+  <h1 class="lang lang-en">Similar Parts — Why Accuracy Matters in Numbering</h1>
+  <p class="post-sub lang lang-en">September 22, 2025 • 6 min read</p>
+      <h1 class="lang lang-he" dir="rtl" style="display:none;">צמצום חלקים — למה הדיוק חשוב במספור</h1>
+  <p class="post-sub lang lang-he" dir="rtl" style="display:none;">22 בספטמבר 2025 • קריאה של 6 דק׳</p>
+    </header>
+
+    <section class="post-content">
+      <h2 class="lang lang-en">Introduction</h2>
+      <p class="lang lang-en">
+        In factory fabrication workflows, parts and assemblies receive
+        <strong>position numbers</strong> made of letters plus a number. The letters are under your control and are great for
+        classifying and keeping order, the numeric part is generated automatically. Only <em>identical</em> geometry (typically
+        within about 1&nbsp;mm per steel tolerances) will get the same number. That’s where accuracy matters: keep the model precise
+        and you keep parts grouped, ignore it and the entire project will feel the consequences.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הקדמה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+ כאשר מייצרים מבנה במפעל, חלקים והרכבות מקבלים <strong>מספרי מיקום</strong> המורכבות מאותיות ומספר. האותיות ניתנים לשליטה וטוב להשתמש בהם כדי לסווג את האלמנטים וליצור סדר כללי, אך המספרים נוצרים אוטומטית. רק גיאומטריה
+ <em>זהה לחלוטין</em> (בדרך כלל בטווח של כ‑1 מ"מ עפ תקן של פלדה) תקבל אותו מספר. וכאן מתחיל העניין, אותו מספר מתקבל רק כאשר
+  שומרים על דיוק בגיאומטריה, וכאשר מתעלמים מכך יש השלכות.
+      </p>
+
+      <h2 class="lang lang-en">The Problem</h2>
+      <p class="lang lang-en">
+        Inaccurate or inconsistent modeling causes parts that should be identical to end up with different position numbers. A 1–2&nbsp;mm
+        offset, a hole placed slightly off, or a mismatched chamfer can split a large set of parts that should share one position into
+        several unnecessary groups.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הבעיה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        מידול לא מדויק או לא עקבי גורם לכך שחלקים שאמורים להיות זהים יקבלו מספרי מיקום שונים. סטייה של 1–2 מ"מ, חור שממוקם קצת
+        אחרת, או פאזה לא תואמת — יכולים לפצל מספר גדול של חלקים שאמורים לקבל את אותו המספר לכמה קבוצות מאופן מיותר.
+      </p>
+
+      <h2 class="lang lang-en">Consequences</h2>
+      <p class="lang lang-en">
+        • More unique drawings than needed.<br/>
+        • Larger, messier fabrication folders.<br/>
+        • Confusion in the workshop (assemblers deal with unnecessary “different” assemblies).<br/>
+        • Harder erection on site — teams spend more time sorting, matching, and understanding drawings.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">השלכות</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        • ריבוי שרטוטים ליותר מהנדרש.<br/>
+        • תיקיות ייצור גדולות ומבולגנות יותר.<br/>
+        • בלבול מיותר במפעל (מרכיבים מתמודדים עם "הרכבות שונות" שלא לצורך).<br/>
+        • הרכבה באתר קשה יותר — הצוותים מבזבזים זמן על מיון, התאמה והבנת שרטוטים.
+      </p>
+
+      <h2 class="lang lang-en">Why It Matters</h2>
+      <p class="lang lang-en">
+        Parts proliferation = more work at every stage: drawing creation, fabrication, and erection. The industry is still maturing with
+        even the move to 3D BIM is a step forward, so inefficiencies often slip under the radar. But teams that ignore this quickly look
+        inexperienced. Example: a plate modeled 50 times can easily split into 4–5 positions because of tiny, avoidable mismatches.
+        And built‑in comparison tools sometimes return generic warnings that don’t pinpoint the issue, so it’s easy to miss similar parts
+        unless you actively check for them.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">למה זה חשוב</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        צמצום חלקים = פחות עבודה בכל שלב: יצירת שרטוטים, ייצור והרכבה. כעט אנו בתחום שעדיין מתבגר, רק המעבר לBIM בתלת מימד הוא סימן של קידמה בתעשייה. לכן, חוסר היעילות הזו לעיתים עובר מתחת לרדאר —
+        אבל צוותים שמתעלמים מזה ייראו חובבניים מהר מאוד. לדוגמה: אותה הפלטה שממודלת 50 פעמים באותו הפרויקט יכולה להפוך ל‑4–5 קבוצות של מספרי מיקום שונים בגלל
+        חוסר־תאימות קטנים שניתן היה למנוע. וכלי ההשוואה המובנים לעיתים מחזירים אזהרות כלליות שלא מצביעות בדיוק על הבעיה. ולכן קל לפספס חלקים דומים אם לא בודקים
+        באופן יזום.
+      </p>
+
+      <h2 class="lang lang-en">Best Practices</h2>
+      <p class="lang lang-en">
+        • Use <a data-custom-components style="color:#22d3ee;" href="2025-09-23-custom-components-in-tekla.html">custom components</a> during modeling: consistent application guarantees identical repeated parts.<br/>
+        • Model accurately and control tolerances: holes, cuts and chamfers must match; small deviations split one group into several positions.<br/>
+        • Make parts reduction a built‑in step: once the model is ready and before producing drawings, run a focused pass to collapse similar parts.<br/>
+        • Use drawings to find the exact mismatch: for anything suspicious, create a quick drawing — in 2D with dimensions, the deviation that blocks grouping is much easier to spot.<br/>
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">שיטות עבודה מומלצות</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        • שימוש ב<a data-custom-components style="color:#22d3ee;" href="2025-09-23-custom-components-in-tekla.html">Custom Components</a> בשלב המידול: יישום עקבי מבטיח חלקים זהים.<br/>
+        • דיוק במידול ובקרה על טולרנסים: חורים, חיתוכים ופאזות חייבים להתאים; סטייה קטנה מפרקת קבוצה אחת לכמה מיקומים.<br/>
+        • הפכו את צמצום החלקים לשלב מובנה: לאחר שהמודל מוכן ולפני הפקת שרטוטים בצעו סבב בדיקות מודל ממוקד.<br/>
+        • שימוש בשרטוטים למציאת הבעיה בדיוק. מה שחשוד כדאי להכין לו שרטוט ובכך במבט הדו מימד עם המידות הרבה יותר קל לראות מהי הסטיה שמונעת מהחלקים להצטמצם.<br/>
+      </p>
+
+      <h2 class="lang lang-en">Our In‑House Tools</h2>
+      <p class="lang lang-en">
+        Because early identification is hard, we built a check that highlights <strong>almost‑similar parts</strong> in orange. With one
+        click you can see where geometry differences prevent parts from sharing a number — it takes you straight to occurrences that should
+        match but ended up separate. See the dedicated post on our <a data-bimchecker style="color:#22d3ee;">BIMChecker</a>. By the way,
+        the same tool highlights <strong>model clashes</strong> in red.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הכלים הביתיים שלנו</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+       בעקבות הקושי בזיהוי מוקדם של חלקים לצמצום פיתחנו כלי שמצביע וצובע <strong>חלקים כמעט‑דומים</strong> בכתום. בלחיצה אחת אפשר לזהות איפה
+        הבדלי גיאומטריה מונעים מחלקים לקבל אותו מספר. זה מקל מאוד כי זה מכוון ישר להתרחשויות שאמורות להיות דומות אך קיבלו מיקומים
+        נפרדים. ראו פוסט ייעודי על ה-<a data-bimchecker style="color:#22d3ee;">BIMChecker</a> ואגב, אותו כלי מדגיש <strong>התנגשויות</strong> באדום.
+      </p>
+
+      <h2 class="lang lang-en">Conclusion</h2>
+      <p class="lang lang-en">
+        Similar parts aren’t just neat modeling — they’re time and cost savings across the project. Invest early and it pays off during
+        fabrication and erection. As standards improve, ignoring this will leave teams behind. BIM’s goal is to make design decisions early
+        so the whole team benefits later.
+      </p>
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">סיכום</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        חלקים דומים הם לא רק מודל נקי — הם חיסכון בזמן ובעלויות לאורך כל הפרויקט. השקעה מוקדמת מחזירה את עצמה בשלב הייצור ובהרכבה.
+        ככל שהסטנדרטים מתקדמים, מי שמתעלם מזה יישאר מאחור. כי המטרה של BIM היא להשקיע בהחלטות תכנוניות מוקדם כדי שכל הצוות ירוויח אחר כך.
+      </p>
+
+               
+    <br />
+      <p class="lang lang-en">
+        Feel free to <a href="../../index.html#contact">contact us</a> — we are available for any inquiry.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        רוצה מענה?
+        אפשר <a href="../../index.html#contact">ליצור קשר</a> בחופשיות - אנו זמינים לכל פנייה.
+      </p>
+    </section>
+  </article>
+
+  <!-- Modal Structure (shared with landing page videos.js) -->
+  <div id="video-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 id="modal-title"></h4>
+        <span class="close-button" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-video-wrap">
+        <video id="modal-video" controls></video>
+        <div class="modal-actions">
+          <button id="modal-next" type="button" class="modal-next-button" style="display:none;"></button>
+          <button id="modal-contact" type="button" class="modal-next-button" style="display:none;"></button>
+        </div>
+      </div>
+      <div id="modal-description" class="modal-description"></div>
+    </div>
+  </div>
+
+  <footer class="blog-footer">
+    <p>&copy; <span id="year"></span> BIMbee</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    // Hydrate shared links once for all languages
+    (function(){
+      var links = {
+        customComponents: '2025-09-23-custom-components-in-tekla.html',
+        bimchecker: '../blog.html#bimchecker'
+      };
+      document.querySelectorAll('[data-custom-components]').forEach(function(a){ a.setAttribute('href', links.customComponents); });
+      // BIMChecker link is a modal trigger on this page; don't overwrite those.
+      document.querySelectorAll('[data-bimchecker]').forEach(function(a){
+        a.setAttribute('href', '#');
+        a.setAttribute('data-bimchecker-modal', '');
+        a.setAttribute('onclick', "openPluginModal('bimchecker');return false;");
+      });
+    })();
+  </script>
+  <script defer src="../../scripts/videos.js"></script>
+  <script defer src="../../scripts/navbar.js"></script>
+  <script defer src="../../scripts/main.js"></script>
+</body>
+</html>

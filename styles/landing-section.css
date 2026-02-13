@@ -1,0 +1,114 @@
+/* Global button typography controls */
+:root {
+    --bee-button-font-size: 1.8vw;   /* increase for bigger text */
+    --bee-button-font-weight: 700;  /* match loaded Alef bold weight */
+    /* Hebrew-specific tuning (scales with base) */
+    --bee-button-font-size-he: calc(var(--bee-button-font-size) * 1.1);
+    --bee-button-font-weight-he: 700;
+}
+
+/* Bee-themed button used across sections */
+#landing-page button[type="button"],
+#contact #mobile-contact-trigger,
+#contact #submit-button,
+#future-roadmap .hero button {
+    background: linear-gradient(90deg, #FFD600 60%, #FFB300 100%);
+    color: #222;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5em 0.8em;
+    font-size: var(--bee-button-font-size);
+    font-weight: var(--bee-button-font-weight);
+    font-family: 'Alef', 'Segoe UI', Tahoma, Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.1s, box-shadow 0.2s;
+    letter-spacing: 0.03em;
+    margin-top: 1em;
+    outline: none;
+    position: relative; /* for stripe overlay */
+    overflow: hidden;   /* clip overlay to pill shape */
+}
+#landing-page button[type="button"]::before,
+#contact #mobile-contact-trigger::before,
+#contact #submit-button::before,
+#future-roadmap .hero button::before {
+    /* subtle diagonal bee stripes overlay */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.06) 0 10px,
+        rgba(0, 0, 0, 0) 10px 20px
+    );
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    transition: opacity 0.2s, transform 0.2s;
+}
+#landing-page button[type="button"]:hover,
+#contact #mobile-contact-trigger:hover,
+#contact #submit-button:hover,
+#future-roadmap .hero button:hover {
+    background: linear-gradient(90deg, #FFB300 60%, #FFD600 100%);
+    color: #000;
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+}
+#landing-page button[type="button"]:hover::before,
+#contact #mobile-contact-trigger:hover::before,
+#contact #submit-button:hover::before,
+#future-roadmap .hero button:hover::before {
+    opacity: 0.8;
+    transform: translateX(4px);
+}
+#landing-page button[type="button"]:active,
+#contact #mobile-contact-trigger:active,
+#contact #submit-button:active,
+#future-roadmap .hero button:active {
+    transform: translateY(0) scale(0.99);
+}
+#landing-page button[type="button"]:focus-visible,
+#contact #mobile-contact-trigger:focus-visible,
+#contact #submit-button:focus-visible,
+#future-roadmap .hero button:focus-visible {
+    outline: 3px solid #000; /* high contrast focus ring */
+    outline-offset: 2px;
+}
+
+/* Ensure Hebrew text inside buttons is slightly larger/bolder */
+#landing-page button[type="button"] .lang-he,
+#contact #mobile-contact-trigger .lang-he,
+#contact #submit-button .lang-he,
+#future-roadmap .hero button .lang-he {
+    font-size: var(--bee-button-font-size-he);
+    font-weight: var(--bee-button-font-weight-he);
+    font-family: 'Alef', 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+#landing-page .hero h2 {
+    /*background-color: rgba(255, 255, 255, 0.8);  Default white with transparency */
+    width: 80%; /* Adjust width as needed */
+    border-radius: 10px; /* Round the corners, adjust value for more/less rounding */
+    text-align: center;
+    display: block;
+    margin: 0 auto; /* Center horizontally */
+}
+
+/* Adjust the transparency by changing the last value in rgba, e.g., rgba(255, 255, 255, 1) for no transparency */
+
+/* Bigger button text on smaller mobile screens for readability */
+@media (max-width: 1025px) {
+    :root {
+        --bee-button-font-size: 5.5vw;
+        --bee-button-font-size-he: calc(var(--bee-button-font-size) * 1.0);
+    }
+    #landing-page button[type="button"],
+    #contact #mobile-contact-trigger,
+    #contact #submit-button,
+    #future-roadmap .hero button {
+        padding: 2vw 4vw; /* keep tap target comfortable */
+    }
+
+
+        
+}

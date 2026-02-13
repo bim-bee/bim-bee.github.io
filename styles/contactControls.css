@@ -1,0 +1,190 @@
+.product-checkmarks .row {
+    display: grid;
+    grid-template-columns: 5vw 70vw; /* Checkbox = 10vw, Text = 60vw */
+    align-items: center;
+   /* Centers each row */
+     /* Ensures it only takes needed space */
+}
+
+.product-checkmarks .hebrew .row {
+    grid-template-columns: 50vw 6vw; /* Reverse for Hebrew */
+}
+
+.product-checkmarks .row .checkbox {
+    width: 5vw;
+}
+
+.product-checkmarks .row input {
+    width: 2vw;
+    height: 2vw;
+}
+
+.product-checkmarks .row .text {
+    font-size: 1.5vw;
+}
+
+.product-checkmarks .lang-he {
+    display: none; /* Hide Hebrew by default */
+    direction: rtl;
+}
+
+.product-checkmarks .lang-en {
+    direction: ltr;
+}
+
+
+#contact-form button {
+    width: 30vw;
+}
+
+button:disabled {
+    opacity: .5;
+    pointer-events: none;
+}
+
+
+.contact-modal-dialog #contact-form.in-modal input[type="text"],
+.contact-modal-dialog #contact-form.in-modal input[type="email"],
+.contact-modal-dialog #contact-form.in-modal input[type="tel"],
+.contact-modal-dialog #contact-form.in-modal textarea{
+    width: 60vw;
+    font-size: 4vw;
+    padding: 0.4em;
+    box-sizing: border-box;
+     text-align: center; 
+    font-family: 'Alef', Arial, sans-serif; /* Use Alef font */
+}
+
+.contact-modal-dialog #contact-form.in-modal textarea {
+    min-height: 8vw;
+    resize: vertical;
+    padding: 0.2em;
+}
+
+.contact-modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    z-index: 999999; /* ensure overlay above all content */
+}
+
+.contact-modal-dialog {
+    z-index: 1000000; /* ensure dialog above overlay */
+}
+
+/* Ensure the close button is always clickable above everything */
+#contact-modal-close {
+    z-index: 1000001; /* higher than dialog content */
+}
+
+#contact-form input[type="text"],
+#contact-form input[type="email"],
+#contact-form input[type="tel"],
+#contact-form textarea {
+    width: 30vw;
+    font-size: 2vw;
+    padding: 0.7em;
+    box-sizing: border-box;
+     text-align: center; 
+    font-family: 'Alef', Arial, sans-serif; /* Use Alef font */
+}
+
+#contact-form textarea {
+    min-height: 8vw;
+    resize: vertical;
+    padding: 0.2em;
+}
+
+.contact-modal-dialog {
+    border: 5px solid black;    /* Black border */
+    padding: 1.5vw;               /* Control padding */
+    background: #fff;           /* Ensure background is visible */
+    position: fixed;
+    top: 19%;
+    left: 38vw;
+    transform: translate(-50%, -50%); /* Center on screen */
+    z-index: 10000;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+    border-radius: 5vw;
+    max-width: 90vw;
+    width: 20vw;                /* Desktop width */
+    height: auto;
+    max-height: none;
+}
+
+@media (max-width: 1025px) {
+    .contact-modal-dialog {
+        width: 80vw;   /* Wider on mobile */
+        padding: 4vw;
+    }
+
+    
+}
+
+/* NEW: overlay styling + customization */
+.contact-modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    background: var(--contact-overlay-bg, rgba(0,0,0,0.5)); /* default if no data attr */
+    z-index: 9999;
+    transition: background .25s ease;
+}
+
+.contact-modal-overlay.is-open {
+    display: block;
+}
+
+.contact-modal-overlay.no-bg {
+    background: transparent !important;
+    pointer-events: none; /* makes only dialog interactive */
+}
+
+/* REPLACED minimal close button */
+.contact-modal-close {
+    position: absolute;
+    top: 2vw;      /* adjust as needed */
+    right: 3vw;    /* adjust as needed */
+    font-size: 10vw; /* X size */
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+    cursor: pointer;
+    color: #000;
+}
+
+/* Optional: remove focus outline (comment out if you want accessibility outline) */
+.contact-modal-close:focus {
+    outline: none;
+}
+
+.contact-modal-header {
+    text-align: center;
+    margin: 0 0 4vw;
+    padding: 0;
+}
+.contact-modal-header h2 {
+    font-size: 8vw;
+    margin: 0;
+    font-family: 'Alef', Arial, sans-serif;
+    line-height: 1.1;
+}
+
+ /* Make form labels/titles larger and bolder */
+    .contact-modal-dialog #contact-form.in-modal label {
+        font-size: 5vw;
+        margin-bottom: 2vw;
+        font-weight: bold;
+        display: block;
+    }
+
+@media (min-width: 1025px) {
+    .contact-modal-header h2 {
+        font-size: 2vw;
+    }
+
+   
+
+}

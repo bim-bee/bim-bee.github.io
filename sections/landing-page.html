@@ -1,0 +1,44 @@
+<section id="landing-page" class="text-overlay">
+    <div class="content-wrapper">
+        <div class="hero">
+            <h2 style="display: block; text-align: center;">BIMbee</h2>            
+            <h1 class="lang lang-en" style="display:none;" >                
+                <span style="display: block; text-align: center;">Flying your projects ahead</span>
+            </h1>
+            
+            <h1 class="lang lang-he" dir="rtl">            
+                <span style="display: block; text-align: center;">מעיפים את הפרויקטים שלך קדימה</span>
+            </h1>
+            <p class="lang lang-en" style="display:none;" >BIM management using automation</p>
+             <p class="lang lang-he" dir="rtl" >ניהול תהליכי בנייה באמצעות אוטומציה</p> 
+            <!--  <p class="lang lang-he" dir="rtl" >לתהליך בנייה מהיר, איכותי וחלק.</p>  -->
+             <div style="text-align: center; margin-top: 0.5em;">
+                <!-- In the future, this button will open a video modal. For now, it scrolls to the services section. -->
+                <!-- <button type="button" onclick="openPluginModal('promo')"> -->
+                <button type="button" onclick="scrollToServices()">
+                    <span class="lang lang-en" style="display:none;">See Examples For Tekla</span>
+                    <span class="lang lang-he" dir="rtl">הדגמה לתוכנות Tekla </span>
+                </button>
+            </div>
+            <div id="promo-desc-en" style="display:none;">
+                BIMbee: Automating your Tekla Structures workflow. See how our plugins save time, money, and stress in real fabrication projects.
+            </div>
+            <div id="promo-desc-he" style="display:none;" dir="rtl">
+                BIMbee: אוטומציה ל- Tekla Structures שלך. צפו כיצד התוספים שלנו חוסכים זמן, כסף וכאב ראש בפרויקטים אמיתיים.
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- For now, video modal logic is disabled. The scrollToServices function is used instead. 
+<script>
+// Scroll to the top of the services section
+function scrollToServices() {
+    var servicesSection = document.getElementById('services');
+    if (servicesSection) {
+        servicesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+</script>
+-->

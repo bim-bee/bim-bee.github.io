@@ -1,0 +1,78 @@
+/* Styles for smaller mobile screens */
+
+@media (max-width: 1025px) {
+    .text-overlay {
+        color: black;
+        font-size: 4vw;
+        text-align: center;
+        width: 100%; /* Changed from 100vw */
+        box-sizing: border-box; /* Added for safety */
+    }
+
+    /* Explicit stacking order so other sections can't overlap the contact modal */
+    #landing-page { z-index: 1; }
+    #metaphor-section { z-index: 2; }
+    #about-us { z-index: 3; }
+    #services { z-index: 4; }
+    #future-roadmap { z-index: 5; }
+    #custom-plugin { z-index: 6; }
+    #contact { z-index: 7; }
+
+    /* Contact modal must always be above all sections when opened */
+    #contact #contact-modal-overlay { z-index: 2147483646 !important; }
+    #contact .contact-modal-dialog,
+    #contact #contact-modal-close { z-index: 2147483647 !important; }
+
+    /* When the contact form modal is open, hide the custom-plugin section */
+    body.contact-modal-open #custom-plugin {
+        display: none !important;
+    }
+
+    :root {
+        --landing-top: 60vw;
+        --metaphor-top: 190vw;
+        --about-us-top: 240vw;
+        --services-top: 370vw;
+        --future-roadmap-top: 725vw;
+        --custom-plugin-top: 835vw;
+        --contact-top: 900vw;
+    }
+    
+    #landing-page {
+        top: var(--landing-top);
+        width: 100%; /* Changed from 100vw */
+        padding: 15px;
+        box-sizing: border-box; /* Added for safety */
+    }
+    
+    #metaphor-section {
+        top: var(--metaphor-top);
+        width: 100%;
+    }
+    
+    #about-us {
+        top: var(--about-us-top);
+        width: 100% !important;
+    }
+    
+    #services {
+        top: var(--services-top);
+        width: 100% !important;
+    }
+    
+    #future-roadmap {
+        top: var(--future-roadmap-top);
+        width: 100%;
+    }
+    
+    #custom-plugin {
+        top: var(--custom-plugin-top);
+        width: 90%;
+    }
+    
+    #contact {
+        top: var(--contact-top);
+        width: 75% !important;
+    }
+    
+}

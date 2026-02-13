@@ -1,0 +1,53 @@
+BIMBlog Posts Guide (Do/Don’t)
+================================
+
+Purpose
+- Keep posts friendly, skimmable, and bilingual (EN/HE) with minimal friction for future edits.
+
+Structure
+- Use the existing post template as reference (see any file under BIMBlog/posts/).
+- Include both languages for each heading/paragraph block:
+  - English: <h2 class="lang lang-en">...</h2> + <p class="lang lang-en">...</p>
+  - Hebrew:  <h2 class="lang lang-he" dir="rtl" style="display:none;">...</h2> + <p class="lang lang-he" dir="rtl" style="display:none;">...</p>
+- Keep language toggle compatibility by preserving classes: `lang lang-en` and `lang lang-he`.
+- Use `site-navbar` and footer exactly like the template; keep scripts at the bottom.
+
+Tone & Content
+- Conversational but professional; short sentences; concrete value.
+- Prefer paragraphs over long bullet lists; bullets are okay for 3–5 crisp items only.
+- Always open with the pain/context; then the fix; then practical takeaway; short conclusion.
+
+Metadata
+- Update `<title>` and `<meta name="description" ...>`.
+- Post header must include EN/HE titles and sub-lines with date and read time.
+- After creating a post, register it in `BIMBlog/scripts/posts.js` with:
+  - title, title_en, title_he
+  - date (YYYY-MM-DD)
+  - excerpt, excerpt_en, excerpt_he
+  - tags, tags_he (2–5 each)
+  - thumbnail (relative path)
+  - url (e.g., `posts/2025-09-21-your-slug.html`)
+  - readTime/readTime_en/readTime_he
+
+Do
+- Keep each section tight (2–5 sentences).
+- Mirror content in both languages; keep meaning consistent, not word-for-word.
+- Use semantic headings (h2) to break the flow logically.
+- Test locally by opening `BIMBlog/blog.html` and clicking through.
+
+Don’t
+- Don’t leave Hebrew sections missing; always include both.
+- Don’t overuse bullet lists or nested lists.
+- Don’t change the navbar or global script includes.
+- Don’t hardcode absolute paths.
+
+Notes
+- If you add images, keep them lightweight and optimized; use `loading="lazy"` on inline images.
+- For code or terms, wrap with <code>...</code> when needed.
+- Keep RTL attributes on Hebrew blocks: `dir="rtl" style="display:none;"`.
+
+Link hygiene 
+- When the same external URL is used in both EN/HE text (e.g., Tekla Support), don’t hardcode the URL twice.
+- Instead, add `data-tekla-support` (or a similarly named data attribute) to both anchors and set the `href` once via a tiny inline script.
+- Support links are styled blue like the contact link via CSS in `BIMBlog/styles/blog.css`:
+  .post-content a[href*="support.tekla.com"] { color: #22d3ee; }
