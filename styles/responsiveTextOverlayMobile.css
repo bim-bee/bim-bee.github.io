@@ -54,6 +54,11 @@
         top: var(--about-us-top);
         width: 100% !important;
     }
+
+    #about-us .lang-en {
+        position: relative;
+        top: -6vw; /* Adjust this value as needed for your design */
+    }
     
     #services {
         top: var(--services-top);
