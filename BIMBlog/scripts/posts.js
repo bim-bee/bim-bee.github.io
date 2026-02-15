@@ -23,7 +23,7 @@ window.BIM_POSTS = {
       tags_he: ["Tekla", "אוטומציה", "שרטוטים", "איכות"],
 
       thumbnail: "pics/Great-Assembly-Drawings.png",
-      url: "posts/2025-09-26-great-assembly-drawings.html",
+      url: "posts/great-assembly-drawings.html",
       
       readTime_en: "7 min read",
       readTime_he: "קריאה של 7 דק׳"
@@ -43,7 +43,7 @@ window.BIM_POSTS = {
       tags_he: ["BIM", "Tekla", "איכות", "אוטומציה"],
 
       thumbnail: "pics/Model-Checking.png",
-      url: "posts/2025-09-27-model-checks-before-fabrication.html",
+      url: "posts/model-checks-before-fabrication.html",
 
       readTime_en: "7 min read",
       readTime_he: "קריאה של 7 דק׳"
@@ -72,7 +72,7 @@ window.BIM_POSTS = {
       tags_he: ["BIM", "ניהול", "אוטומציה", "Tekla"],
 
       thumbnail: "pics/BIM-Management1.jpg",
-      url: "posts/2025-09-25-bim-not-just-3d.html",
+      url: "posts/bim-not-just-3d.html",
       
       readTime_en: "6 min read",
       readTime_he: "קריאה של 6 דק׳"
@@ -104,7 +104,7 @@ window.BIM_POSTS = {
       ],
 
       thumbnail: "pics/Fab-Folder1.jpg",
-      url: "posts/2025-09-24-fabrication-folder.html",
+      url: "posts/fabrication-folder.html",
 
       readTime_en: "6 min read",
       readTime_he: "קריאה של 6 דק׳"
@@ -128,7 +128,7 @@ window.BIM_POSTS = {
       tags: ["Tekla", "Components", "BIM", "Productivity"],
       tags_he: ["Tekla", "קומפוננטים", "BIM", "פרודוקטיביות"],
       thumbnail: "pics/Custom-Components5.jpg",
-      url: "posts/2025-09-23-custom-components-in-tekla.html",
+      url: "posts/custom-components-in-tekla.html",
       readTime: "6 min read",
       readTime_en: "6 min read",
       readTime_he: "קריאה של 6 דק׳"
@@ -144,7 +144,7 @@ window.BIM_POSTS = {
       tags: ["Tekla", "BIM", "Quality", "Productivity"],
       tags_he: ["Tekla", "BIM", "איכות", "פרודוקטיביות"],
       thumbnail: "pics/Similar-Parts1.jpg",
-      url: "posts/2025-09-22-similar-parts-numbering-accuracy.html",
+      url: "posts/similar-parts-numbering-accuracy.html",
       readTime: "6 min read",
       readTime_en: "6 min read",
       readTime_he: "קריאה של 6 דק׳"
@@ -167,7 +167,7 @@ window.BIM_POSTS = {
       tags: ["Tekla", "Standards", "BIM", "Productivity"],
       tags_he: ["Tekla", "סטנדרטים", "BIM", "פרודוקטיביות"],
       thumbnail: "pics/Firm-Folder1.png",
-      url: "posts/2025-09-21-tekla-firm-folder.html",
+      url: "posts/tekla-firm-folder.html",
       readTime: "5 min read",
       readTime_en: "5 min read",
       readTime_he: "קריאה של 5 דק׳"
@@ -183,7 +183,7 @@ window.BIM_POSTS = {
       tags: ["Fabrication", "Tekla", "BIM"],
       tags_he: ["פבריקציה", "Tekla", "BIM"],
       thumbnail: "pics/SymmetricRailingIntro.jpg",
-      url: "posts/2023-11-20-symmetrical-railings.html",
+      url: "posts/symmetrical-railings.html",
       readTime: "4 min read",
       readTime_en: "4 min read",
       readTime_he: "קריאה של 4 דק׳"
@@ -203,7 +203,7 @@ There is a better post on the same subject.
       tags: ["Tekla", "Automation", "BIM"],
       tags_he: ["Tekla", "אוטומציה", "BIM"],
       thumbnail: "pics/assem_drawing_props.jpg",
-      url: "posts/2023-11-30-automatically-dimensioning-assemblies.html",
+      url: "posts/automatically-dimensioning-assemblies.html",
       readTime: "6 min read",
       readTime_en: "6 min read",
       readTime_he: "קריאה של 6 דק׳"
@@ -229,7 +229,7 @@ There is a better post on the same subject.
       tags: ["Fabrication", "Tekla", "Automation", "BIM"],
       tags_he: ["פבריקציה", "Tekla", "אוטומציה", "BIM"],
       thumbnail: "pics/Welcome-To-Bim-Blog1.png",
-      url: "posts/2025-09-14-welcome.html",
+      url: "posts/welcome.html",
       readTime: "3 min read",
       readTime_en: "3 min read",
       readTime_he: "קריאה של 3 דק׳"

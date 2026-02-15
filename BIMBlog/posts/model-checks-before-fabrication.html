@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model Checking</title>
+  <link rel="icon" type="image/png" href="../../favicon.png">
+  <link href="../../styles/global.css" rel="stylesheet" />
+  <link href="../../styles/navbar.css" rel="stylesheet" />
+  <link href="../styles/blog.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Alef&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="../styles/hebrew-fontsize.css" rel="stylesheet" />
+  <script>window.defaultLang = 'en';</script>
+  <meta name="description" content="Why structured model checks before fabrication protect schedules, budgets, and relationships — and how automation helps detailers catch issues early." />
+  <meta name="robots" content="index,follow" />
+  <meta name="author" content="BIMbee" />
+  <meta name="date" content="2026-01-19" />
+  <link href="../../styles/videos.css" rel="stylesheet" />
+</head>
+<body>
+  <site-navbar data-root="../../"></site-navbar>
+  <article class="post-page">
+  <header class="post-header">
+   <br />
+   <div class="post-backbar">
+     <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+     <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">← חזרה לבימבלוג</a>
+   </div>
+   <h1 class="lang lang-en">Why Model Checking Must Happen Before Fabrication</h1>
+   <h1 class="lang lang-he" dir="rtl" style="display:none;">
+     למה בדיקת המודל חייבת לקרות לפני הייצור
+   </h1>
+  <p class="post-sub lang lang-en">January 19, 2026 • 7 min read</p>
+  <p class="post-sub lang lang-he" dir="rtl" style="display:none;">19 בינואר 2026 • קריאה של 7 דק׳</p>
+ </header>
+
+    <section class="post-content">
+      <h2 class="lang lang-en">Introduction</h2>
+      <p class="lang lang-en">
+        Shops rightly push for speed—idle machines, crews, and cranes cost money. Detailers feel that pressure and rush to drawings to show progress. But skipping a structured check turns speed into risk: problems that take minutes to fix in the model become days of rework in the shop and on site.
+      </p>
+      <p class="lang lang-en">
+        BIM’s real value is catching issues early while they’re cheap to correct. A disciplined check between modeling and fabrication is what turns BIM from nice 3D into a reliable decision tool.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הקדמה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        המפעלים דוחפים להוציא את הפלדה לייצור כמה שיותר מהר — ובצדק. כל דקה שמכונות, צוותים ומנופים עומדים ללא עבודה עולה כסף. הדיטיילרים מרגישים את הלחץ הזה
+        ורוצים להראות התקדמות, ולכן קופצים ישר לשרטוטים. אבל דילוג על שלב בדיקה מסודר הופך את המהירות הזאת
+        לסיכון: בעיות שהיה אפשר לפתור בדקות בתוך המודל הופכות לימים של תיקונים במפעל ובשטח.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        המטרה האמיתית של BIM היא לגלות תקלות מוקדם, כשהן עדיין זולות ופשוטות לתיקון. שלב בדיקה מסודר בין המידול לייצור הוא זה
+        שהופך את ה‑BIM מתלת‑ממד יפה לכלי קבלת החלטות שאפשר לסמוך עליו.
+      </p>
+
+      <h2 class="lang lang-en">What Happens When You Don’t Check the Model</h2>
+      <p class="lang lang-en">
+        Without a real check, the surprises move from the screen to the shop floor: holes too big, wrong edge distances, parts that don’t match, assemblies that need site fixes. These cost multiples more when discovered against real steel.
+      </p>
+      <p class="lang lang-en">
+        Even the “small” things—wrong finish, incorrect grade, ignoring stock lengths, or failing to group similar parts and bolts—cause stoppages, improvisations, and cascading delays. Late discovery jams production and creates friction with the shop.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">מה קורה כשלא בודקים את המודל</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כשאין בדיקה אמיתית של המודל לפני הייצור, ההפתעות עוברות מהמחשב לרצפת המפעל. פתאום יש חורים גדולים מדי, מרווחי קדח שגויים,
+        חלקים שלא באמת מתאימים זה לזה או הרכבות שמצריכות התאמות בשטח. כל טעות כזו עולה פי כמה כשמגלים אותה מול פלדה אמיתית
+        במקום על מסך.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">        
+        גם תקלות אחריות כמו גימור לא נכון, דרגת חומר שגויה, התעלמות מאורך חומר גלם, או חוסר צמצום חלקים וברגים - יוצרות עצירות, פתרונות מאולתרים ושרשרת עיכובים.
+        כל גילוי מאוחר תוקע את הייצור ומייצר חיכוך בין הדיטיילר למפעל.
+      </p>
+
+      <h2 class="lang lang-en">Why Checking Before Drawing Creation Matters</h2>
+      <p class="lang lang-en">
+        Meaningful model changes affect numbering. When numbering shifts, every dependent drawing must be updated, rechecked, or recreated. Rushing to produce drawings without checks multiplies the work.
+      </p>
+      <p class="lang lang-en">
+        Instead of a clean Model → Drawing flow, you get Incomplete Model → Drawing → Fix Model → New Drawing. It’s exhausting and error‑prone. The correct work process is clear: first get the model checked and feel confident, and only then handle numbering and make the drawings.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">למה חשוב לבדוק לפני יצירת שרטוטים</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כל שינוי משמעותי במודל משפיע על המספור. וברגע שהמספור משתנה, כל שרטוט שמבוסס עליו צריך לעבור עדכון, בדיקה מחדש או אפילו יצירה
+        מחדש. הרבה דיטיילרים בתחילת הדרך מרגישים ש"התקדמות" שווה להוציא כמה שיותר שרטוטים כמה שיותר מהר, אבל דילוג על בדיקות
+        המודל מייצר בדיוק את ההפך: עבודה כפולה ומשולשת.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        במקום <em>מודל בדוק ← שרטוט</em> אחד, מקבלים <em>מודל לא גמור ← שרטוט ← תיקון מודל ← שרטוט חדש</em>. זה שוחק, ומגדיל את
+        הסיכוי לטעויות שיחליקו פנימה. שגרת העבודה הנכונה ברורה: מכוונים קודם למודל בדוק ולהרגשת בטחון, ורק אחרי דואגים למספור ולהפקת השרטוטים.
+      </p>
+
+      <h2 class="lang lang-en">The Four Categories of Checks</h2>
+      <p class="lang lang-en">
+        To make checks systematic we should split them into four clear families that together cover most issues that would otherwise slip to the shop or site.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">בדיקה שיטתית בארבע קטגוריות</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כדי להפוך את שלב הבדיקה לשיטתי, בלי להסתמך על זיכרון או אלתור, כדאי לפרק אותו לארבע משפחות בדיקה ברורות.
+        ביחד הן מכסות את רוב הבעיות שעלולות לזלוג למפעל או להרכבה בשטח.
+      </p>
+
+      <h3 class="lang lang-en">1. Clash Checks</h3>
+      <p class="lang lang-en">
+        Find elements occupying the same space: steel penetrating steel, plates colliding with concrete, or bolts that aren’t physically installable. In the model it’s easy to overlook; in the field it’s a hard contradiction that must be solved.
+      </p>
+      <p class="lang lang-en">
+        Tekla has a built‑in clash tool, but many skip it because setup and use aren’t always intuitive. A manual scan misses small or angled clashes. Automating clash checks lowers risk and catches tight issues in time.
+      </p>
+
+      <h3 class="lang lang-he" dir="rtl" style="display:none;">1. בדיקת התנגשויות</h3>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+      פה החיפוש הוא אחר אלמנטים שתופסים את אותו נפח במציאות: פלדה שחודרת זה בזה, פלטות שמתנגשות עם בטון או ברגים שלא ניתנים להרכבה במציאות.
+       במודל אפשר "להתעלם" ממצבים כאלה, אבל בשטח זאת סתירה פיזית שחובה לטפל בה.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        ל‑Tekla יש כלי מובנה לבדיקות התנגשויות, אבל לא מעט משתמשים מדלגים עליו כי ההגדרה והשימוש לא תמיד ברור. סקירה ידנית של המודל
+        עדיף מכלום אבל להסתמך רק על העין ותחושת בטן לא בדיוק משרה בטחון. אוטומציה של בדיקות התנגשויות מקטינה מאוד את הסיכון הזה ומאפשרת לעצור בעיות לפני שהן
+        עוברות לתכניות הייצור.
+      </p>
+
+      <h3 class="lang lang-en">2. Similar Part Checks</h3>
+      <p class="lang lang-en">
+        Parts that should be identical but differ slightly get different numbering. This usually indicates a modeling inconsistency: a moved hole on one instance, a missing galvanizing clearance, geometry misalignment, an unupdated finish, or similar problems.
+      </p>
+      <p class="lang lang-en">
+        Unifying similar parts reduces unique items and drawings, produces cleaner fabrication packages, and lowers shop confusion. This topic doesn’t get enough attention, to increase awareness we dive deeper in the post 
+        <a href="2025-09-22-similar-parts-numbering-accuracy.html" style="color:#22d3ee;">why accuracy matters in numbering</a>.
+      </p>
+
+      <h3 class="lang lang-he" dir="rtl" style="display:none;">2. צמצום חלקים דומים</h3>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        חלקים דומים שאמורים להיות זהים, אבל בפועל שונים מעט, גורמים למערכת לתת מספרי
+        חלק שונים. ההבדלים הקטנים האלה הם בדרך כלל רמז לבעיה במידול: חור שזז רק בחלק אחד, פינוי לגילוון שחסר, גיאומטריה לא עקבית, גימור לא מעודכן, או משהו דומה.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        צמצום החלקים הדומים מקטין את מספר החלקים וההרכבות הייחודיים, מוריד את מספר השרטוטים הדרושים לייצור ובכך יוצא תיק נקי שמפעלים אוהבים ומעריכים.
+        נושא זה לא מקבל מספיק תצומת לב וכדי להגדיל את המודעות הרחבנו על כך בפוסט 
+        <a href="2025-09-22-similar-parts-numbering-accuracy.html" style="color:#22d3ee;">למה הדיוק חשוב במספור</a>.
+      </p>
+
+      <h3 class="lang lang-en">3. Bolt &amp; Hole Checks</h3>
+      <p class="lang lang-en">
+        Codes define distances and hole diameters, shops add reality: drill sizes, machine limits, minimum weld and erection clearances. Checks must ensure both code compliance and what’s practical in the shop and on site.
+      </p>
+      <p class="lang lang-en">
+        Also review bolt lengths: instead of long lists of near‑identical lengths, standardize to one or a few. For example, group M20-55mm/-60mm/-65mm to a single M20×65 where acceptable. This simplifies purchasing, reduces site errors, and eases inventory handling.
+      </p>
+
+      <h3 class="lang lang-he" dir="rtl" style="display:none;">3. בדיקות ברגים וחורים</h3>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        התקנים מגדירים טווחים של מרחקים וקטרי חורים, אבל למפעל יש מגבלות בפועל: קטרי מקדחים זמינים, מגבלות מכונה ומרווחים
+        מינימליים לריתוך ולהרכבה. בדיקת ברגים וחורים צריכה לקחת בחשבון גם את הדרישות התקניות וגם את מה שבאמת אפשרי
+        ומעשי במפעל ובשטח.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בנוסף חשוב להסתכל על אורכי הברגים עצמם: במקום רשימה ארוכה של אורכים כמעט זהים, עדיף לאחד אותם לאורך אחד או למספר מצומצם
+        של אורכים. לדוגמה, במקום M20x55mm / x60mm / x65mm, לא פעם אפשר לאחד ל‑M20x65mm אחד. זה מקל על רכש, מפחית טעויות בשטח ומפשט את
+        ההתנהלות סביב מלאי וחוסרים.
+      </p>
+
+      <h3 class="lang lang-en">4. Stock Checks</h3>
+      <p class="lang lang-en">
+        Tie the model to real stock: bar lengths, plates, and sheet availability. You can’t fabricate a 14m beam from 12m stock without planning a splice in the model. The same logic applies to large plates and special profiles.
+      </p>
+      <p class="lang lang-en">
+        Beyond length, verify material grades against project requirements and shop availability. Engineers or shops may specify higher grades for certain plates, profiles, or connections—reflect that in the model to avoid missing critical requirements.
+      </p>
+
+      <h3 class="lang lang-he" dir="rtl" style="display:none;">4. השוואה לחומר גלם</h3>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        נדרש לחבר את המודל לעולם האמיתי של אורכי מוטות, לוחות ומלאי. אי אפשר להפיק קורה באורך 14 מ׳ מחומר גלם שמגיע
+        במוטות של 12 מ׳ בלבד בלי לתכנן חיבור ספלייס מתאים. אותו הדבר נכון לגבי פלטות גדולות וחתכים מיוחדים.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        נוסף לאורך עצמו, חשוב לוודא שדרגות החומר שבמודל תואם את דרישות הפרויקט. 
+        ייתכן שהמהנדס או המפעל קבעו דרגת חומר גבוהה יותר לעובי פלטה מסוימת, לפרופיל מסוים או לחיבור ספציפי. 
+        חשוב לזהות זאת במודל כדי לוודא שההדרגה הנכונה מופיעה ולא מפספסים דרישות קריטיות.
+      </p>
+
+      <h2 class="lang lang-en">Why This Is a Heavy Responsibility</h2>
+      <p class="lang lang-en">
+        The detailer is the last gate before expensive processes: procurement, cutting, drilling, welding, transport, and erection. When an issue surfaces, the first question is “How wasn’t this caught earlier?” The responsibility is significant.
+      </p>
+      <p class="lang lang-en">
+        Experienced detailers know it well, new ones should be aware: the pre‑fabrication model check is critical. A structured process with clear categories lowers stress and replaces guesswork with a repeatable system.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">למה זו אחריות כבדה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+       הדיטיילר הוא החוליה האחרונה לפני הייצור, ובזכות העבודה המדויקת שלו מתגלים לעיתים פערים שלא נראו קודם. 
+       הוא השער אל תהליכים יקרים—רכש, חיתוך, קידוח, ריתוך, הובלה והרכבה—ולכן האחריות משמעותית. כשיש תקלה, הדיטיילר הוא הראשון שנשאל "איך זה לא נתפס קודם?". 
+       דיטיילרים מנוסים מכירים זאת היטב, וחדשים צריכים להיות מודעים לכך: בדיקת המודל לפני ייצור היא שלב קריטי שאסור להקל בו ראש.
+      </p>
+
+      <h2 class="lang lang-en">How Automation Helps</h2>
+      <p class="lang lang-en">
+        At minimum, use Tekla’s built in Organizer tool to view the model as a dynamic list and handle issues more systematically than by eye. Still, it’s manual, doesn’t cover all needs, and has a learning curve.
+      </p>
+      <p class="lang lang-en">
+        That’s why we built <a data-bimchecker style="color:#22d3ee; text-decoration:underline;" href="#" onclick="openPluginModal('bimchecker');return false;" data-bimchecker-modal>BIMChecker</a>: one dashboard for the four chack families—clashes in red, groupable similar parts in orange, and focused lists for bolts, holes, and stock issues. It also helps managers who oversee external detailers review, distribute findings, and stay in control of quality.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">איך האוטומציה עוזרת</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לכל הפחות כדאי להכיר ולהיעזר בכלי המובנה של Tekla שנקרא ה-Organizer. הוא מציג את המודל כרשימה דינמית ומאפשר לאתר ולטפל בבעיות בצורה מסודרת יותר מאשר הסתמכות על העין בלבד. 
+           אם כי העבודה איתו עדיין ידנית למדי, הוא לא מכסה את כל הצרכים שפירטנו מעל, ויש לו עקומת למידה מסוימת.
+        לכן פיתחנו כלי משלים —<a data-bimchecker style="color:#22d3ee; text-decoration:underline;" href="#" onclick="openPluginModal('bimchecker');return false;" data-bimchecker-modal>BIMChecker</a>— שמרכז את ארבע הקטגוריות במקום אחד: התנגשויות מודל מסומנות באדום, חלקים שניתן לצמצם מודגשים בכתום, ובדיקות ברגים, חורים
+        וחומר גלם מוצגות ברשימות ממוקדות,
+        הכלי מאפשר גם למי שמנהל דיטיילרים חיצוניים לבדוק ולהפיץ את הממצאים, ובכך להיות בשליטה על בקרת האיכות.
+      </p>
+     
+      <h2 class="lang lang-en">Conclusion</h2>
+      <p class="lang lang-en">
+        Pausing to check the model before fabrication isn’t a delay—it prevents bigger delays later. Early discovery protects schedules, budgets, and relationships with the shop and site.
+      </p>
+      <p class="lang lang-en">
+        With clear categories and supportive tools, checking becomes a manageable step. Do it at the right time saves drawing rework, findings avoid cost and frustration. The goal: confidence, clarity, and clean fabrication packages—before the steel meets the shop.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">סיכום</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        עצירה יזומה לבדיקת המודל לפני הייצור היא לא עיכוב אלא הדרך למנוע עיכובים יקרים יותר בהמשך. גילוי מוקדם של בעיות מגן על
+        לוחות הזמנים, התקציב והיחסים עם המפעל ועם האתר.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כשעובדים בשיטתיות עם קטגוריות בדיקה ברורות ומשלבים כלי אוטומציה שתומכים בתהליך, האחריות על המודל הופכת לנשלטת יותר.
+        ביצוע שלב הבדיקות ברגע הנכון חוסך זמן שרטוט מיותר, הממצאים מהבדיקות חוסכים כסף ועוגמת נפש.
+        המטרה: ביטחון, בהירות ותיקי ייצור נקיים, לפני שהפלדה פוגשת את המפעל.
+      </p>
+
+              
+    <br />
+      <p class="lang lang-en">
+        Feel free to <a href="../../index.html#contact">contact us</a> — we are available for any inquiry.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        רוצה מענה?
+        אפשר <a href="../../index.html#contact">ליצור קשר</a> בחופשיות - אנו זמינים לכל פנייה.
+      </p>
+    </section>
+  </article>
+
+  <!-- Modal Structure (shared with landing page videos.js) -->
+  <div id="video-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 id="modal-title"></h4>
+        <span class="close-button" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-video-wrap">
+        <video id="modal-video" controls></video>
+        <div class="modal-actions">
+          <button id="modal-next" type="button" class="modal-next-button" style="display:none;"></button>
+          <button id="modal-contact" type="button" class="modal-next-button" style="display:none;"></button>
+        </div>
+      </div>
+      <div id="modal-description" class="modal-description"></div>
+    </div>
+  </div>
+
+  <footer class="blog-footer">
+     <p>&copy; <span id="year"></span> BIMbee</p>
+  </footer>
+
+  <script defer src="../../scripts/navbar.js"></script>
+  <script defer src="../../scripts/main.js"></script>
+  <script defer src="../../scripts/videos.js"></script>
+</body>
+</html>
