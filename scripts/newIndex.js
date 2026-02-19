@@ -35,23 +35,81 @@ window.addEventListener("load", function () {
         "3.png",
     ];
 
-    function updateImages() {
-        const isMobile = window.matchMedia("(max-width: 1025px)").matches;
+    // Controlled cache busting: update only when background assets change.
+    const ASSET_VERSION = "2026-02-19";
+
+    const MOBILE_QUERY = "(max-width: 1025px)";
+
+    // Scroll clamp logic (robust for mobile): limit scroll so bottom of viewport cannot pass last image bottom
+    let maxScroll = null;
+    let clampReady = false;
+    function computeMaxScroll() {
+        const imgs = imageContainer.querySelectorAll('img');
+        if (!imgs.length) return;
+        const lastImg = imgs[imgs.length - 1];
+        const rect = lastImg.getBoundingClientRect();
+        const absoluteTop = window.scrollY + rect.top; // document Y of top of last image
+        const lastBottom = absoluteTop + rect.height;  // document Y of bottom of last image
+        maxScroll = Math.max(0, lastBottom - window.innerHeight);
+    }
+    function enforceScrollClamp() {
+        // IMPORTANT: avoid "scroll jump" while backgrounds are still loading.
+        // We only clamp once all background images have finished loading.
+        if (!clampReady) return;
+        if (maxScroll == null) return;
+        if (window.scrollY > maxScroll) window.scrollTo(0, maxScroll);
+    }
+
+    let imageLoadGeneration = 0;
+    let lastIsMobile = window.matchMedia(MOBILE_QUERY).matches;
+    function buildImageUrl(isMobile, filename) {
+        const base = isMobile ? 'images/mobile/' : 'images/desktop/';
+        return `${base}${filename}?v=${encodeURIComponent(ASSET_VERSION)}`;
+    }
+    function waitForImage(img) {
+        return new Promise((resolve) => {
+            if (img.complete) return resolve();
+            const done = () => resolve();
+            img.addEventListener('load', done, { once: true });
+            img.addEventListener('error', done, { once: true });
+        });
+    }
+
+    async function updateImages() {
+        const generation = ++imageLoadGeneration;
+        clampReady = false;
+        maxScroll = null;
+
+        const isMobile = window.matchMedia(MOBILE_QUERY).matches;
+        lastIsMobile = isMobile;
         imageContainer.innerHTML = ""; // Clear existing images
 
         const paths = isMobile ? mobileImagePaths : desktopImagePaths;
+        if (!paths.length) return;
 
-        paths.forEach((path) => {
-            const img = document.createElement("img");
-            const cacheBuster = new Date().getTime();
-
-            img.src = isMobile
-                ? `images/mobile/${path}`
-                : `images/desktop/${path}?${cacheBuster}`;
-
-            img.alt = path.replace(/-/g, " ").replace(".jpg", "") + " Background";
+        async function createAppendAndWait(path) {
+            if (generation !== imageLoadGeneration) return;
+            const img = document.createElement('img');
+            img.src = buildImageUrl(isMobile, path);
+            const altBase = path.replace(/\.[^.]+$/, '').replace(/-/g, ' ');
+            img.alt = `${altBase} Background`;
             imageContainer.appendChild(img);
-        });
+            await waitForImage(img);
+            if (generation !== imageLoadGeneration) return;
+        }
+
+        // Load hero first, then remaining backgrounds sequentially.
+        await createAppendAndWait(paths[0]);
+        for (let i = 1; i < paths.length; i++) {
+            await createAppendAndWait(paths[i]);
+        }
+
+        // Enable clamp only once all backgrounds have finished loading.
+        if (generation === imageLoadGeneration) {
+            clampReady = true;
+            computeMaxScroll();
+            enforceScrollClamp();
+        }
     }
 
 
@@ -84,6 +142,11 @@ window.addEventListener("load", function () {
                                 'en';
                             setLanguage(saved);
                         }
+                        // Layout may change after sections injection; refresh clamp.
+                        setTimeout(function () {
+                            computeMaxScroll();
+                            enforceScrollClamp();
+                        }, 0);
                         // Scroll to section if hash is present
                         if (window.location.hash) {
                             setTimeout(function () {
@@ -100,50 +163,7 @@ window.addEventListener("load", function () {
     updateImages();
     loadSections();
 
-    // Scroll clamp logic (robust for mobile): limit scroll so bottom of viewport cannot pass last image bottom
-    let maxScroll = null;
-    function computeMaxScroll() {
-        const imgs = imageContainer.querySelectorAll('img');
-        if (!imgs.length) return;
-        const lastImg = imgs[imgs.length - 1];
-        const rect = lastImg.getBoundingClientRect();
-        const absoluteTop = window.scrollY + rect.top; // document Y of top of last image
-        const lastBottom = absoluteTop + rect.height;  // document Y of bottom of last image
-        maxScroll = Math.max(0, lastBottom - window.innerHeight);
-    }
-    function enforceScrollClamp() {
-        if (maxScroll == null) return;
-        if (window.scrollY > maxScroll) window.scrollTo(0, maxScroll);
-    }
-    function prepareClampAfterImages() {
-        const imgs = imageContainer.querySelectorAll('img');
-        let pending = 0;
-        imgs.forEach(img => {
-            if (!img.complete) {
-                pending++;
-                const finalize = () => {
-                    pending--;
-                    if (pending === 0) {
-                        computeMaxScroll();
-                        enforceScrollClamp();
-                    }
-                };
-                img.addEventListener('load', finalize, { once: true });
-                img.addEventListener('error', finalize, { once: true });
-            }
-        });
-        if (pending === 0) {
-            computeMaxScroll();
-            enforceScrollClamp();
-        }
-    }
-    // Initial clamp
-    prepareClampAfterImages();
-    // Recompute after sections fully loaded since layout may extend
-    window.addEventListener('bimbee:sectionsLoaded', () => {
-        computeMaxScroll();
-        enforceScrollClamp();
-    });
+    // Clamp is intentionally disabled until backgrounds finish loading to prevent scroll jumps.
     // Clamp on scroll (helps iOS elastic / Android overscroll)
     window.addEventListener('scroll', enforceScrollClamp, { passive: true });
     // Recompute on resize / orientation change
@@ -193,7 +213,18 @@ window.addEventListener("load", function () {
 
     window.addEventListener("resize", () => {
         clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(updateImages, 200); // Adjust the delay as needed
+        resizeTimeout = setTimeout(() => {
+            const isMobileNow = window.matchMedia(MOBILE_QUERY).matches;
+            // Only rebuild images if we actually crossed the breakpoint.
+            // Mobile browsers can fire resize during scroll (address bar show/hide).
+            if (isMobileNow !== lastIsMobile) {
+                updateImages();
+            } else {
+                // Just recompute clamp; no expensive DOM rebuild.
+                computeMaxScroll();
+                enforceScrollClamp();
+            }
+        }, 200);
     });
 
 });
