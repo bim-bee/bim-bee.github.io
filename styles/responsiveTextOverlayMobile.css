@@ -30,12 +30,12 @@
 
     :root {
         --landing-top: 60vw;
-        --metaphor-top: 190vw;
-        --about-us-top: 240vw;
-        --services-top: 370vw;
-        --future-roadmap-top: 725vw;
-        --custom-plugin-top: 835vw;
-        --contact-top: 900vw;
+        --metaphor-top: 200vw;
+        --about-us-top: 255vw;
+        --services-top: 405vw;
+        --future-roadmap-top: 740vw;
+        --custom-plugin-top: 855vw;
+        --contact-top: 920vw;
     }
     
     #landing-page {
