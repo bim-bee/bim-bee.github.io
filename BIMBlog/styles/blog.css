@@ -211,6 +211,9 @@ body { padding-top: 3vw; }
 
 /* Footer */
 .blog-footer { border-top: 1px solid var(--border); color: var(--muted); text-align: center; padding: 1.2rem 0 2.2rem; }
+.blog-footer-inner { width: min(850px, 92%); margin: 0 auto; padding: 0 1.25rem; position: relative; }
+.blog-footer .post-back { position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); margin: 0; }
+.blog-footer p { margin: 0; text-align: center; }
 
 /* Utilities */
 .muted { color: var(--muted); }
