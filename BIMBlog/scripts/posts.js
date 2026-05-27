@@ -6,6 +6,34 @@ const ltrSpan = (text) =>
 // JS fallback for blog posts data. Useful when viewing over file:// where fetch may be blocked.
 window.BIM_POSTS = {
   posts: [
+    {
+      date: "2026-03-25",
+
+      title_en: "Your NC Files May Be Wasting Beam Line Time — Here’s How to Fix It",
+      excerpt_en:
+        "Beam line NC/DSTV files often include redundant scribing and marking that wastes machine time. What DSTV carries, common pitfalls, and practical rules to optimize scribing and hardstamps.",
+
+      title_he:
+        "קבצי ה-" +
+        ltrSpan("NC") +
+        " שלך עלולים לבזבז זמן בייצור — כך מתקנים זאת",
+
+      excerpt_he:
+        "קבצי " +
+        ltrSpan("NC/DSTV") +
+        " כוללים לעיתים סימונים מיותרים שמבזבזים זמן מכונה. מה יש בקובץ, מה משתבש בדרך כלל, וכללים פרקטיים לצמצום סימון ולהטבעת " +
+        ltrSpan("Hardstamp") +
+        " בצורה נכונה.",
+
+      tags: ["Fabrication", "Automation", "NC", "DSTV"],
+      tags_he: [ltrSpan("Fabrication"), "אוטומציה", ltrSpan("NC"), ltrSpan("DSTV")],
+
+      thumbnail: "pics/NC-Beamline-Thumb.svg",
+      url: "posts/nc-files-beam-line-time.html",
+
+      readTime_en: "8 min read",
+      readTime_he: "קריאה של 8 דק׳"
+    },
     {            
       date: "2026-02-02",
       
