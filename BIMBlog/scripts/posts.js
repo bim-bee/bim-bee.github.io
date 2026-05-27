@@ -6,6 +6,7 @@ const ltrSpan = (text) =>
 // JS fallback for blog posts data. Useful when viewing over file:// where fetch may be blocked.
 window.BIM_POSTS = {
   posts: [
+/*
     {
       date: "2026-03-25",
 
@@ -34,6 +35,7 @@ window.BIM_POSTS = {
       readTime_en: "8 min read",
       readTime_he: "קריאה של 8 דק׳"
     },
+*/
     {            
       date: "2026-02-02",
       
