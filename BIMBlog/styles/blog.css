@@ -215,6 +215,25 @@ body { padding-top: 3vw; }
 .blog-footer .post-back { position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); margin: 0; }
 .blog-footer p { margin: 0; text-align: center; }
 
+@media (max-width: 480px) {
+  .blog-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .blog-footer .post-back {
+    position: static;
+    transform: none;
+  }
+
+  .blog-footer p {
+    margin-left: auto;
+    text-align: right;
+  }
+}
+
 /* Utilities */
 .muted { color: var(--muted); }
 .error { color: #fca5a5; }
