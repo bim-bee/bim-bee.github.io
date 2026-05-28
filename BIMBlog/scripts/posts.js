@@ -37,7 +37,7 @@ window.BIM_POSTS = {
     },
 */
     {            
-      date: "2026-02-02",
+      date: "2026-05-04",
       
       title_en: "Great Assembly Drawings: Shift From Manual Drafting to Confident Reviewing",
       excerpt_en: "How to move from manual assembly drafting to confident reviewing using clear rules and API-driven automation in Tekla.",
@@ -59,7 +59,7 @@ window.BIM_POSTS = {
       readTime_he: "קריאה של 7 דק׳"
     },
     {
-      date: "2026-01-19",
+      date: "2026-03-23",
 
       title_en: "Why Model Checking Must Happen Before Fabrication",
       excerpt_en:
@@ -80,7 +80,7 @@ window.BIM_POSTS = {
     },
 
     {            
-      date: "2025-10-27",
+      date: "2025-08-04",
       
       title_en: "BIM Is Not Just 3D — Why BIM Management Matters",
       excerpt_en: "BIM isn’t only 3D geometry — it’s managed information. Why BIM management matters and how automation roots it deeper.",
@@ -109,7 +109,7 @@ window.BIM_POSTS = {
     },
 
     {
-      date: "2025-11-10",
+      date: "2025-09-15",
 
       title_en: "Fabrication Folder — Turning Modeling into Reality",
       excerpt_en: "What goes into a complete fabrication folder and how to issue it right: phases, reports, drawings, DSTV/DXF, IFC, checks, and smart locking.",
@@ -147,7 +147,7 @@ window.BIM_POSTS = {
         "קומפוננטים ב-" +
         ltrSpan("Tekla") +
         " — בונים פעם וממחזרים",
-      date: "2025-11-24",
+      date: "2025-10-20",
       excerpt: "Why custom components are essential for accurate, consistent, and future‑proof Tekla models — plus practical tips.",
       excerpt_en: "Why custom components are essential for accurate, consistent, and future‑proof Tekla models — plus practical tips.",
       excerpt_he:
@@ -167,7 +167,7 @@ window.BIM_POSTS = {
       title: "Similar Parts — Why Accuracy Matters in Numbering",
       title_en: "Similar Parts — Why Accuracy Matters in Numbering",
       title_he: "חלקים דומים — למה הדיוק חשוב במספור",
-      date: "2025-12-22",
+      date: "2026-01-05",
       excerpt: "How precise modeling keeps parts sharing the same position number, saving time in drawings, fabrication, and erection.",
       excerpt_en: "How precise modeling keeps parts sharing the same position number, saving time in drawings, fabrication, and erection.",
       excerpt_he: "איך דיוק במידול מבטיח שחלקים יקבלו אותו מספר מיקום, חוסך זמן ואנרגיה בשרטוטים, בייצור ובהרכבה.",
@@ -187,7 +187,7 @@ window.BIM_POSTS = {
         ltrSpan("Firm") +
         " ב-" +
         ltrSpan("Tekla"),
-      date: "2025-12-08",
+      date: "2025-12-01",
       excerpt: "Centralize attributes once in a Tekla firm folder so every new project starts ready to go.",
       excerpt_en: "Centralize attributes once in a Tekla firm folder so every new project starts ready to go.",
       excerpt_he:
@@ -206,7 +206,7 @@ window.BIM_POSTS = {
       title: "Symmetrical Railings — Importance in Detailing",
       title_en: "Symmetrical Railings — Importance in Detailing",
       title_he: "מעקות סימטריים — חשיבות בתכנון",
-      date: "2026-01-05",
+      date: "2026-02-16",
       excerpt: "Why symmetry in railing detailing saves time and reduces complexity in fabrication and installation.",
       excerpt_en: "Why symmetry in railing detailing saves time and reduces complexity in fabrication and installation.",
       excerpt_he: "מדוע סימטריה בתכנון חוסכת זמן ומפחיתה מורכבות בייצור ובהרכבה, בדוגמא על מעקות.",
@@ -245,7 +245,7 @@ There is a better post on the same subject.
       title: "Welcome to BIMblog",
       title_en: "Welcome to BIMblog",
       title_he: "ברוכים הבאים לבימבלוג",
-      date: "2025-10-13",
+      date: "2025-06-30",
 
       excerpt: "Welcome to BIMblog — an introduction and an invitation to explore practical insights on BIM processes and standards in real projects.",
       excerpt_en: "Welcome to BIMblog — an introduction and an invitation to explore practical insights on BIM processes and standards in real projects.",
