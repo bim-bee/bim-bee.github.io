@@ -6,9 +6,9 @@ const ltrSpan = (text) =>
 // JS fallback for blog posts data. Useful when viewing over file:// where fetch may be blocked.
 window.BIM_POSTS = {
   posts: [
-/*
+/* */
     {
-      date: "2026-03-25",
+      date: "2026-06-15",
 
       title_en: "Your NC Files May Be Wasting Beam Line Time — Here’s How to Fix It",
       excerpt_en:
@@ -29,13 +29,13 @@ window.BIM_POSTS = {
       tags: ["Fabrication", "Automation", "NC", "DSTV"],
       tags_he: [ltrSpan("Fabrication"), "אוטומציה", ltrSpan("NC"), ltrSpan("DSTV")],
 
-      thumbnail: "pics/NC-Beamline-Thumb.svg",
+      thumbnail: "pics/NC-Optimization.jpg",
       url: "posts/nc-files-beam-line-time.html",
 
       readTime_en: "8 min read",
       readTime_he: "קריאה של 8 דק׳"
     },
-*/
+
     {            
       date: "2026-05-04",
       
