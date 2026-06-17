@@ -10,6 +10,69 @@
     color:#555; line-height:1.6; margin-bottom:20px;
     text-align:center; width:55%; margin:0 auto 20px;
 }
+#contact .calendar-booking-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: none;
+    margin: 1em auto 0;
+    padding: 0.5em 0.8em;
+    background: linear-gradient(90deg, #FFD600 60%, #FFB300 100%);
+    color: #222;
+    border: none;
+    border-radius: 4px;
+    font-size: var(--bee-button-font-size, 1.8vw);
+    font-weight: var(--bee-button-font-weight, 700);
+    font-family: 'Alef', 'Segoe UI', Tahoma, Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.1s, box-shadow 0.2s;
+    letter-spacing: 0.03em;
+    outline: none;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+#contact .calendar-booking-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.06) 0 10px,
+        rgba(0, 0, 0, 0) 10px 20px
+    );
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    transition: opacity 0.2s, transform 0.2s;
+}
+#contact .calendar-booking-button:hover {
+    background: linear-gradient(90deg, #FFB300 60%, #FFD600 100%);
+    color: #000;
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+}
+#contact .calendar-booking-button:hover::before {
+    opacity: 0.8;
+    transform: translateX(4px);
+}
+#contact .calendar-booking-button:active {
+    transform: translateY(0) scale(0.99);
+}
+#contact .calendar-booking-button:focus-visible {
+    outline: 3px solid #000;
+    outline-offset: 2px;
+}
+#contact .calendar-booking-button .lang-he {
+    font-size: var(--bee-button-font-size-he, calc(var(--bee-button-font-size, 1.8vw) * 1.1));
+    font-weight: var(--bee-button-font-weight-he, 700);
+    font-family: 'Alef', 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+#contact .calendar-booking-mobile-break {
+    display: none;
+}
 #contact-form { max-width:600px; margin:0 auto; }
 #contact-form label { display:block; margin-bottom:5px; font-weight:bold; }
 #contact-form input[type="text"],
@@ -29,6 +92,16 @@
     .checkbox-group { grid-template-columns:repeat(2, max-content); }
 }
 @media (max-width: 1025px) {
+    #contact .calendar-booking-button {
+        padding: 2vw 2.5vw;
+        font-size: var(--bee-button-font-size, 5.5vw);
+    }
+    #contact .calendar-booking-button .lang-he {
+        font-size: var(--bee-button-font-size-he, var(--bee-button-font-size, 5.5vw));
+    }
+    #contact .calendar-booking-mobile-break {
+        display: block;
+    }
     .mobile-contact-trigger {
         display:inline-block; padding:15px 30px; font-size:1.1em;
         background:#FFC107; color:#333; border:none; border-radius:5px;
