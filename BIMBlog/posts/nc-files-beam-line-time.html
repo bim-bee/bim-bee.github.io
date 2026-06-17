@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your NC Files May Be Wasting Beam Line Time — Here’s How to Fix It</title>
+  <link rel="icon" type="image/png" href="../../favicon.png">
+  <link href="../../styles/global.css" rel="stylesheet" />
+  <link href="../../styles/navbar.css" rel="stylesheet" />
+  <link href="../styles/blog.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Alef&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="../styles/hebrew-fontsize.css" rel="stylesheet" />
+  <script>window.defaultLang = 'en';</script>
+  <meta name="description" content="Beam line NC/DSTV files often include redundant scribing and marking that wastes machine time. Learn what DSTV carries, common pitfalls, and practical rules to optimize scribing and hardstamps." />
+  <meta name="robots" content="index,follow" />
+  <meta name="author" content="BIMbee" />
+  <meta name="date" content="2026-03-25" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GD41K6C42F"></script>
+  <script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-GD41K6C42F');
+  </script>
+</head>
+<body>
+  <site-navbar data-root="../../"></site-navbar>
+
+  <article class="post-page">
+    <header class="post-header">
+      <br />
+      <div class="post-backbar">
+        <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+        <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">← חזרה לבימבלוג</a>
+      </div>
+
+      <h1 class="lang lang-en">Your NC Files May Be Wasting Beam Line Time — Here’s How to Fix It</h1>
+      <p class="post-sub lang lang-en">March 25, 2026 • 8 min read</p>
+
+      <h1 class="lang lang-he" dir="rtl" style="display:none;">קבצי ה‑NC שלך עלולים לבזבז זמן בייצור — כך מתקנים זאת</h1>
+      <p class="post-sub lang lang-he" dir="rtl" style="display:none;">25 במרץ 2026 • קריאה של 8 דק׳</p>
+    </header>
+
+    <section class="post-content">
+      <h2 class="lang lang-en">Introduction</h2>
+      <p class="lang lang-en">
+        NC files (often called <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files) sent to fabrication can easily be inefficient.
+        Machines are often forced to process unnecessary marking data — running duplicate passes, following overly detailed contours,
+        and attempting marks that shouldn’t exist in the first place.
+      </p>
+      <p class="lang lang-en">
+        The result is predictable: longer production times, increased tool wear, and unnecessary intervention from machinists on the shop floor.
+        The fix is simple: strip away any unneeded data from the file — it only needs the information required to fabricate and weld correctly,
+        nothing else.
+      </p>
+      <p class="lang lang-en">
+        This post breaks down what a <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> file controls in a beam line machine,
+        and how to optimize it to immediately reduce fabrication time and machine wear.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הקדמה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        קבצי <span dir="ltr" style="unicode-bidi:isolate;">NC</span> (שנקראים לא פעם גם <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span>) שמועברים לייצור יכולים להיות לא יעילים.
+        לעיתים המכונה נאלצת לעבד מידע מיותר — לבצע סימונים ארוכים, מעברים כפולים, צורות מידי מורכבות,
+        ולנסות לבצע סימונים שלא באמת עוזרים לרצפת הייצור.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        התוצאה צפויה: זמני ייצור ארוכים יותר, שחיקה מוגברת של כלי העבודה, והתערבות וטיפול ידני מיותר של מפעילי המכונה.
+        והפתון פשוט: להסיר מהקובץ כל מידע שאינו נחוץ, כדי שיכיל רק את המידע הנדרש כדי לייצר ולרתך נכון, וזהו.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בפוסט הזה נפרק מה בעצם קובץ <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> “מכתיב” למכונת הייצור,
+        ואיך אופטימיזציה נכונה יכולה להפחית מיד זמן מכונה ושחיקה.
+      </p>
+
+         <div style="margin: 0.5rem 0 1rem;">
+        <figure style="flex:1 1 320px; margin:0; border:2px solid #000; padding:0.5rem; background:#000;">
+          <img src="../pics/NC-Unoptimized.jpg" alt="Unoptimized NC/DSTV marking example" loading="lazy" />
+          <figcaption class="muted" style="margin:.25rem 0 0; font-size:0.95rem; text-align:center;">
+            <span class="lang lang-en">Unoptimized — full contours and redundant marking</span>
+            <span class="lang lang-he" dir="rtl" style="display:none;">לא אופטימלי — קווי סימון בקונטורים מלאים, השם לייצור מוטבע במרכז ה-web ללא התחשבות בהתנגשויות.</span>
+          </figcaption>
+        </figure>
+        <figure style="margin:1rem 0 0; border:2px solid #000; padding:0.5rem; background:#000;">
+          <img src="../pics/NC-Optimized.jpg" alt="Optimized NC/DSTV marking example" loading="lazy" />
+          <figcaption class="muted" style="margin:.25rem 0 0; font-size:0.95rem; text-align:center;">
+            <span class="lang lang-en">Optimized — only essential welding/assembly marks</span>
+            <span class="lang lang-he" dir="rtl" style="display:none;">אופטימלי — רק סימונים חיוניים לריתוך והרכבה, השם לייצור מוטבע ב-flang העליון והתחתון לנגישות מלאה.</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <h2 class="lang lang-en">Deep Dive: What DSTV Actually Carries</h2>
+      <p class="lang lang-en">
+        <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files are machine instruction files used primarily for beam profile processing.
+        They define everything the machine needs to perform cutting, drilling, and marking operations on structural members.
+        Plates are typically handled separately using a <span dir="ltr" style="unicode-bidi:isolate;">DXF</span> format.
+      </p>
+      <p class="lang lang-en">For this discussion, two elements matter:</p>
+      <ul class="lang lang-en">
+        <li><strong>Scribing</strong> — marking lines or points on the material to guide welding and assembly</li>
+        <li><strong>Hardstamp</strong> — the physical imprint used to identify the part</li>
+      </ul>
+      <p class="lang lang-en">
+        Scribing is typically executed in one of two ways (or both):
+      </p>
+      <ul class="lang lang-en">
+        <li><strong>Punching</strong> — a physical scratch or dent madeby the machine tool</li>
+        <li><strong>Powdering</strong> — a visual marking applied with paint or powder</li>
+      </ul>
+      <p class="lang lang-en">
+        In practice, most fabrication shops use only one of these methods, usually punching.
+        However, many <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files include both — which leads directly to inefficiency.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">צלילה עמוקה: מה באמת קיים בקובץ DSTV</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        קבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> הם קבצי הוראות למכונה, שנועדו בעיקר לעיבוד קורות פלדה הנדסיות.
+        הם מגדירים למכונה את כל מה שנדרש לביצוע חיתוכים, קידוחים וסימונים על אלמנטים קונסטרוקטיביים.
+        פלטות בדרך כלל מטופלות בנפרד באמצעות פורמט <span dir="ltr" style="unicode-bidi:isolate;">DXF</span>.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">בדיון הזה שני רכיבים הם העיקר:</p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li><strong>Scribing</strong> — סימון קווים או נקודות שמסייעים לריתוך ולהרכבה</li>
+        <li><strong>Hardstamp</strong> — הטבעה פיזית שמזהה את החלק</li>
+      </ul>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        את הסימון (Scribing) מבצעים בדרך כלל באחת משתי שיטות (או בשתיהן):
+      </p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li><strong>Punching</strong> — חריטה/דפיקה פיזית באמצעות כלי מכאני</li>
+        <li><strong>Powdering</strong> — סימון ויזואלי בעזרת צבע/אבקה</li>
+      </ul>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בפועל, רוב המפעלים משתמשים רק בשיטה אחת — לרוב Punching. אבל לא מעט קבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> כוללים את שתיהן,
+        ומהרגע הזה מתחילה חוסר היעילות.
+      </p>
+
+      <h2 class="lang lang-en">The Problem</h2>
+      <p class="lang lang-en">Common problems in <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files include:</p>
+      <ul class="lang lang-en">
+        <li>Full geometry being scribed instead of only essential marks</li>
+        <li>Long, continuous marking paths</li>
+        <li>Redundant contours that do not contribute to fabrication</li>
+        <li>Hardstamps missing or not placed correctly for smooth fabrication</li>
+        <li>Markings placed too close to edges or in areas the machine tool cannot reach</li>
+      </ul>
+      <p class="lang lang-en">
+        Depending on the machine, these issues result in either errors or silent failures where markings are skipped.
+        In both cases, machinists often step in to manually adjust marks, reposition hardstamps, or remove unnecessary lines.
+        All of this is avoidable with properly prepared NC files.
+      </p>
+
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">הבעיה</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">בעיות נפוצות בקבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span>:</p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li>סימון של גיאומטריה מלאה במקום סימונים חיוניים בלבד</li>
+        <li>מסלולי סימון ארוכים ורציפים</li>
+        <li>קונטורים מיותרים שלא תורמים לייצור</li>
+        <li>Hardstamp חסר או ממוקם לא נכון — מה שמאט את העבודה</li>
+        <li>סימונים קרובים מדי לקצה או באזורים שהכלי לא יכול להגיע אליהם</li>
+      </ul>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בהתאם לסוג המכונה, הבעיות הללו גורמות או לשגיאות וחוסרים, או ל״כשל שקט״ שבו הסימונים מתבצעים סתם.
+        בשני המקרים מפעילי המכונה נאלצים להתערב: לתקן סימונים ידנית, להזיז Hardstamp, או להסיר קווים מיותרים.
+        את כל זה אפשר למנוע באמצעות קבצי <span dir="ltr" style="unicode-bidi:isolate;">NC</span> מוכנים נכון.
+      </p>
+
+      <h2 class="lang lang-en">Punching vs Powdering</h2>
+      <p class="lang lang-en">
+        Each manufacturer has its own preferred marking method. Most use punching because it is simpler and requires less setup,
+        while some use powdering or a combination of both. The important thing is that the method is clearly defined and enforced in
+        the NC files. A common issue is when this is overlooked.
+      </p>
+      <p class="lang lang-en">
+        In one real-world case, <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files included both punching and powdering instructions,
+        even though the factory only used punching. The machine followed both sets of instructions, running over the same geometry twice.
+        The second pass added no value — the powdering wasn’t set up, so the machine just ran the same path again, doubling the marking time.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">Punching מול Powdering</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לכל יצרן מכונה יש שיטת סימון מועדפת. לרוב משתמשים ב‑Punching כי זה פשוט יותר ודורש פחות הכנות,
+        בעוד שבחלק מהמפעלים משתמשים ב‑Powdering או שילוב של השניים.
+        הדבר החשוב הוא שהשיטה תהיה מוגדרת וברורה, ושהקבצים אכן יעמדו בה.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        במקרה אמיתי, קבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> כללו גם הוראות Punching וגם Powdering,
+        למרות שבמפעל השתמשו רק ב‑Punching. המכונה ביצעה את שתי קבוצות ההוראות ועברה על כל קו פעמיים.
+        המעבר השני לא תרם כלום — ה‑Powdering לא היה מכוון בכלל, ולכן המכונה רק חזרה על אותו מסלול והכפילה את זמן הסימון.
+      </p>
+
+       <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-start; margin: 0.5rem 0 1rem;">
+        <figure style="flex:1 1 320px; margin:0; border:2px solid #000; padding:0.5rem; background:#000;">
+          <img src="../pics/SHS-Scribing-Naive-Closeup.jpg" alt="Naive SHS scribing closeup with full inner and outer contours" loading="lazy" style="display:block; width:100%; height:420px; object-fit:contain;" />
+          <figcaption class="muted" style="margin:.25rem 0 0; font-size:0.95rem; text-align:center;">
+            <span class="lang lang-en">Naive plate and SHS scribing:<br> Full contour lines without edge-clearance consideration. The SHS includes complete inner and outer contours.</span>
+            <span class="lang lang-he" dir="rtl" style="display:none;">סימון נאיבי של פלטה ופרופיל מרובע:<br> קונטורים מלאים ללא התחשבות במרחק מהקצה. בפרופיל המרובע קונטורים פנימיים וחיצוניים מלאים.</span>
+          </figcaption>
+        </figure>
+        <figure style="flex:1 1 320px; margin:0; border:2px solid #000; padding:0.5rem; background:#000;">
+          <img src="../pics/SHS-Scribing-Optimized-Closeup.jpg" alt="Optimized SHS scribing closeup with corner marks only" loading="lazy" style="display:block; width:100%; height:420px; object-fit:contain;" />
+          <figcaption class="muted" style="margin:.25rem 0 0; font-size:0.95rem; text-align:center;">
+            <span class="lang lang-en">Optimized plate and SHS scribing:<br> Contour lines reduced to minimal start and end segments while maintaining edge clearance. For SHS, only the outer corners are marked.</span>
+            <span class="lang lang-he" dir="rtl" style="display:none;">סימון אופטימלי של פלטה ופרופיל מרובע:<br> קווי קונטור מפורקים להתחלה וסוף מינימליים תוך שמירה על מרחק מהקצה. בפרופיל מרובע מסומנים הפינות החיצוניות בלבד.</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <h2 class="lang lang-en">Scribing Optimization Strategy</h2>
+      <p class="lang lang-en">
+        The guiding principle is straightforward: mark only what is required for welding and assembly.
+        Full geometry is not needed. What matters is clarity, not completeness.
+        Instead of scribing continuous contours, markings should be reduced to minimal, functional segments.
+      </p>
+      <p class="lang lang-en">Practical rules include:</p>
+      <ul class="lang lang-en">
+        <li>Break long scribe lines into short segments (start, middle, end)</li>
+        <li>Properly define whether scribing is done with punching, powdering, or both</li>
+        <li>Avoid marking too close to edges or profile radius</li>
+        <li>Account for machine tool width to prevent errors</li>
+        <li>Remove redundant internal or overlapping contours</li>
+      </ul>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">אסטרטגיית אופטימיזציה לסימון (Scribing)</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        העיקרון המנחה פשוט: מסמנים רק מה שנדרש לריתוך ולהרכבה.
+        אין צורך בגיאומטריה מלאה. החשוב הוא שהסימון יהיה ברור, לא שהוא יהיה “שלם”.
+        במקום קונטורים רציפים, כדאי לצמצם את הסימון למקטעים קצרים ופונקציונליים.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">כללים פרקטיים לדוגמה:</p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li>לשבור קווי סימון ארוכים למקטעים קצרים (תחילה, אמצע, סוף)</li>
+        <li>להגדיר באופן חד‑משמעי אם הסימון מתבצע ב‑Punching, Powdering או שניהם</li>
+        <li>להימנע מסימון קרוב מדי לקצוות או לרדיוס של הפרופיל</li>
+        <li>לקחת בחשבון את רוחב הכלי כדי למנוע חוסרים ושגיאות</li>
+        <li>להסיר קונטורים פנימיים/חופפים ומידע כפול</li>
+      </ul>
+
+      <h2 class="lang lang-en">Hardstamp Best Practices</h2>
+      <p class="lang lang-en">
+        Hardstamp placement is also important. Its purpose is simple: clearly identify the part during fabrication.
+        Poor placement can slow down the machine or make the mark unusable.
+      </p>
+      <p class="lang lang-en">Best practices:</p>
+      <ul class="lang lang-en">
+        <li>Ensure every part has a hardstamp</li>
+        <li>Avoid placing hardstamps too close to edges or radii</li>
+        <li>Avoid placing directly over the web where tool wear increases</li>
+        <li>Avoid clashes with holes or scribe marks</li>
+      </ul>
+      <p class="lang lang-en">
+        Visibility is also critical. A practical improvement is to place the hardstamp on two opposing sides of the part.
+        This prevents cases where the mark is hidden depending on how the profile is positioned in the shop.
+      </p>
+      <p class="lang lang-en">
+        Size must be balanced: too small → unreadable; too large → unnecessary machine time.
+        A good hardstamp is clear, reachable, and efficient.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">כללי אצבע ל‑Hardstamp</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        גם מיקום ה‑Hardstamp חשוב. המטרה היא לזהות את החלק בצורה ברורה במהלך הייצור.
+        מיקום לא טוב יכול להאט את המכונה או להפוך את ההטבעה ללא שימושית.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">כללי אצבע:</p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li>לוודא שלכל חלק יש Hardstamp</li>
+        <li>לא למקם Hardstamp קרוב מדי לקצה או לרדיוס</li>
+        <li>להימנע ממיקום ישירות על ה‑Web (אזור ששוחק יותר את הכלי)</li>
+        <li>להימנע מהתנגשות עם חורים או סימונים</li>
+      </ul>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        גם נראות היא קריטית. שיפור פרקטי הוא להטביע Hardstamp בשני צדדים נגדיים של הקורה כך הוא לא “נעלם” בהתאם לאופן שבו הפרופיל מונח במפעל.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        גם הגודל צריך איזון: קטן מדי ← לא קריא; גדול מדי ← בזבוז זמן מכונה.
+        Hardstamp טוב הוא כזה שהוא ברור, נגיש למכונה ולמרתך.
+      </p>
+
+      <h2 class="lang lang-en">Before vs After (and Why It Matters)</h2>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-start; margin: 0.5rem 0 1rem;">
+        <figure style="flex:1 1 320px; margin:0; border:2px solid #000; padding:0.5rem; background:#000;">
+          <img src="../pics/SHS-Scribing-Naive-Closeup.jpg" alt="Naive SHS scribing closeup with full inner and outer contours" loading="lazy" style="display:block; width:100%; height:420px; object-fit:contain;" />
+          <figcaption class="muted" style="margin:.25rem 0 0; font-size:0.95rem; text-align:center;">
+            <span class="lang lang-en">Naive plate and SHS scribing:<br> Full contour lines without edge-clearance consideration. The SHS includes complete inner and outer contours.</span>
+            <span class="lang lang-he" dir="rtl" style="display:none;">סימון נאיבי של פלטה ופרופיל מרובע:<br> קונטורים מלאים ללא התחשבות במרחק מהקצה. בפרופיל המרובע קונטורים פנימיים וחיצוניים מלאים.</span>
+          </figcaption>
+        </figure>
+        <figure style="flex:1 1 320px; margin:0; border:2px solid #000; padding:0.5rem; background:#000;">
+          <img src="../pics/SHS-Scribing-Optimized-Closeup.jpg" alt="Optimized SHS scribing closeup with corner marks only" loading="lazy" style="display:block; width:100%; height:420px; object-fit:contain;" />
+          <figcaption class="muted" style="margin:.25rem 0 0; font-size:0.95rem; text-align:center;">
+            <span class="lang lang-en">Optimized plate and SHS scribing:<br> Contour lines reduced to minimal start and end segments while maintaining edge clearance. For SHS, only the outer corners are marked.</span>
+            <span class="lang lang-he" dir="rtl" style="display:none;">סימון אופטימלי של פלטה ופרופיל מרובע:<br> .קווי קונטור מפורקים להתחלה וסוף מינימליים תוך שמירה על מרחק מהקצה. בפרופיל מרובע מסומנים הפינות החיצוניות בלבד</span>
+          </figcaption>
+        </figure>
+      </div>
+      <p class="lang lang-en">
+        By reducing full contours, the total scribing length can drop by around 80–90%.
+        For example, a <span dir="ltr" style="unicode-bidi:isolate;">SHS100×10</span> profile scribed naively includes both inner and outer contours.
+        After optimization, only the outer corner marks remain, reducing the total scribing length significantly.
+      </p>
+      <p class="lang lang-en">
+        This applies to all profiles (and plates), not just this example.
+        Beam line machines also have built-in safety rules to prevent operations that could damage the machine.
+        While this is necessary, it often results in errors when marks are too close to edges or placed in unreachable areas.
+      </p>
+      <p class="lang lang-en">
+        These errors interrupt production and force the machinist to decide whether to ignore or adjust the marks for each case.
+        With an average scribing speed of around ten centimeters a second, and considering real interruptions,
+        reducing unnecessary marking can cut machine time by half or sometimes more.
+      </p>
+      <p class="lang lang-en">
+        On a job with 100 beams, each with multiple scribes, this leads to noticeable time savings, reduced tool wear, and fewer interruptions.
+        The ROI is straightforward — less time, less wear, fewer errors. A smoother beam line means a more efficient and profitable project.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">לפני מול אחרי (ולמה זה חשוב)</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כשמצמצמים קונטורים מלאים, אורך הסימון הכולל יכול לרדת בערך ב‑80–90%.
+        לדוגמה, פרופיל <span dir="ltr" style="unicode-bidi:isolate;">SHS100×10</span> שסומן בצורה נאיבית כולל קונטור פנימי וחיצוני.
+        אחרי אופטימיזציה נשארים רק סימוני פינות, ואורך הסימון יורד משמעותית.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        זה נכון לכל הפרופילים (וגם לפלטות) ולא רק לדוגמה הזו.
+        למכונות Beam Line יש חוקי בטיחות מובנים שמונעים פעולות שעלולות להזיק למכונה.
+        זה חשוב, אבל בפועל זה יוצר שגיאות כאשר הסימונים קרובים מדי לקצה או נמצאים באזור שהכלי לא מגיע אליו.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        השגיאות הללו עוצרות את הייצור ומכריחות את המפעיל להחליט בכל פעם אם להתעלם מהסימון או לבצע התאמה.
+        במהירות סימון ממוצעת של <span dir="ltr" style="unicode-bidi:isolate;">כעשר סנטימטר לשנייה</span>, ובתוספת העצירות בפועל,
+        צמצום סימונים מיותרים יכול לקצר את זמן המכונה בחצי ולעיתים אפילו יותר.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בפרויקט עם 100 קורות, שלכל אחת יש מספר סימונים, זה מתורגם לחיסכון בזמן, פחות שחיקה, ופחות עצירות.
+        פחות זמן, פחות בלאי, פחות תקלות. מכונות ייצור שעובדות חלק= פרויקט יעיל ורווחי יותר.
+      </p>
+
+      <h2 class="lang lang-en">Practical Solution: Making It Scalable</h2>
+      <p class="lang lang-en">
+        This kind of optimization cannot be done reliably by hand.
+        To make it work across different projects and teams, it needs clear rules and automation.
+        The best approach is to post-process <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files.
+        This means any file, no matter where it came from or which BIM software was used, can be improved before it reaches the machine.
+      </p>
+      <p class="lang lang-en">A typical workflow:</p>
+      <ul class="lang lang-en">
+        <li>Receive <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files from any source</li>
+        <li>Run a post-processing step</li>
+        <li>Use the updated files as machine-ready <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files</li>
+      </ul>
+      <p class="lang lang-en">
+        This makes sure all files follow the shop’s machining requirements and stay consistent, no matter who created them.
+        For Tekla users, full integration is also possible.
+        As Tekla partners, we offer tools like the <a href="../../index.html#custom-plugin" style="color:#22d3ee;">Fabrication Packager</a>,
+        which automatically creates NC files with optimized scribing and correct hardstamp placement.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">פתרון פרקטי: איך עושים את זה בפועל</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        אופטימיזציה כזו אי אפשר לבצע בצורה אמינה באופן ידני.
+        כדי שזה יעבוד לאורך זמן ובין צוותים ופרויקטים שונים, צריך כללים ברורים ואוטומציה.
+        הגישה הטובה ביותר היא Post‑Processing לקבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span>.
+        כלומר: כל קובץ — לא משנה מאיפה הגיע ובאיזו תוכנת <span dir="ltr" style="unicode-bidi:isolate;">BIM</span> נוצר — יכול לעבור שיפור לפני שהוא מגיע למכונה.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">תהליך טיפוסי:</p>
+      <ul class="lang lang-he" dir="rtl" style="display:none;">
+        <li>מקבלים קבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> מכל מקור</li>
+        <li>מריצים שלב Post‑Processing</li>
+        <li>משתמשים בקבצים המעודכנים כקבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> מוכנים למכונה</li>
+      </ul>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כך מוודאים שכל הקבצים עומדים בדרישות העיבוד של המפעל ונשארים עקביים — לא משנה מי יצר אותם.
+        למשתמשי Tekla אפשר גם להגיע לאינטגרציה מלאה.
+        כשותפים של Tekla, אנחנו מציעים כלים כמו <a href="../../index.html#custom-plugin" style="color:#22d3ee;">Fabrication Packager</a>,
+        שמפיק אוטומטית קבצי <span dir="ltr" style="unicode-bidi:isolate;">NC</span> עם סימון אופטימלי והטבעת Hardstamp במיקום נכון.
+      </p>
+
+      <h2 class="lang lang-en">Conclusion</h2>
+      <p class="lang lang-en">
+        The <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> files you use today may contain more data than your beam line machine actually needs.
+        This extra data slows production, increases tool wear, and creates avoidable problems on the shop floor.
+      </p>
+      <p class="lang lang-en">
+        By keeping only essential scribing and placing hardstamps correctly, you can immediately improve fabrication efficiency without changing much.
+        Even if this requires adding a post-processing tool, the ROI is clear, with reduced machine time and lower wear quickly justifying the investment.
+      </p>
+      <p class="lang lang-en">
+        This directly affects production performance. Less marking and better placement gets you faster results.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">סיכום</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        קבצי <span dir="ltr" style="unicode-bidi:isolate;">DSTV</span> שבהם משתמשים היום עשויים להכיל הרבה יותר מידע ממה שמכונת ה‑Beam Line באמת צריכה.
+        המידע העודף הזה מאט את הייצור, מגדיל שחיקה, ויוצר בעיות מיותרות ברצפת המפעל.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כששומרים רק סימונים חיוניים וממקמים Hardstamp נכון, אפשר לשפר מיד את יעילות הייצור בלי לשנות הרבה.
+        גם אם צריך להוסיף כלי Post‑Processing, פחות זמן מכונה ופחות בלאי מצדיקים מהר מאוד את ההשקעה.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        הדבר משפיע ישירות על ביצועי הייצור, עם פחות סימונים במיקום טוב יותר מקבלים תוצאה מהירה ואמינה יותר.
+      </p>
+
+      <br />
+      <p class="lang lang-en">
+        Feel free to <a href="../../index.html#contact">contact us</a> — we are available for any inquiry.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        רוצה מענה?
+        אפשר <a href="../../index.html#contact">ליצור קשר</a> בחופשיות - אנו זמינים לכל פנייה.
+      </p>
+    </section>
+  </article>
+
+  <footer class="blog-footer">
+    <div class="blog-footer-inner">
+      <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+      <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">חזרה לבימבלוג ← </a>
+      <p>&copy; <span id="year"></span> BIMbee</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+  <script defer src="../../scripts/navbar.js"></script>
+  <script defer src="../../scripts/main.js"></script>
+</body>
+</html>
