@@ -1,5 +1,25 @@
 // File: scripts/contact.js
 document.addEventListener('DOMContentLoaded', function() {
+    const sendEmailEndpoint = 'http://localhost:7103/api/SendEmailFunction';
+
+    function initCalendarBookingLink() {
+        const bookingLink = document.querySelector('#contact .calendar-booking-button');
+        if (!bookingLink || bookingLink.dataset.wired === '1') {
+            return Boolean(bookingLink);
+        }
+
+        bookingLink.dataset.wired = '1';
+        bookingLink.addEventListener('click', event => {
+            const isDesktop = window.matchMedia('(min-width: 1026px)').matches;
+            if (!isDesktop) return;
+
+            event.preventDefault();
+            window.open(bookingLink.href, '_blank', 'noopener,noreferrer');
+        });
+
+        return true;
+    }
+
     function initMobileContactModal() {
         const triggerBtn = document.getElementById('mobile-contact-trigger');
         const closeBtn = document.getElementById('contact-modal-close');
@@ -93,41 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function attachListener() {
         const form = document.getElementById('contact-form');
         const container = document.querySelector('.checkbox-group');
-        if (form && container) {
-            // File: scripts/contact.js
-            // Phone input: allow only digits and a single leading '+'
-            const phoneInput = document.getElementById('phone');
-            if (phoneInput) {
-                // Helpful on mobile keyboards
-                phoneInput.setAttribute('inputmode', 'tel');
+        if (!form) {
+            return false;
+        }
 
-                // Block invalid keys at typing time
-                phoneInput.addEventListener('keydown', (e) => {
-                    const ctrlCmd = e.ctrlKey || e.metaKey;
-                    const allowedNav = ['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','Home','End'];
-                    if (allowedNav.includes(e.key) || (ctrlCmd && ['a','c','v','x'].includes(e.key.toLowerCase()))) {
-                        return;
-                    }
-                    if (e.key === '+') {
-                        const pos = phoneInput.selectionStart ?? 0;
-                        // Only allow one '+' and only at position 0
-                        if (pos !== 0 || phoneInput.value.includes('+')) e.preventDefault();
-                        return;
-                    }
-                    if (!/^\d$/.test(e.key)) {
-                        e.preventDefault();
-                    }
-                });
-
-                // Sanitize pasted/auto-filled content
-                const sanitize = () => {
-                    const v = phoneInput.value;
-                    const keepPlus = v.startsWith('+');
-                    const digitsOnly = v.replace(/[^\d]/g, '');
-                    phoneInput.value = keepPlus ? ('+' + digitsOnly) : digitsOnly;
-                };
-                phoneInput.addEventListener('input', sanitize);
-            }
+        if (container && container.dataset.populated !== '1') {
             container.innerHTML = '';
             [
                 'Option First',
@@ -145,53 +135,112 @@ document.addEventListener('DOMContentLoaded', function() {
                 label.append(` ${option}`);
                 container.appendChild(label);
             });
+            container.dataset.populated = '1';
+        }
 
-            const messageDiv = document.getElementById('form-message');
-            form.addEventListener('submit', async e => {
-                e.preventDefault();
-                const nameCompany = document.getElementById('name-company').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const phone = document.getElementById('phone').value.trim();
-                const message = document.getElementById('message').value.trim();
-                const interests = Array.from(
-                    document.querySelectorAll('input[name="interest"]:checked')
-                ).map(cb => cb.value);
+        const phoneInput = document.getElementById('phone');
+        if (phoneInput && phoneInput.dataset.wired !== '1') {
+            phoneInput.dataset.wired = '1';
+            phoneInput.setAttribute('inputmode', 'tel');
 
-                const lines = [
-                    `Name/Company: ${nameCompany}`,
-                    `Email: ${email}`,
-                    `Phone: ${phone}`,
-                    `Interested in: ${interests.join(', ')}`
-                ];
-                if (message) lines.push(`Message: ${message}`);
-                const formData = new FormData();
-                formData.append('subject', `Contact form from ${nameCompany}`);
-                formData.append('body', lines.join('\n'));
-
-                try {
-                    const res = await fetch('https://factoryfunctions.azurewebsites.net/api/SendEmailFunction?code=Bf-jCZu3gse08jleLLz2jgI7Lm1yrY1_z0hhZ_5pPMKLAzFueG16VQ==', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const text = await res.text();
-                    if (!res.ok) throw text;
-                    if (messageDiv) {
-                        messageDiv.textContent = text;
-                        messageDiv.style.color = 'green';
+            phoneInput.addEventListener('keydown', (e) => {
+                const ctrlCmd = e.ctrlKey || e.metaKey;
+                const allowedNav = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                if (allowedNav.includes(e.key) || (ctrlCmd && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) {
+                    return;
+                }
+                if (e.key === '+') {
+                    const pos = phoneInput.selectionStart ?? 0;
+                    if (pos !== 0 || phoneInput.value.includes('+')) {
+                        e.preventDefault();
                     }
-                    const submitButton = document.getElementById('submit-button');
-                    if (submitButton) submitButton.disabled = true;
-                } catch (err) {
-                    console.error(err);
-                    if (messageDiv) {
-                        messageDiv.textContent = '❌ ' + err;
-                        messageDiv.style.color = 'red';
-                    }
+                    return;
+                }
+                if (!/^\d$/.test(e.key)) {
+                    e.preventDefault();
                 }
             });
+
+            phoneInput.addEventListener('input', () => {
+                const value = phoneInput.value;
+                const keepPlus = value.startsWith('+');
+                const digitsOnly = value.replace(/[^\d]/g, '');
+                phoneInput.value = keepPlus ? `+${digitsOnly}` : digitsOnly;
+            });
+        }
+
+        if (form.dataset.submitWired === '1') {
             return true;
         }
-        return false;
+
+        form.dataset.submitWired = '1';
+        const messageDiv = document.getElementById('form-message');
+        const submitButton = document.getElementById('submit-button');
+
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+
+            const nameCompany = document.getElementById('name-company').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const message = document.getElementById('message').value.trim();
+            const interests = Array.from(
+                form.querySelectorAll('input[name="interest"]:checked')
+            ).map(cb => cb.value);
+
+            const lines = [
+                `Name/Company: ${nameCompany}`,
+                `Email: ${email}`,
+                `Phone: ${phone}`
+            ];
+            if (interests.length > 0) {
+                lines.push(`Interested in: ${interests.join(', ')}`);
+            }
+            if (message) {
+                lines.push(`Message: ${message}`);
+            }
+
+            const formData = new FormData(form);
+            formData.set('subject', `Contact form from ${nameCompany}`);
+            formData.set('body', lines.join('\n'));
+
+            if (messageDiv) {
+                messageDiv.textContent = 'Sending...';
+                messageDiv.style.color = '';
+            }
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+
+            try {
+                const response = await fetch('https://factoryfunctions.azurewebsites.net/api/SendEmailFunction?code=Bf-jCZu3gse08jleLLz2jgI7Lm1yrY1_z0hhZ_5pPMKLAzFueG16VQ==', {
+                    method: 'POST',
+                    body: formData
+                });
+                const text = await response.text();
+
+                if (!response.ok) {
+                    throw new Error(text || `Request failed with status ${response.status}`);
+                }
+
+                if (messageDiv) {
+                    messageDiv.textContent = text || 'Your message was sent successfully.';
+                    messageDiv.style.color = 'green';
+                }
+            } catch (err) {
+                console.error(err);
+                if (messageDiv) {
+                    const errorMessage = err instanceof Error ? err.message : String(err);
+                    messageDiv.textContent = `Unable to send your message. ${errorMessage}`;
+                    messageDiv.style.color = 'red';
+                }
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+            }
+        });
+
+        return true;
     }
 
     if (!initMobileContactModal()) {
@@ -199,6 +248,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (initMobileContactModal()) modalObserver.disconnect();
         });
         modalObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    if (!initCalendarBookingLink()) {
+        const bookingObserver = new MutationObserver(() => {
+            if (initCalendarBookingLink()) bookingObserver.disconnect();
+        });
+        bookingObserver.observe(document.body, { childList: true, subtree: true });
     }
 
     if (!attachListener()) {
