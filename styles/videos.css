@@ -109,11 +109,28 @@
 }
 
 @media (max-width: 1025px) {
-    .modal-content { --modal-next-on-controls: 5vw; }
+    /* Position slightly lower on mobile (closer to bottom) */
+    .modal-content { --modal-next-on-controls: 4.5vw; }
 
     .modal-next-button {
         font-size: 3.5vw;
         padding: 8px 14px;
+    }
+
+    /* Keep original visual style but adjust widths and make text smaller */
+    #modal-next.modal-next-button {
+        width: min(25vw, 260px); /* wider */
+        font-size: 3.5vw;       /* slightly smaller text */
+      
+    }
+
+    #modal-contact.modal-next-button {
+        width: min(25vw, 260px); /* match width */
+        font-size: 3.5vw;
+        /* keep the same visual style as desktop */
+        background: #000;
+        color: #FFD600;
+        border-color: #FFD600;
     }
 }
 
