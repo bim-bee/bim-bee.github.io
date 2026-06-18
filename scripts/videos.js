@@ -295,6 +295,16 @@ function openModal(videoSrc, videoTitle, descriptionId) {
     // title.textContent = videoTitle;
     title.textContent = '';
     var descElem = document.getElementById(descriptionId);
+    // If on mobile and a mobile-specific short description exists, prefer it.
+    try {
+        var isMobile = window.matchMedia && window.matchMedia('(max-width: 1025px)').matches;
+        if (isMobile) {
+            var mobileOverride = document.getElementById(descriptionId + '-mobile');
+            if (mobileOverride) descElem = mobileOverride;
+        }
+    } catch (e) {
+        // ignore matchMedia errors
+    }
     description.innerHTML = descElem ? descElem.innerHTML : "";
 
     hideNextButton();

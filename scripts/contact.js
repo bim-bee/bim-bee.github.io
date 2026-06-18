@@ -97,15 +97,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Mobile-only nav Contact link opens the same modal
-        const contactNavLinks = document.querySelectorAll('a[href="#contact"]');
-        contactNavLinks.forEach(link => {
-            link.addEventListener('click', e => {
-                const isMobile = window.matchMedia('(max-width: 1025px)').matches;
-                if (!isMobile) return; // allow normal scroll on desktop
-                e.preventDefault();
-                openModal();
-            });
-        });
+     //   const contactNavLinks = document.querySelectorAll('a[href="#contact"]');
+       // contactNavLinks.forEach(link => {
+         //   link.addEventListener('click', e => {
+           //     const isMobile = window.matchMedia('(max-width: 1025px)').matches;
+             //   if (!isMobile) return; // allow normal scroll on desktop
+               // e.preventDefault();
+              //  openModal();
+          //  });
+       // });
 
         return true;
     }
