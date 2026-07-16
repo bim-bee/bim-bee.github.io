@@ -2,11 +2,13 @@
 (function initNcNestingConfig() {
   const productionSolveUrl = "https://factory-functions-net8-fmfnahexbfdbdcdd.switzerlandnorth-01.azurewebsites.net/api/Csp1dSolverFunction?code=NaY3wiOwj5ft95Sj5F9VSUaAcuTg57uf1Y95ekO3f8MeAzFuTv6TXw==";
   const localSolveUrl = "http://localhost:7113/api/Csp1dSolverFunction";
+  const currentHostname = String(window.location.hostname || "").toLowerCase();
+  const isLocalPreview = currentHostname === "localhost" || currentHostname === "127.0.0.1";
   const searchParams = new URLSearchParams(window.location.search);
   const querySolveUrl = String(searchParams.get("solveUrl") || "").trim();
 
   window.NcNestingConfig = Object.freeze({
-    solveUrl: querySolveUrl || productionSolveUrl,
+    solveUrl: querySolveUrl || (isLocalPreview ? localSolveUrl : productionSolveUrl),
     productionSolveUrl,
     localSolveUrl,
     requestTimeoutMs: 120000
