@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NC Nesting — Cutting Plan</title>
+  <link rel="stylesheet" href="styles/cutting-plan.css">
+</head>
+<body>
+  <main>
+    <section class="panel load-error" id="loadError" role="alert" hidden></section>
+    <header class="job-header">
+      <div>
+        <div class="page-actions">
+          <a id="backLink" href="batch-result.html">← Batch result</a>
+          <button id="demo">Load demo data</button>
+        </div>
+        <h1 id="pageHeading">Cut Plan</h1>
+        <div class="job-meta"><div id="jobSettings"></div></div>
+      </div>
+      <div class="status" id="status">Plan</div>
+    </header>
+    <section class="panel"><h2>Plan summary</h2><div class="summary-grid" id="summary"></div></section>
+    <section class="panel"><h2>Stocks matrix — parts per layout</h2><div class="table-wrap"><table id="layoutMatrix"></table></div></section>
+    <section class="panel"><h2>Individual stock pieces</h2><div id="pieces"></div><div class="legend" id="legend"></div></section>
+    <div class="source-summary-grid">
+      <section class="panel source-summary-card stock-orders-card"><h2>Stock orders</h2><div id="stockOrders"></div></section>
+      <section class="panel source-summary-card storage-retrievals-card"><h2>Storage retrievals</h2><div id="storageRetrieval"></div></section>
+    </div>
+    <section class="panel"><h2>Waste list</h2><div class="table-wrap"><table id="wasteList"></table></div></section>
+  </main>
+  <script src="scripts/config.js"></script>
+  <script src="scripts/app-storage.js"></script>
+  <script src="scripts/demo-data.js"></script>
+  <script src="scripts/cutting-plan.js"></script>
+</body>
+</html>

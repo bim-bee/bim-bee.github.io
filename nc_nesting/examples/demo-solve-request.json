@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "1.0",
+  "requestId": "demo-request-001",
+  "currency": "Israeli New Shekel",
+  "cuttingSettings": {
+    "toolWidth": 3,
+    "trimStart": 20,
+    "trimEnd": 20,
+    "reusableMinimumLength": 1250
+  },
+  "groups": [
+    {
+      "groupId": "group-1",
+      "profileName": "HEA140",
+      "steelGrade": "S355",
+      "partRequirements": [
+        {
+          "partId": "HEA140-Column",
+          "length": 4200,
+          "quantity": 3
+        },
+        {
+          "partId": "HEA140-Brace",
+          "length": 1650,
+          "quantity": 5
+        },
+        {
+          "partId": "HEA140-Cap",
+          "length": 700,
+          "quantity": 4
+        }
+      ],
+      "stockOrders": [
+        {
+          "stockOrderId": "Stock-A",
+          "length": 6000,
+          "availableQuantity": 3,
+          "price": 105
+        },
+        {
+          "stockOrderId": "Stock-B",
+          "length": 12000,
+          "availableQuantity": null,
+          "price": 195
+        }
+      ],
+      "storageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:4300",
+          "length": 4300,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "groupId": "group-2",
+      "profileName": "HEB240",
+      "steelGrade": "S275",
+      "partRequirements": [
+        {
+          "partId": "HEB240-Rafter",
+          "length": 3200,
+          "quantity": 2
+        },
+        {
+          "partId": "HEB240-Plate",
+          "length": 900,
+          "quantity": 4
+        }
+      ],
+      "stockOrders": [
+        {
+          "stockOrderId": "Stock-C",
+          "length": 7500,
+          "availableQuantity": 4,
+          "price": 148
+        }
+      ],
+      "storageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:3500",
+          "length": 3500,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "groupId": "group-3",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S275",
+      "partRequirements": [
+        {
+          "partId": "RHS-S275-Stiffener",
+          "length": 1100,
+          "quantity": 6
+        },
+        {
+          "partId": "RHS-S275-Tie",
+          "length": 750,
+          "quantity": 4
+        }
+      ],
+      "stockOrders": [
+        {
+          "stockOrderId": "Stock-E",
+          "length": 7500,
+          "availableQuantity": null,
+          "price": 96
+        }
+      ],
+      "storageStock": []
+    },
+    {
+      "groupId": "group-4",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S355",
+      "partRequirements": [
+        {
+          "partId": "RHS-S355-Post",
+          "length": 2300,
+          "quantity": 4
+        },
+        {
+          "partId": "RHS-S355-Rail",
+          "length": 1450,
+          "quantity": 3
+        }
+      ],
+      "stockOrders": [
+        {
+          "stockOrderId": "Stock-D",
+          "length": 6000,
+          "availableQuantity": 3,
+          "price": 78
+        },
+        {
+          "stockOrderId": "Stock-E",
+          "length": 7500,
+          "availableQuantity": null,
+          "price": 96
+        }
+      ],
+      "storageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:3100",
+          "length": 3100,
+          "quantity": 2
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NC Nesting — Batch Input</title>
+  <link rel="stylesheet" href="styles/input.css">
+</head>
+<body>
+  <main>
+    <header class="head">
+      <div>
+        <nav class="site-nav"><a href="index.html">Batch input</a><a href="batch-result.html?demo=1">Result demo</a><a href="cutting-plan.html?demo=1">Plan demo</a></nav>
+        <h1>1D Cutting Stock — Batch Input</h1>
+        <p>Prepare the complete nesting batch before solving.</p>
+      </div>
+      <div class="actions"><button id="preview">Preview solve JSON</button><button id="demo">Load demo data</button></div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2>Job parameters</h2><p>All physical lengths use integer millimetres.</p></div></div>
+      <div class="settings">
+        <div class="field"><label for="toolWidth">Tool width</label><div class="input-shell"><input id="toolWidth" type="number" min="0" step="1" value="3"><span class="unit">mm</span></div></div>
+        <div class="field"><label for="trimStart">Start trim</label><div class="input-shell"><input id="trimStart" type="number" min="0" step="1" value="20"><span class="unit">mm</span></div></div>
+        <div class="field"><label for="trimEnd">End trim</label><div class="input-shell"><input id="trimEnd" type="number" min="0" step="1" value="20"><span class="unit">mm</span></div></div>
+        <div class="field"><label for="reusableMinimum">Reusable minimum</label><div class="input-shell"><input id="reusableMinimum" type="number" min="0" step="1" value="1250"><span class="unit">mm</span></div></div>
+        <div class="field"><label for="currency">Currency <span class="optional">(optional)</span></label><div class="input-shell"><select id="currency"><option selected>Israeli New Shekel</option><option>US Dollar</option><option>Euro</option></select></div></div>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>Stock orders</h2><p>New stock available for matching profile-and-grade groups.</p></div>
+          <div class="actions">
+            <label class="file-button" for="stockCsv">Import CSV</label><input id="stockCsv" type="file" accept=".csv,.txt">
+            <button data-download="stockOrders">Download CSV / template</button><button data-add="stockOrders">Add row</button><button class="danger" data-clear="stockOrders">Clear</button>
+          </div>
+        </div>
+        <div class="wrap"><table class="stock-table"><thead><tr><th>Stock order ID</th><th>Profile</th><th>Steel grade</th><th>Length (mm)</th><th>Quantity</th><th>Price <span class="optional">(optional)</span></th><th></th></tr></thead><tbody id="stockBody"></tbody></table></div>
+        <div class="note">Profile is required. Steel grade is optional: a blank value matches every grade of that profile. Blank IDs receive stable defaults such as Stock-A and Stock-B.</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>Storage stocks</h2><p>Existing stocks and offcuts. Storage quantity is always fixed.</p></div>
+          <div class="actions">
+            <label class="file-button" for="storageCsv">Import CSV</label><input id="storageCsv" type="file" accept=".csv,.txt">
+            <button data-download="storage">Download CSV / template</button><button data-add="storage">Add row</button><button class="danger" data-clear="storage">Clear</button>
+          </div>
+        </div>
+        <div class="wrap"><table class="storage-table"><thead><tr><th>Storage ID</th><th>Profile</th><th>Steel grade</th><th>Length (mm)</th><th>Quantity</th><th>Storage area</th><th></th></tr></thead><tbody id="storageBody"></tbody></table></div>
+        <div class="note">Only storage stocks that exactly match a nesting group and can fit at least one requested part are grouped for solving. Blank IDs receive stable defaults such as Storage-A and Storage-B. Storage-area details remain in the browser project and are not sent to the solver.</div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="solve-head"><div><h2>Solve job</h2><p>Import the project NC files, review the parts, then send the complete prepared batch in one request.</p></div><button id="solve" class="primary" disabled>Solve</button></div>
+      <div id="drop" class="drop"><strong>Drop NC files here</strong><span>or click to select a batch of .nc1, .nc, or text files</span><input id="ncFiles" type="file" accept=".nc1,.nc,.txt" multiple></div>
+      <div class="badges"><span id="partBadge" class="badge">0 part rows</span><span id="groupBadge" class="badge warn">No nesting groups detected</span></div>
+      <div id="ncErrors" class="errors"></div><div id="validation" class="validation bad"></div>
+      <div class="backend-note">Set the Azure Function URL in <code>scripts/config.js</code>. The function must allow CORS from the GitHub Pages origin.</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2>Parts to cut</h2><p>NC imports populate this table. Rows may also be imported, pasted from Excel, added manually, or edited.</p></div>
+        <div class="actions"><label class="file-button" for="partsCsv">Import CSV</label><input id="partsCsv" type="file" accept=".csv,.txt"><button data-download="parts">Download CSV / template</button><button data-add="parts">Add row</button><button class="danger" data-clear="parts">Clear</button></div>
+      </div>
+      <div class="wrap"><table><thead><tr><th>Position</th><th>Steel grade</th><th>Quantity</th><th>Profile</th><th>Length (mm)</th><th>Source</th><th></th></tr></thead><tbody id="partsBody"></tbody></table></div>
+      <div class="note">Excel paste: copy a rectangular cell range, select the first destination cell, then paste. NC lengths are rounded up to the next whole millimetre. Position is required and is never generated automatically.</div>
+    </section>
+  </main>
+
+  <dialog id="previewDialog">
+    <div class="dialog-head"><strong>Prepared solve request</strong><button id="closePreview">Close</button></div>
+    <div class="dialog-body"><pre id="previewJson"></pre><div class="preview-actions"><button id="copyPreview">Copy JSON</button></div></div>
+  </dialog>
+
+  <script src="scripts/config.js"></script>
+  <script src="scripts/app-storage.js"></script>
+  <script src="scripts/demo-data.js"></script>
+  <script src="scripts/relevant-storage-stock-selector.js"></script>
+  <script src="scripts/input.js"></script>
+</body>
+</html>

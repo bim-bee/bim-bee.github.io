@@ -1,0 +1,315 @@
+(function () {
+  "use strict";
+
+  const input = {
+    cuttingSettings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250 },
+    currency: "Israeli New Shekel",
+    parts: [
+      { positionId: "HEA140-Column", profileName: "HEA140", steelGrade: "S355", quantity: 3, length: 4200, source: "demo data" },
+      { positionId: "HEA140-Brace", profileName: "HEA140", steelGrade: "S355", quantity: 5, length: 1650, source: "demo data" },
+      { positionId: "HEA140-Cap", profileName: "HEA140", steelGrade: "S355", quantity: 4, length: 700, source: "demo data" },
+      { positionId: "HEB240-Rafter", profileName: "HEB240", steelGrade: "S275", quantity: 2, length: 3200, source: "demo data" },
+      { positionId: "HEB240-Plate", profileName: "HEB240", steelGrade: "S275", quantity: 4, length: 900, source: "demo data" },
+      { positionId: "RHS-S355-Post", profileName: "RHS 100x50x5", steelGrade: "S355", quantity: 4, length: 2300, source: "demo data" },
+      { positionId: "RHS-S355-Rail", profileName: "RHS 100x50x5", steelGrade: "S355", quantity: 3, length: 1450, source: "demo data" },
+      { positionId: "RHS-S275-Stiffener", profileName: "RHS 100x50x5", steelGrade: "S275", quantity: 6, length: 1100, source: "demo data" },
+      { positionId: "RHS-S275-Tie", profileName: "RHS 100x50x5", steelGrade: "S275", quantity: 4, length: 750, source: "demo data" }
+    ],
+    stockOrders: [
+      { stockOrderId: "", profileName: "HEA140", steelGrade: "S355", length: 6000, availableQuantity: 3, price: 105 },
+      { stockOrderId: "", profileName: "HEA140", steelGrade: "", length: 12000, availableQuantity: null, price: 195 },
+      { stockOrderId: "", profileName: "HEB240", steelGrade: "S275", length: 7500, availableQuantity: 4, price: 148 },
+      { stockOrderId: "", profileName: "RHS 100x50x5", steelGrade: "S355", length: 6000, availableQuantity: 3, price: 78 },
+      { stockOrderId: "", profileName: "RHS 100x50x5", steelGrade: "", length: 7500, availableQuantity: null, price: 96 },
+      { stockOrderId: "", profileName: "HEA140", steelGrade: "S275", length: 6000, availableQuantity: 2, price: 90 }
+    ],
+    storageStock: [
+      { storageStockId: "", profileName: "HEA140", steelGrade: "S355", length: 4300, quantity: 1, storageArea: "Bay A" },
+      { storageStockId: "", profileName: "HEA140", steelGrade: "S355", length: 600, quantity: 2, storageArea: "Bay A" },
+      { storageStockId: "", profileName: "HEB240", steelGrade: "S275", length: 3500, quantity: 1, storageArea: "Bay B" },
+      { storageStockId: "", profileName: "RHS 100x50x5", steelGrade: "S355", length: 3100, quantity: 2, storageArea: "Bay C" },
+      { storageStockId: "", profileName: "RHS 100x50x5", steelGrade: "S420", length: 6000, quantity: 1, storageArea: "Bay C" },
+      { storageStockId: "", profileName: "SHS 100x100x6", steelGrade: "S355", length: 6000, quantity: 1, storageArea: "Bay D" }
+    ]
+  };
+
+  const heaPlan = {
+    groupId: "group-1",
+    status: "Optimal",
+    profileName: "HEA140",
+    steelGrade: "S355",
+    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
+    requestedParts: [
+      { partId: "HEA140-Column", length: 4200, requestedQuantity: 3 },
+      { partId: "HEA140-Brace", length: 1650, requestedQuantity: 5 },
+      { partId: "HEA140-Cap", length: 700, requestedQuantity: 4 }
+    ],
+    stockOrderOptions: [
+      { stockTypeId: "Stock-A", length: 6000, isUnlimited: false, availableQuantity: 3, cost: 105, selectedPieceCount: 2, selectedStockLength: 12000, selectedPartLength: 9400, utilizationPercentage: 78.3, wasteLength: 2600 },
+      { stockTypeId: "Stock-B", length: 12000, isUnlimited: true, availableQuantity: null, cost: 195, selectedPieceCount: 1, selectedStockLength: 12000, selectedPartLength: 10050, utilizationPercentage: 83.8, wasteLength: 1950 }
+    ],
+    stockPieces: [
+      {
+        pieceNumber: 1,
+        layoutId: "L-STORAGE-01",
+        stockSource: "StorageStock",
+        stockTypeId: "StorageStock:4300",
+        stockLength: 4300,
+        segments: [
+          { type: "StartTrim", length: 20 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Column", length: 4200 },
+          { type: "ToolCut", length: 3 },
+          { type: "NonReusableOffcut", length: 51 },
+          { type: "ToolCut", length: 3 },
+          { type: "EndTrim", length: 20 }
+        ],
+        storageStockId: "Storage-A",
+        storageArea: "Bay A",
+      },
+      {
+        pieceNumber: 2,
+        layoutId: "L-6000-01",
+        stockSource: "StockOrder",
+        stockTypeId: "Stock-A",
+        stockLength: 6000,
+        segments: [
+          { type: "StartTrim", length: 20 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Brace", length: 1650 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Brace", length: 1650 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Brace", length: 1650 },
+          { type: "ToolCut", length: 3 },
+          { type: "NonReusableOffcut", length: 995 },
+          { type: "ToolCut", length: 3 },
+          { type: "EndTrim", length: 20 }
+        ],
+        storageStockId: null,
+        storageArea: null,
+      },
+      {
+        pieceNumber: 3,
+        layoutId: "L-12000-01",
+        stockSource: "StockOrder",
+        stockTypeId: "Stock-B",
+        stockLength: 12000,
+        segments: [
+          { type: "StartTrim", length: 20 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Column", length: 4200 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Column", length: 4200 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Brace", length: 1650 },
+          { type: "ToolCut", length: 3 },
+          { type: "ReusableOffcut", length: 1895 },
+          { type: "ToolCut", length: 3 },
+          { type: "EndTrim", length: 20 }
+        ],
+        storageStockId: null,
+        storageArea: null,
+      },
+      {
+        pieceNumber: 4,
+        layoutId: "L-6000-02",
+        stockSource: "StockOrder",
+        stockTypeId: "Stock-A",
+        stockLength: 6000,
+        segments: [
+          { type: "StartTrim", length: 20 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Brace", length: 1650 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Cap", length: 700 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Cap", length: 700 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Cap", length: 700 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEA140-Cap", length: 700 },
+          { type: "ToolCut", length: 3 },
+          { type: "ReusableOffcut", length: 1489 },
+          { type: "ToolCut", length: 3 },
+          { type: "EndTrim", length: 20 }
+        ],
+        storageStockId: null,
+        storageArea: null,
+      }
+    ],
+    storageRetrievals: [
+      { storageStockId: "Storage-A", quantity: 1, storageArea: "Bay A", stockLength: 4300, totalPartLength: 4200, utilizationPercentage: 97.7, wasteLength: 100 }
+    ],
+    totals: { totalStockLengthConsumed: 28300, totalConsumedLength: 23870, totalOffcutLength: 4430, totalStorageStockLengthConsumed: 4300, totalStockOrderLengthOrdered: 24000, totalReusableOffcutLength: 3384, storageStockPieceCount: 1, stockOrderPieceCount: 3 }
+  };
+
+  const hebPlan = {
+    groupId: "group-2",
+    status: "Optimal",
+    profileName: "HEB240",
+    steelGrade: "S275",
+    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
+    requestedParts: [
+      { partId: "HEB240-Rafter", length: 3200, requestedQuantity: 2 },
+      { partId: "HEB240-Plate", length: 900, requestedQuantity: 4 }
+    ],
+    stockOrderOptions: [
+      { stockTypeId: "Stock-C", length: 7500, isUnlimited: false, availableQuantity: 4, cost: 148, selectedPieceCount: 1, selectedStockLength: 7500, selectedPartLength: 6800, utilizationPercentage: 90.7, wasteLength: 700 }
+    ],
+    stockPieces: [
+      {
+        pieceNumber: 1,
+        layoutId: "L-HEB-STORAGE",
+        stockSource: "StorageStock",
+        stockTypeId: "StorageStock:3500",
+        stockLength: 3500,
+        segments: [
+          { type: "StartTrim", length: 20 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEB240-Rafter", length: 3200 },
+          { type: "ToolCut", length: 3 },
+          { type: "NonReusableOffcut", length: 251 },
+          { type: "ToolCut", length: 3 },
+          { type: "EndTrim", length: 20 }
+        ],
+        storageStockId: "Storage-C",
+        storageArea: "Bay B",
+      },
+      {
+        pieceNumber: 2,
+        layoutId: "L-HEB-7500",
+        stockSource: "StockOrder",
+        stockTypeId: "Stock-C",
+        stockLength: 7500,
+        segments: [
+          { type: "StartTrim", length: 20 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEB240-Rafter", length: 3200 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEB240-Plate", length: 900 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEB240-Plate", length: 900 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEB240-Plate", length: 900 },
+          { type: "ToolCut", length: 3 },
+          { type: "Part", partId: "HEB240-Plate", length: 900 },
+          { type: "ToolCut", length: 3 },
+          { type: "NonReusableOffcut", length: 639 },
+          { type: "ToolCut", length: 3 },
+          { type: "EndTrim", length: 20 }
+        ],
+        storageStockId: null,
+        storageArea: null,
+      }
+    ],
+    storageRetrievals: [
+      { storageStockId: "Storage-C", quantity: 1, storageArea: "Bay B", stockLength: 3500, totalPartLength: 3200, utilizationPercentage: 91.4, wasteLength: 300 }
+    ],
+    totals: { totalStockLengthConsumed: 11000, totalConsumedLength: 10110, totalOffcutLength: 890, totalStorageStockLengthConsumed: 3500, totalStockOrderLengthOrdered: 7500, totalReusableOffcutLength: 0, storageStockPieceCount: 1, stockOrderPieceCount: 1 }
+  };
+
+  function partSequence(partEntries, stockLength, reusableMinimumLength) {
+    const segments = [{ type: "StartTrim", length: 20 }, { type: "ToolCut", length: 3 }];
+    partEntries.forEach((part, index) => {
+      segments.push({ type: "Part", partId: part.partId, length: part.length });
+      segments.push({ type: "ToolCut", length: 3 });
+    });
+    const usedBeforeOffcut = segments.reduce((total, segment) => total + segment.length, 0) + 23;
+    const offcutLength = stockLength - usedBeforeOffcut;
+    segments.push({ type: offcutLength >= reusableMinimumLength ? "ReusableOffcut" : "NonReusableOffcut", length: offcutLength });
+    segments.push({ type: "ToolCut", length: 3 }, { type: "EndTrim", length: 20 });
+    return segments;
+  }
+
+  const rhsS275Plan = {
+    groupId: "group-3", status: "Optimal", profileName: "RHS 100x50x5", steelGrade: "S275",
+    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
+    requestedParts: [
+      { partId: "RHS-S275-Stiffener", length: 1100, requestedQuantity: 6 },
+      { partId: "RHS-S275-Tie", length: 750, requestedQuantity: 4 }
+    ],
+    stockOrderOptions: [
+      { stockTypeId: "Stock-E", length: 7500, isUnlimited: true, availableQuantity: null, cost: 96, selectedPieceCount: 2, selectedStockLength: 15000, selectedPartLength: 9600, utilizationPercentage: 64, wasteLength: 5278 }
+    ],
+    stockPieces: [
+      { pieceNumber: 1, layoutId: "L-RHS275-01", stockSource: "StockOrder", stockTypeId: "Stock-E", stockLength: 7500, segments: partSequence(Array.from({ length: 5 }, () => ({ partId: "RHS-S275-Stiffener", length: 1100 })), 7500, 1250), storageStockId: null, storageArea: null },
+      { pieceNumber: 2, layoutId: "L-RHS275-02", stockSource: "StockOrder", stockTypeId: "Stock-E", stockLength: 7500, segments: partSequence([{ partId: "RHS-S275-Stiffener", length: 1100 }, ...Array.from({ length: 4 }, () => ({ partId: "RHS-S275-Tie", length: 750 }))], 7500, 1250), storageStockId: null, storageArea: null }
+    ],
+    storageRetrievals: [],
+    totals: { totalStockLengthConsumed: 15000, totalConsumedLength: 9722, totalOffcutLength: 5278, totalStorageStockLengthConsumed: 0, totalStockOrderLengthOrdered: 15000, totalReusableOffcutLength: 5278, storageStockPieceCount: 0, stockOrderPieceCount: 2 }
+  };
+
+  const rhsS355Plan = {
+    groupId: "group-4", status: "Optimal", profileName: "RHS 100x50x5", steelGrade: "S355",
+    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
+    requestedParts: [
+      { partId: "RHS-S355-Post", length: 2300, requestedQuantity: 4 },
+      { partId: "RHS-S355-Rail", length: 1450, requestedQuantity: 3 }
+    ],
+    stockOrderOptions: [
+      { stockTypeId: "Stock-D", length: 6000, isUnlimited: false, availableQuantity: 3, cost: 78, selectedPieceCount: 1, selectedStockLength: 6000, selectedPartLength: 5200, utilizationPercentage: 86.7, wasteLength: 745 },
+      { stockTypeId: "Stock-E", length: 7500, isUnlimited: true, availableQuantity: null, cost: 96, selectedPieceCount: 1, selectedStockLength: 7500, selectedPartLength: 3750, utilizationPercentage: 50, wasteLength: 3698 }
+    ],
+    stockPieces: [
+      { pieceNumber: 1, layoutId: "L-RHS355-S1", stockSource: "StorageStock", stockTypeId: "StorageStock:3100", stockLength: 3100, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }], 3100, 1250), storageStockId: "Storage-D", storageArea: "Bay C" },
+      { pieceNumber: 2, layoutId: "L-RHS355-S2", stockSource: "StorageStock", stockTypeId: "StorageStock:3100", stockLength: 3100, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }], 3100, 1250), storageStockId: "Storage-D", storageArea: "Bay C" },
+      { pieceNumber: 3, layoutId: "L-RHS355-6000", stockSource: "StockOrder", stockTypeId: "Stock-D", stockLength: 6000, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }, { partId: "RHS-S355-Rail", length: 1450 }, { partId: "RHS-S355-Rail", length: 1450 }], 6000, 1250), storageStockId: null, storageArea: null },
+      { pieceNumber: 4, layoutId: "L-RHS355-7500", stockSource: "StockOrder", stockTypeId: "Stock-E", stockLength: 7500, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }, { partId: "RHS-S355-Rail", length: 1450 }], 7500, 1250), storageStockId: null, storageArea: null }
+    ],
+    storageRetrievals: [
+      { storageStockId: "Storage-D", quantity: 2, storageArea: "Bay C", stockLength: 3100, totalPartLength: 4600, utilizationPercentage: 74.2, wasteLength: 1502 }
+    ],
+    totals: { totalStockLengthConsumed: 19700, totalConsumedLength: 13755, totalOffcutLength: 5945, totalStorageStockLengthConsumed: 6200, totalStockOrderLengthOrdered: 13500, totalReusableOffcutLength: 3698, storageStockPieceCount: 2, stockOrderPieceCount: 2 }
+  };
+
+  const batchResult = {
+    status: "Completed",
+    batchId: "demo-batch-001",
+    generatedAt: "2026-07-14T10:00:00Z",
+    currency: "Israeli New Shekel",
+    groups: [
+      {
+        groupId: "group-1", profileName: "HEA140", steelGrade: "S355", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-1",
+        profileKeilogramPerMeter: 24.6,
+        totalStockLengthConsumed: 28300, totalConsumedLength: 23870, totalOffcutLength: 4430, totalStorageStockLengthConsumed: 4300, totalReusableOffcutLength: 3384,
+        storageStockQuantity: 1, stockOrderQuantity: 3, weightTon: 2.42, storageStockWeightTon: 0.36,
+        stockOrders: [
+          { stockTypeId: "Stock-A", stockLength: 6000, requiredQuantity: 2, unitPrice: 105 },
+          { stockTypeId: "Stock-B", stockLength: 12000, requiredQuantity: 1, unitPrice: 195 }
+        ]
+      },
+      {
+        groupId: "group-2", profileName: "HEB240", steelGrade: "S275", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-2",
+        profileKeilogramPerMeter: 83.2,
+        totalStockLengthConsumed: 11000, totalConsumedLength: 10110, totalOffcutLength: 890, totalStorageStockLengthConsumed: 3500, totalReusableOffcutLength: 0,
+        storageStockQuantity: 1, stockOrderQuantity: 1, weightTon: 2.91, storageStockWeightTon: 0.93,
+        stockOrders: [{ stockTypeId: "Stock-C", stockLength: 7500, requiredQuantity: 1, unitPrice: 148 }]
+      },
+      {
+        groupId: "group-3", profileName: "RHS 100x50x5", steelGrade: "S275", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-3",
+        profileKeilogramPerMeter: null,
+        totalStockLengthConsumed: 15000, totalConsumedLength: 9722, totalOffcutLength: 5278, totalStorageStockLengthConsumed: 0, totalReusableOffcutLength: 5278,
+        storageStockQuantity: 0, stockOrderQuantity: 2, weightTon: 0.86, storageStockWeightTon: 0,
+        stockOrders: [{ stockTypeId: "Stock-E", stockLength: 7500, requiredQuantity: 2, unitPrice: 96 }]
+      },
+      {
+        groupId: "group-4", profileName: "RHS 100x50x5", steelGrade: "S355", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-4",
+        profileKeilogramPerMeter: null,
+        totalStockLengthConsumed: 19700, totalConsumedLength: 13755, totalOffcutLength: 5945, totalStorageStockLengthConsumed: 6200, totalReusableOffcutLength: 3698,
+        storageStockQuantity: 2, stockOrderQuantity: 2, weightTon: 1.12, storageStockWeightTon: 0.35,
+        stockOrders: [
+          { stockTypeId: "Stock-D", stockLength: 6000, requiredQuantity: 1, unitPrice: 78 },
+          { stockTypeId: "Stock-E", stockLength: 7500, requiredQuantity: 1, unitPrice: 96 }
+        ]
+      }
+    ]
+  };
+
+  window.NcNestingDemo = Object.freeze({
+    input,
+    batchResult,
+    plans: Object.freeze({ "group-1": heaPlan, "group-2": hebPlan, "group-3": rhsS275Plan, "group-4": rhsS355Plan }),
+    defaultPlan: heaPlan
+  });
+})();
