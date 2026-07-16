@@ -303,7 +303,7 @@
     } catch (error) {
       if (error?.name === "AbortError") throw new Error("The solve request timed out.");
       if (error instanceof TypeError) {
-        throw new Error(`The browser could not reach ${solveUrl}. If you are using Live Server, make sure the Azure Function is running and allows CORS from ${window.location.origin}.`);
+        throw new Error(`The browser could not complete the request to ${solveUrl}. The Azure Function is likely reachable, but the response is being blocked for origin ${window.location.origin}. Make sure the function allows CORS from that exact origin.`);
       }
       throw error;
     } finally {

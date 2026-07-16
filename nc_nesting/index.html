@@ -59,7 +59,7 @@
       <div id="drop" class="drop"><strong>Drop NC files here</strong><span>or click to select a batch of .nc1, .nc, or text files</span><input id="ncFiles" type="file" accept=".nc1,.nc,.txt" multiple></div>
       <div class="badges"><span id="partBadge" class="badge">0 part rows</span><span id="groupBadge" class="badge warn">No nesting groups detected</span></div>
       <div id="ncErrors" class="errors"></div><div id="validation" class="validation bad"></div>
-      <div class="backend-note">Set the Azure Function URL in <code>scripts/config.js</code>. The function must allow CORS from the GitHub Pages origin.</div>
+      <div class="backend-note">Set the Azure Function URL in <code>scripts/config.js</code>. The function must return CORS headers for the exact page origin that is opening this site.</div>
     </section>
 
     <section class="panel">
