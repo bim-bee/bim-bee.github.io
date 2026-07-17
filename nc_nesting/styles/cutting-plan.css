@@ -43,6 +43,23 @@
 
     .job-header h1 { margin-bottom: 5px; }
 
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid #aeb8c7;
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:hover { background: #f7f8fa; }
+
     .job-meta {
       color: var(--muted);
       font-size: 14px;
@@ -412,6 +429,7 @@
 
     @media (max-width: 780px) {
       .job-header { display: block; }
+      .job-header .actions { margin-top: 10px; }
       .status { display: inline-block; margin-top: 12px; }
       .list-row { grid-template-columns: 1fr 1fr; }
       .source-summary-heading { display: block; }
@@ -426,11 +444,12 @@
     }
 
     @media print {
+      .no-print { display: none !important; }
       body { background: white; }
       main { width: 100%; margin: 0; }
       .panel { box-shadow: none; break-inside: avoid; }
       .bar { min-width: 0; }
     }
 
-.page-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.page-actions { margin-bottom: 8px; }
 .page-actions a { color:var(--primary); font-weight:700; text-decoration:none; }

@@ -2,314 +2,2670 @@
   "use strict";
 
   const input = {
-    cuttingSettings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250 },
-    currency: "Israeli New Shekel",
-    parts: [
-      { positionId: "HEA140-Column", profileName: "HEA140", steelGrade: "S355", quantity: 3, length: 4200, source: "demo data" },
-      { positionId: "HEA140-Brace", profileName: "HEA140", steelGrade: "S355", quantity: 5, length: 1650, source: "demo data" },
-      { positionId: "HEA140-Cap", profileName: "HEA140", steelGrade: "S355", quantity: 4, length: 700, source: "demo data" },
-      { positionId: "HEB240-Rafter", profileName: "HEB240", steelGrade: "S275", quantity: 2, length: 3200, source: "demo data" },
-      { positionId: "HEB240-Plate", profileName: "HEB240", steelGrade: "S275", quantity: 4, length: 900, source: "demo data" },
-      { positionId: "RHS-S355-Post", profileName: "RHS 100x50x5", steelGrade: "S355", quantity: 4, length: 2300, source: "demo data" },
-      { positionId: "RHS-S355-Rail", profileName: "RHS 100x50x5", steelGrade: "S355", quantity: 3, length: 1450, source: "demo data" },
-      { positionId: "RHS-S275-Stiffener", profileName: "RHS 100x50x5", steelGrade: "S275", quantity: 6, length: 1100, source: "demo data" },
-      { positionId: "RHS-S275-Tie", profileName: "RHS 100x50x5", steelGrade: "S275", quantity: 4, length: 750, source: "demo data" }
-    ],
-    stockOrders: [
-      { stockOrderId: "", profileName: "HEA140", steelGrade: "S355", length: 6000, availableQuantity: 3, price: 105 },
-      { stockOrderId: "", profileName: "HEA140", steelGrade: "", length: 12000, availableQuantity: null, price: 195 },
-      { stockOrderId: "", profileName: "HEB240", steelGrade: "S275", length: 7500, availableQuantity: 4, price: 148 },
-      { stockOrderId: "", profileName: "RHS 100x50x5", steelGrade: "S355", length: 6000, availableQuantity: 3, price: 78 },
-      { stockOrderId: "", profileName: "RHS 100x50x5", steelGrade: "", length: 7500, availableQuantity: null, price: 96 },
-      { stockOrderId: "", profileName: "HEA140", steelGrade: "S275", length: 6000, availableQuantity: 2, price: 90 }
-    ],
-    storageStock: [
-      { storageStockId: "", profileName: "HEA140", steelGrade: "S355", length: 4300, quantity: 1, storageArea: "Bay A" },
-      { storageStockId: "", profileName: "HEA140", steelGrade: "S355", length: 600, quantity: 2, storageArea: "Bay A" },
-      { storageStockId: "", profileName: "HEB240", steelGrade: "S275", length: 3500, quantity: 1, storageArea: "Bay B" },
-      { storageStockId: "", profileName: "RHS 100x50x5", steelGrade: "S355", length: 3100, quantity: 2, storageArea: "Bay C" },
-      { storageStockId: "", profileName: "RHS 100x50x5", steelGrade: "S420", length: 6000, quantity: 1, storageArea: "Bay C" },
-      { storageStockId: "", profileName: "SHS 100x100x6", steelGrade: "S355", length: 6000, quantity: 1, storageArea: "Bay D" }
-    ]
-  };
-
-  const heaPlan = {
-    groupId: "group-1",
-    status: "Optimal",
-    profileName: "HEA140",
-    steelGrade: "S355",
-    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
-    requestedParts: [
-      { partId: "HEA140-Column", length: 4200, requestedQuantity: 3 },
-      { partId: "HEA140-Brace", length: 1650, requestedQuantity: 5 },
-      { partId: "HEA140-Cap", length: 700, requestedQuantity: 4 }
-    ],
-    stockOrderOptions: [
-      { stockTypeId: "Stock-A", length: 6000, isUnlimited: false, availableQuantity: 3, cost: 105, selectedPieceCount: 2, selectedStockLength: 12000, selectedPartLength: 9400, utilizationPercentage: 78.3, wasteLength: 2600 },
-      { stockTypeId: "Stock-B", length: 12000, isUnlimited: true, availableQuantity: null, cost: 195, selectedPieceCount: 1, selectedStockLength: 12000, selectedPartLength: 10050, utilizationPercentage: 83.8, wasteLength: 1950 }
-    ],
-    stockPieces: [
-      {
-        pieceNumber: 1,
-        layoutId: "L-STORAGE-01",
-        stockSource: "StorageStock",
-        stockTypeId: "StorageStock:4300",
-        stockLength: 4300,
-        segments: [
-          { type: "StartTrim", length: 20 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Column", length: 4200 },
-          { type: "ToolCut", length: 3 },
-          { type: "NonReusableOffcut", length: 51 },
-          { type: "ToolCut", length: 3 },
-          { type: "EndTrim", length: 20 }
-        ],
-        storageStockId: "Storage-A",
-        storageArea: "Bay A",
+  "cuttingSettings": {
+    "toolWidth": 3,
+    "trimStart": 20,
+    "trimEnd": 20,
+    "reusableMinimumLength": 1250
+  },
+  "currency": "Israeli New Shekel",
+  "autoFillOrders": true,
+  "parts": [
+    {
+      "positionId": "HEA-S235-COLUMN#1",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 8,
+      "length": 7300,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-BRACE",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 12,
+      "length": 2800,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-BEAM#1",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 10,
+      "length": 1450,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-COLUMN#2",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 5,
+      "length": 3650,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-KNEE",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 22,
+      "length": 1800,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-BEAM#2",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 8,
+      "length": 4450,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEB-S355-MAIN",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "quantity": 2,
+      "length": 3600,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEB-S355-BRACE",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "quantity": 4,
+      "length": 1850,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEB-S355-CLEAT",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "quantity": 3,
+      "length": 2400,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "RHS-S235-POST",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "quantity": 2,
+      "length": 2900,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "RHS-S235-RAIL",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "quantity": 3,
+      "length": 1950,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "RHS-S235-GUSSET",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "quantity": 4,
+      "length": 1450,
+      "source": "Demo data"
+    }
+  ],
+  "stockOrders": [
+    {
+      "generatedId": "Order-A",
+      "stockOrderId": "Order-A",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 6000,
+      "availableQuantity": null,
+      "price": 1350
+    },
+    {
+      "generatedId": "Order-B",
+      "stockOrderId": "Order-B",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 7500,
+      "availableQuantity": 2,
+      "price": 1420
+    },
+    {
+      "generatedId": "Order-C",
+      "stockOrderId": "Order-C",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 12000,
+      "availableQuantity": null,
+      "price": 2740
+    },
+    {
+      "generatedId": "Order-D",
+      "stockOrderId": "Order-D",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "length": 7500,
+      "availableQuantity": 3,
+      "price": 3650
+    },
+    {
+      "generatedId": "Order-E",
+      "stockOrderId": "Order-E",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 12000,
+      "availableQuantity": null,
+      "price": 1120
+    },
+    {
+      "generatedId": "Order-F",
+      "stockOrderId": "Order-F",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 6000,
+      "availableQuantity": null,
+      "price": 930
+    }
+  ],
+  "storageStock": [
+    {
+      "generatedId": "Storage-A",
+      "storageStockId": "Storage-A",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 3700,
+      "quantity": 1,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-B",
+      "storageStockId": "Storage-B",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 2000,
+      "quantity": 2,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-C",
+      "storageStockId": "Storage-C",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "length": 2450,
+      "quantity": 1,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-D",
+      "storageStockId": "Storage-D",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "length": 1900,
+      "quantity": 1,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-E",
+      "storageStockId": "Storage-E",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 3000,
+      "quantity": 2,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-F",
+      "storageStockId": "Storage-F",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 2050,
+      "quantity": 1,
+      "storageArea": ""
+    }
+  ],
+  "groupIds": {
+    "HEA140\u0000S235": "group-1",
+    "HEB240\u0000S355": "group-2",
+    "RHS 100X50X5\u0000S235": "group-3"
+  },
+  "nextIds": {
+    "stockOrders": 7,
+    "storage": 7,
+    "groups": 4
+  }
+};
+  const request = {
+  "schemaVersion": "1.0",
+  "requestId": "6b964f13-1862-49ee-865f-21b378fcf637",
+  "currency": "Israeli New Shekel",
+  "cuttingSettings": {
+    "toolWidth": 3,
+    "trimStart": 20,
+    "trimEnd": 20,
+    "reusableMinimumLength": 1250
+  },
+  "groups": [
+    {
+      "groupId": "group-1",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "partRequirements": [
+        {
+          "partId": "HEA-S235-COLUMN#1",
+          "length": 7300,
+          "quantity": 8
+        },
+        {
+          "partId": "HEA-S235-BRACE",
+          "length": 2800,
+          "quantity": 12
+        },
+        {
+          "partId": "HEA-S235-BEAM#1",
+          "length": 1450,
+          "quantity": 10
+        },
+        {
+          "partId": "HEA-S235-COLUMN#2",
+          "length": 3650,
+          "quantity": 5
+        },
+        {
+          "partId": "HEA-S235-KNEE",
+          "length": 1800,
+          "quantity": 22
+        },
+        {
+          "partId": "HEA-S235-BEAM#2",
+          "length": 4450,
+          "quantity": 8
+        }
+      ],
+      "stockOrders": [
+        {
+          "stockOrderId": "Order-A",
+          "length": 6000,
+          "availableQuantity": null,
+          "price": 1350
+        },
+        {
+          "stockOrderId": "Order-B",
+          "length": 7500,
+          "availableQuantity": 2,
+          "price": 1420
+        },
+        {
+          "stockOrderId": "Order-C",
+          "length": 12000,
+          "availableQuantity": null,
+          "price": 2740
+        }
+      ],
+      "storageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:3700",
+          "length": 3700,
+          "quantity": 1
+        },
+        {
+          "groupedStorageStockId": "StorageStock:2000",
+          "length": 2000,
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "groupId": "group-2",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "partRequirements": [
+        {
+          "partId": "HEB-S355-MAIN",
+          "length": 3600,
+          "quantity": 2
+        },
+        {
+          "partId": "HEB-S355-BRACE",
+          "length": 1850,
+          "quantity": 4
+        },
+        {
+          "partId": "HEB-S355-CLEAT",
+          "length": 2400,
+          "quantity": 3
+        }
+      ],
+      "stockOrders": [
+        {
+          "stockOrderId": "Order-D",
+          "length": 7500,
+          "availableQuantity": 3,
+          "price": 3650
+        }
+      ],
+      "storageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:2450",
+          "length": 2450,
+          "quantity": 1
+        },
+        {
+          "groupedStorageStockId": "StorageStock:1900",
+          "length": 1900,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "groupId": "group-3",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "partRequirements": [
+        {
+          "partId": "RHS-S235-POST",
+          "length": 2900,
+          "quantity": 2
+        },
+        {
+          "partId": "RHS-S235-RAIL",
+          "length": 1950,
+          "quantity": 3
+        },
+        {
+          "partId": "RHS-S235-GUSSET",
+          "length": 1450,
+          "quantity": 4
+        }
+      ],
+      "stockOrders": [
+        {
+          "stockOrderId": "Order-E",
+          "length": 12000,
+          "availableQuantity": null,
+          "price": 1120
+        },
+        {
+          "stockOrderId": "Order-F",
+          "length": 6000,
+          "availableQuantity": null,
+          "price": 930
+        }
+      ],
+      "storageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:3000",
+          "length": 3000,
+          "quantity": 2
+        },
+        {
+          "groupedStorageStockId": "StorageStock:2050",
+          "length": 2050,
+          "quantity": 1
+        }
+      ]
+    }
+  ]
+};
+  const response = {
+  "succeeded": true,
+  "schemaVersion": "1.0",
+  "requestId": "4e51b362-4780-436d-9707-23953318c9d6",
+  "batchId": "4e51b362-4780-436d-9707-23953318c9d6",
+  "currency": "Israeli New Shekel",
+  "batchResult": [
+    {
+      "groupId": "group-1",
+      "profileName": "HEA140",
+      "profileKeilogramPerMeter": 24.6,
+      "steelGrade": "S235",
+      "status": "Succeeded",
+      "totalStockLength": 202700,
+      "actualConsumedLength": 201203,
+      "totalOffcutLength": 1497,
+      "storageStockLengthConsumed": 7700,
+      "reusableOffcutLength": 0,
+      "storageStockQuantityUsed": 3,
+      "stockOrderQuantity": 20,
+      "stockOrderCost": 43820,
+      "lengthSubgroups": [
+        {
+          "stockLength": 2000,
+          "status": "Succeeded",
+          "totalStockLength": 4000,
+          "actualConsumedLength": 3698,
+          "totalOffcutLength": 302,
+          "storageStockLengthConsumed": 4000,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 2,
+          "stockOrderQuantityRequired": 0,
+          "stockOrderCost": 0
+        },
+        {
+          "stockLength": 3700,
+          "status": "Succeeded",
+          "totalStockLength": 3700,
+          "actualConsumedLength": 3699,
+          "totalOffcutLength": 1,
+          "storageStockLengthConsumed": 3700,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 1,
+          "stockOrderQuantityRequired": 0,
+          "stockOrderCost": 0
+        },
+        {
+          "stockLength": 6000,
+          "status": "Succeeded",
+          "totalStockLength": 36000,
+          "actualConsumedLength": 35712,
+          "totalOffcutLength": 288,
+          "storageStockLengthConsumed": 0,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 0,
+          "stockOrderQuantityRequired": 6,
+          "stockOrderCost": 8100,
+          "stockOrderId": "Order-A",
+          "unitPrice": 1350
+        },
+        {
+          "stockLength": 7500,
+          "status": "Succeeded",
+          "totalStockLength": 15000,
+          "actualConsumedLength": 14604,
+          "totalOffcutLength": 396,
+          "storageStockLengthConsumed": 0,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 0,
+          "stockOrderQuantityRequired": 2,
+          "stockOrderCost": 2840,
+          "stockOrderId": "Order-B",
+          "unitPrice": 1420,
+          "availableQuantity": 2
+        },
+        {
+          "stockLength": 12000,
+          "status": "Succeeded",
+          "totalStockLength": 144000,
+          "actualConsumedLength": 143490,
+          "totalOffcutLength": 510,
+          "storageStockLengthConsumed": 0,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 0,
+          "stockOrderQuantityRequired": 12,
+          "stockOrderCost": 32880,
+          "stockOrderId": "Order-C",
+          "unitPrice": 2740
+        }
+      ]
+    },
+    {
+      "groupId": "group-2",
+      "profileName": "HEB240",
+      "profileKeilogramPerMeter": 83.2,
+      "steelGrade": "S355",
+      "status": "Succeeded",
+      "totalStockLength": 22500,
+      "actualConsumedLength": 21965,
+      "totalOffcutLength": 535,
+      "storageStockLengthConsumed": 0,
+      "reusableOffcutLength": 0,
+      "storageStockQuantityUsed": 0,
+      "stockOrderQuantity": 3,
+      "stockOrderCost": 10950,
+      "lengthSubgroups": [
+        {
+          "stockLength": 7500,
+          "status": "Succeeded",
+          "totalStockLength": 22500,
+          "actualConsumedLength": 21965,
+          "totalOffcutLength": 535,
+          "storageStockLengthConsumed": 0,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 0,
+          "stockOrderQuantityRequired": 3,
+          "stockOrderCost": 10950,
+          "stockOrderId": "Order-D",
+          "unitPrice": 3650,
+          "availableQuantity": 3
+        }
+      ]
+    },
+    {
+      "groupId": "group-3",
+      "profileName": "RHS 100x50x5",
+      "profileKeilogramPerMeter": null,
+      "steelGrade": "S235",
+      "status": "Succeeded",
+      "totalStockLength": 18000,
+      "actualConsumedLength": 17615,
+      "totalOffcutLength": 385,
+      "storageStockLengthConsumed": 6000,
+      "reusableOffcutLength": 0,
+      "storageStockQuantityUsed": 2,
+      "stockOrderQuantity": 1,
+      "stockOrderCost": 1120,
+      "lengthSubgroups": [
+        {
+          "stockLength": 3000,
+          "status": "Succeeded",
+          "totalStockLength": 6000,
+          "actualConsumedLength": 5904,
+          "totalOffcutLength": 96,
+          "storageStockLengthConsumed": 6000,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 2,
+          "stockOrderQuantityRequired": 0,
+          "stockOrderCost": 0
+        },
+        {
+          "stockLength": 12000,
+          "status": "Succeeded",
+          "totalStockLength": 12000,
+          "actualConsumedLength": 11711,
+          "totalOffcutLength": 289,
+          "storageStockLengthConsumed": 0,
+          "reusableOffcutLength": 0,
+          "storageStockQuantityUsed": 0,
+          "stockOrderQuantityRequired": 1,
+          "stockOrderCost": 1120,
+          "stockOrderId": "Order-E",
+          "unitPrice": 1120
+        }
+      ]
+    }
+  ],
+  "plans": [
+    {
+      "groupId": "group-1",
+      "profileName": "HEA140",
+      "profileKeilogramPerMeter": 24.6,
+      "steelGrade": "S235",
+      "status": "Optimal",
+      "cuttingSettings": {
+        "toolWidth": 3,
+        "trimStart": 20,
+        "trimEnd": 20,
+        "reusableMinimumLength": 1250
       },
-      {
-        pieceNumber: 2,
-        layoutId: "L-6000-01",
-        stockSource: "StockOrder",
-        stockTypeId: "Stock-A",
-        stockLength: 6000,
-        segments: [
-          { type: "StartTrim", length: 20 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Brace", length: 1650 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Brace", length: 1650 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Brace", length: 1650 },
-          { type: "ToolCut", length: 3 },
-          { type: "NonReusableOffcut", length: 995 },
-          { type: "ToolCut", length: 3 },
-          { type: "EndTrim", length: 20 }
-        ],
-        storageStockId: null,
-        storageArea: null,
-      },
-      {
-        pieceNumber: 3,
-        layoutId: "L-12000-01",
-        stockSource: "StockOrder",
-        stockTypeId: "Stock-B",
-        stockLength: 12000,
-        segments: [
-          { type: "StartTrim", length: 20 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Column", length: 4200 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Column", length: 4200 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Brace", length: 1650 },
-          { type: "ToolCut", length: 3 },
-          { type: "ReusableOffcut", length: 1895 },
-          { type: "ToolCut", length: 3 },
-          { type: "EndTrim", length: 20 }
-        ],
-        storageStockId: null,
-        storageArea: null,
-      },
-      {
-        pieceNumber: 4,
-        layoutId: "L-6000-02",
-        stockSource: "StockOrder",
-        stockTypeId: "Stock-A",
-        stockLength: 6000,
-        segments: [
-          { type: "StartTrim", length: 20 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Brace", length: 1650 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Cap", length: 700 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Cap", length: 700 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Cap", length: 700 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEA140-Cap", length: 700 },
-          { type: "ToolCut", length: 3 },
-          { type: "ReusableOffcut", length: 1489 },
-          { type: "ToolCut", length: 3 },
-          { type: "EndTrim", length: 20 }
-        ],
-        storageStockId: null,
-        storageArea: null,
+      "requestedParts": [
+        {
+          "partId": "HEA-S235-COLUMN#1",
+          "length": 7300,
+          "quantity": 8
+        },
+        {
+          "partId": "HEA-S235-BRACE",
+          "length": 2800,
+          "quantity": 12
+        },
+        {
+          "partId": "HEA-S235-BEAM#1",
+          "length": 1450,
+          "quantity": 10
+        },
+        {
+          "partId": "HEA-S235-COLUMN#2",
+          "length": 3650,
+          "quantity": 5
+        },
+        {
+          "partId": "HEA-S235-KNEE",
+          "length": 1800,
+          "quantity": 22
+        },
+        {
+          "partId": "HEA-S235-BEAM#2",
+          "length": 4450,
+          "quantity": 8
+        }
+      ],
+      "selectedStockOrders": [
+        {
+          "stockOrderId": "Order-A",
+          "length": 6000,
+          "availableQuantity": null,
+          "selectedQuantity": 6,
+          "selectedTotalLength": 36000,
+          "unitPrice": 1350,
+          "totalCost": 8100,
+          "finishedPartLength": 35400,
+          "offcutLength": 288
+        },
+        {
+          "stockOrderId": "Order-B",
+          "length": 7500,
+          "availableQuantity": 2,
+          "selectedQuantity": 2,
+          "selectedTotalLength": 15000,
+          "unitPrice": 1420,
+          "totalCost": 2840,
+          "finishedPartLength": 14500,
+          "offcutLength": 396
+        },
+        {
+          "stockOrderId": "Order-C",
+          "length": 12000,
+          "availableQuantity": null,
+          "selectedQuantity": 12,
+          "selectedTotalLength": 144000,
+          "unitPrice": 2740,
+          "totalCost": 32880,
+          "finishedPartLength": 142800,
+          "offcutLength": 510
+        }
+      ],
+      "selectedGroupedStorageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:2000",
+          "length": 2000,
+          "selectedQuantity": 2,
+          "selectedTotalLength": 4000,
+          "finishedPartLength": 3600,
+          "offcutLength": 302
+        },
+        {
+          "groupedStorageStockId": "StorageStock:3700",
+          "length": 3700,
+          "selectedQuantity": 1,
+          "selectedTotalLength": 3700,
+          "finishedPartLength": 3650,
+          "offcutLength": 1
+        }
+      ],
+      "stockPieces": [
+        {
+          "pieceNumber": 1,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-A",
+          "groupedStorageStockId": null,
+          "stockLength": 6000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 6000,
+            "finishedPartLength": 5900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 5952,
+            "offcutLength": 48
+          }
+        },
+        {
+          "pieceNumber": 2,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-A",
+          "groupedStorageStockId": null,
+          "stockLength": 6000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 6000,
+            "finishedPartLength": 5900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 5952,
+            "offcutLength": 48
+          }
+        },
+        {
+          "pieceNumber": 3,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-A",
+          "groupedStorageStockId": null,
+          "stockLength": 6000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 6000,
+            "finishedPartLength": 5900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 5952,
+            "offcutLength": 48
+          }
+        },
+        {
+          "pieceNumber": 4,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-A",
+          "groupedStorageStockId": null,
+          "stockLength": 6000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 6000,
+            "finishedPartLength": 5900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 5952,
+            "offcutLength": 48
+          }
+        },
+        {
+          "pieceNumber": 5,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-A",
+          "groupedStorageStockId": null,
+          "stockLength": 6000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 6000,
+            "finishedPartLength": 5900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 5952,
+            "offcutLength": 48
+          }
+        },
+        {
+          "pieceNumber": 6,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-A",
+          "groupedStorageStockId": null,
+          "stockLength": 6000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 6000,
+            "finishedPartLength": 5900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 5952,
+            "offcutLength": 48
+          }
+        },
+        {
+          "pieceNumber": 7,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-B",
+          "groupedStorageStockId": null,
+          "stockLength": 7500,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 198
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 7500,
+            "finishedPartLength": 7250,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 7302,
+            "offcutLength": 198
+          }
+        },
+        {
+          "pieceNumber": 8,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-B",
+          "groupedStorageStockId": null,
+          "stockLength": 7500,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 4450,
+              "partId": "HEA-S235-BEAM#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 198
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 7500,
+            "finishedPartLength": 7250,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 7302,
+            "offcutLength": 198
+          }
+        },
+        {
+          "pieceNumber": 9,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 10,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 11,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 12,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 13,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 14,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 15,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 16,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 7300,
+              "partId": "HEA-S235-COLUMN#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 45
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 11955,
+            "offcutLength": 45
+          }
+        },
+        {
+          "pieceNumber": 17,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 3650,
+              "partId": "HEA-S235-COLUMN#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 3650,
+              "partId": "HEA-S235-COLUMN#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 42
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 18,
+            "trimLength": 40,
+            "actualConsumedLength": 11958,
+            "offcutLength": 42
+          }
+        },
+        {
+          "pieceNumber": 18,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2800,
+              "partId": "HEA-S235-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 3650,
+              "partId": "HEA-S235-COLUMN#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 3650,
+              "partId": "HEA-S235-COLUMN#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 42
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 18,
+            "trimLength": 40,
+            "actualConsumedLength": 11958,
+            "offcutLength": 42
+          }
+        },
+        {
+          "pieceNumber": 19,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 33
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 27,
+            "trimLength": 40,
+            "actualConsumedLength": 11967,
+            "offcutLength": 33
+          }
+        },
+        {
+          "pieceNumber": 20,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-C",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "HEA-S235-BEAM#1"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 33
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11900,
+            "toolCutLength": 27,
+            "trimLength": 40,
+            "actualConsumedLength": 11967,
+            "offcutLength": 33
+          }
+        },
+        {
+          "pieceNumber": 21,
+          "stockSource": "StorageStock",
+          "stockOrderId": null,
+          "groupedStorageStockId": "StorageStock:3700",
+          "stockLength": 3700,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 3650,
+              "partId": "HEA-S235-COLUMN#2"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 1
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 3700,
+            "finishedPartLength": 3650,
+            "toolCutLength": 9,
+            "trimLength": 40,
+            "actualConsumedLength": 3699,
+            "offcutLength": 1
+          }
+        },
+        {
+          "pieceNumber": 22,
+          "stockSource": "StorageStock",
+          "stockOrderId": null,
+          "groupedStorageStockId": "StorageStock:2000",
+          "stockLength": 2000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 151
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 2000,
+            "finishedPartLength": 1800,
+            "toolCutLength": 9,
+            "trimLength": 40,
+            "actualConsumedLength": 1849,
+            "offcutLength": 151
+          }
+        },
+        {
+          "pieceNumber": 23,
+          "stockSource": "StorageStock",
+          "stockOrderId": null,
+          "groupedStorageStockId": "StorageStock:2000",
+          "stockLength": 2000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1800,
+              "partId": "HEA-S235-KNEE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 151
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 2000,
+            "finishedPartLength": 1800,
+            "toolCutLength": 9,
+            "trimLength": 40,
+            "actualConsumedLength": 1849,
+            "offcutLength": 151
+          }
+        }
+      ],
+      "totals": {
+        "totalStockLength": 202700,
+        "actualConsumedLength": 201203,
+        "totalOffcutLength": 1497,
+        "reusableOffcutLength": 0,
+        "nonReusableOffcutLength": 1497,
+        "storageStockLengthConsumed": 7700,
+        "storageStockQuantityUsed": 3,
+        "stockOrderLength": 195000,
+        "stockOrderQuantity": 20,
+        "stockOrderCost": 43820
       }
-    ],
-    storageRetrievals: [
-      { storageStockId: "Storage-A", quantity: 1, storageArea: "Bay A", stockLength: 4300, totalPartLength: 4200, utilizationPercentage: 97.7, wasteLength: 100 }
-    ],
-    totals: { totalStockLengthConsumed: 28300, totalConsumedLength: 23870, totalOffcutLength: 4430, totalStorageStockLengthConsumed: 4300, totalStockOrderLengthOrdered: 24000, totalReusableOffcutLength: 3384, storageStockPieceCount: 1, stockOrderPieceCount: 3 }
-  };
-
-  const hebPlan = {
-    groupId: "group-2",
-    status: "Optimal",
-    profileName: "HEB240",
-    steelGrade: "S275",
-    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
-    requestedParts: [
-      { partId: "HEB240-Rafter", length: 3200, requestedQuantity: 2 },
-      { partId: "HEB240-Plate", length: 900, requestedQuantity: 4 }
-    ],
-    stockOrderOptions: [
-      { stockTypeId: "Stock-C", length: 7500, isUnlimited: false, availableQuantity: 4, cost: 148, selectedPieceCount: 1, selectedStockLength: 7500, selectedPartLength: 6800, utilizationPercentage: 90.7, wasteLength: 700 }
-    ],
-    stockPieces: [
-      {
-        pieceNumber: 1,
-        layoutId: "L-HEB-STORAGE",
-        stockSource: "StorageStock",
-        stockTypeId: "StorageStock:3500",
-        stockLength: 3500,
-        segments: [
-          { type: "StartTrim", length: 20 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEB240-Rafter", length: 3200 },
-          { type: "ToolCut", length: 3 },
-          { type: "NonReusableOffcut", length: 251 },
-          { type: "ToolCut", length: 3 },
-          { type: "EndTrim", length: 20 }
-        ],
-        storageStockId: "Storage-C",
-        storageArea: "Bay B",
+    },
+    {
+      "groupId": "group-2",
+      "profileName": "HEB240",
+      "profileKeilogramPerMeter": 83.2,
+      "steelGrade": "S355",
+      "status": "Optimal",
+      "cuttingSettings": {
+        "toolWidth": 3,
+        "trimStart": 20,
+        "trimEnd": 20,
+        "reusableMinimumLength": 1250
       },
-      {
-        pieceNumber: 2,
-        layoutId: "L-HEB-7500",
-        stockSource: "StockOrder",
-        stockTypeId: "Stock-C",
-        stockLength: 7500,
-        segments: [
-          { type: "StartTrim", length: 20 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEB240-Rafter", length: 3200 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEB240-Plate", length: 900 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEB240-Plate", length: 900 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEB240-Plate", length: 900 },
-          { type: "ToolCut", length: 3 },
-          { type: "Part", partId: "HEB240-Plate", length: 900 },
-          { type: "ToolCut", length: 3 },
-          { type: "NonReusableOffcut", length: 639 },
-          { type: "ToolCut", length: 3 },
-          { type: "EndTrim", length: 20 }
-        ],
-        storageStockId: null,
-        storageArea: null,
+      "requestedParts": [
+        {
+          "partId": "HEB-S355-MAIN",
+          "length": 3600,
+          "quantity": 2
+        },
+        {
+          "partId": "HEB-S355-BRACE",
+          "length": 1850,
+          "quantity": 4
+        },
+        {
+          "partId": "HEB-S355-CLEAT",
+          "length": 2400,
+          "quantity": 3
+        }
+      ],
+      "selectedStockOrders": [
+        {
+          "stockOrderId": "Order-D",
+          "length": 7500,
+          "availableQuantity": 3,
+          "selectedQuantity": 3,
+          "selectedTotalLength": 22500,
+          "unitPrice": 3650,
+          "totalCost": 10950,
+          "finishedPartLength": 21800,
+          "offcutLength": 535
+        }
+      ],
+      "selectedGroupedStorageStock": [],
+      "stockPieces": [
+        {
+          "pieceNumber": 1,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-D",
+          "groupedStorageStockId": null,
+          "stockLength": 7500,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 3600,
+              "partId": "HEB-S355-MAIN"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 3600,
+              "partId": "HEB-S355-MAIN"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 248
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 7500,
+            "finishedPartLength": 7200,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 7252,
+            "offcutLength": 248
+          }
+        },
+        {
+          "pieceNumber": 2,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-D",
+          "groupedStorageStockId": null,
+          "stockLength": 7500,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1850,
+              "partId": "HEB-S355-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1850,
+              "partId": "HEB-S355-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1850,
+              "partId": "HEB-S355-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1850,
+              "partId": "HEB-S355-BRACE"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 42
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 7500,
+            "finishedPartLength": 7400,
+            "toolCutLength": 18,
+            "trimLength": 40,
+            "actualConsumedLength": 7458,
+            "offcutLength": 42
+          }
+        },
+        {
+          "pieceNumber": 3,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-D",
+          "groupedStorageStockId": null,
+          "stockLength": 7500,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2400,
+              "partId": "HEB-S355-CLEAT"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2400,
+              "partId": "HEB-S355-CLEAT"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2400,
+              "partId": "HEB-S355-CLEAT"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 245
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 7500,
+            "finishedPartLength": 7200,
+            "toolCutLength": 15,
+            "trimLength": 40,
+            "actualConsumedLength": 7255,
+            "offcutLength": 245
+          }
+        }
+      ],
+      "totals": {
+        "totalStockLength": 22500,
+        "actualConsumedLength": 21965,
+        "totalOffcutLength": 535,
+        "reusableOffcutLength": 0,
+        "nonReusableOffcutLength": 535,
+        "storageStockLengthConsumed": 0,
+        "storageStockQuantityUsed": 0,
+        "stockOrderLength": 22500,
+        "stockOrderQuantity": 3,
+        "stockOrderCost": 10950
       }
-    ],
-    storageRetrievals: [
-      { storageStockId: "Storage-C", quantity: 1, storageArea: "Bay B", stockLength: 3500, totalPartLength: 3200, utilizationPercentage: 91.4, wasteLength: 300 }
-    ],
-    totals: { totalStockLengthConsumed: 11000, totalConsumedLength: 10110, totalOffcutLength: 890, totalStorageStockLengthConsumed: 3500, totalStockOrderLengthOrdered: 7500, totalReusableOffcutLength: 0, storageStockPieceCount: 1, stockOrderPieceCount: 1 }
-  };
+    },
+    {
+      "groupId": "group-3",
+      "profileName": "RHS 100x50x5",
+      "profileKeilogramPerMeter": null,
+      "steelGrade": "S235",
+      "status": "Optimal",
+      "cuttingSettings": {
+        "toolWidth": 3,
+        "trimStart": 20,
+        "trimEnd": 20,
+        "reusableMinimumLength": 1250
+      },
+      "requestedParts": [
+        {
+          "partId": "RHS-S235-POST",
+          "length": 2900,
+          "quantity": 2
+        },
+        {
+          "partId": "RHS-S235-RAIL",
+          "length": 1950,
+          "quantity": 3
+        },
+        {
+          "partId": "RHS-S235-GUSSET",
+          "length": 1450,
+          "quantity": 4
+        }
+      ],
+      "selectedStockOrders": [
+        {
+          "stockOrderId": "Order-E",
+          "length": 12000,
+          "availableQuantity": null,
+          "selectedQuantity": 1,
+          "selectedTotalLength": 12000,
+          "unitPrice": 1120,
+          "totalCost": 1120,
+          "finishedPartLength": 11650,
+          "offcutLength": 289
+        }
+      ],
+      "selectedGroupedStorageStock": [
+        {
+          "groupedStorageStockId": "StorageStock:3000",
+          "length": 3000,
+          "selectedQuantity": 2,
+          "selectedTotalLength": 6000,
+          "finishedPartLength": 5800,
+          "offcutLength": 96
+        }
+      ],
+      "stockPieces": [
+        {
+          "pieceNumber": 1,
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-E",
+          "groupedStorageStockId": null,
+          "stockLength": 12000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2900,
+              "partId": "RHS-S235-POST"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 2900,
+              "partId": "RHS-S235-POST"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1950,
+              "partId": "RHS-S235-RAIL"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1950,
+              "partId": "RHS-S235-RAIL"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1950,
+              "partId": "RHS-S235-RAIL"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 289
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 12000,
+            "finishedPartLength": 11650,
+            "toolCutLength": 21,
+            "trimLength": 40,
+            "actualConsumedLength": 11711,
+            "offcutLength": 289
+          }
+        },
+        {
+          "pieceNumber": 2,
+          "stockSource": "StorageStock",
+          "stockOrderId": null,
+          "groupedStorageStockId": "StorageStock:3000",
+          "stockLength": 3000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "RHS-S235-GUSSET"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "RHS-S235-GUSSET"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 3000,
+            "finishedPartLength": 2900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 2952,
+            "offcutLength": 48
+          }
+        },
+        {
+          "pieceNumber": 3,
+          "stockSource": "StorageStock",
+          "stockOrderId": null,
+          "groupedStorageStockId": "StorageStock:3000",
+          "stockLength": 3000,
+          "segments": [
+            {
+              "type": "StartTrim",
+              "length": 20
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "RHS-S235-GUSSET"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "Part",
+              "length": 1450,
+              "partId": "RHS-S235-GUSSET"
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "NonReusableOffcut",
+              "length": 48
+            },
+            {
+              "type": "ToolCut",
+              "length": 3
+            },
+            {
+              "type": "EndTrim",
+              "length": 20
+            }
+          ],
+          "totals": {
+            "stockLength": 3000,
+            "finishedPartLength": 2900,
+            "toolCutLength": 12,
+            "trimLength": 40,
+            "actualConsumedLength": 2952,
+            "offcutLength": 48
+          }
+        }
+      ],
+      "totals": {
+        "totalStockLength": 18000,
+        "actualConsumedLength": 17615,
+        "totalOffcutLength": 385,
+        "reusableOffcutLength": 0,
+        "nonReusableOffcutLength": 385,
+        "storageStockLengthConsumed": 6000,
+        "storageStockQuantityUsed": 2,
+        "stockOrderLength": 12000,
+        "stockOrderQuantity": 1,
+        "stockOrderCost": 1120
+      }
+    }
+  ]
+};
 
-  function partSequence(partEntries, stockLength, reusableMinimumLength) {
-    const segments = [{ type: "StartTrim", length: 20 }, { type: "ToolCut", length: 3 }];
-    partEntries.forEach((part, index) => {
-      segments.push({ type: "Part", partId: part.partId, length: part.length });
-      segments.push({ type: "ToolCut", length: 3 });
-    });
-    const usedBeforeOffcut = segments.reduce((total, segment) => total + segment.length, 0) + 23;
-    const offcutLength = stockLength - usedBeforeOffcut;
-    segments.push({ type: offcutLength >= reusableMinimumLength ? "ReusableOffcut" : "NonReusableOffcut", length: offcutLength });
-    segments.push({ type: "ToolCut", length: 3 }, { type: "EndTrim", length: 20 });
-    return segments;
+  function clone(value) {
+    return globalThis.structuredClone ? structuredClone(value) : JSON.parse(JSON.stringify(value));
   }
 
-  const rhsS275Plan = {
-    groupId: "group-3", status: "Optimal", profileName: "RHS 100x50x5", steelGrade: "S275",
-    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
-    requestedParts: [
-      { partId: "RHS-S275-Stiffener", length: 1100, requestedQuantity: 6 },
-      { partId: "RHS-S275-Tie", length: 750, requestedQuantity: 4 }
-    ],
-    stockOrderOptions: [
-      { stockTypeId: "Stock-E", length: 7500, isUnlimited: true, availableQuantity: null, cost: 96, selectedPieceCount: 2, selectedStockLength: 15000, selectedPartLength: 9600, utilizationPercentage: 64, wasteLength: 5278 }
-    ],
-    stockPieces: [
-      { pieceNumber: 1, layoutId: "L-RHS275-01", stockSource: "StockOrder", stockTypeId: "Stock-E", stockLength: 7500, segments: partSequence(Array.from({ length: 5 }, () => ({ partId: "RHS-S275-Stiffener", length: 1100 })), 7500, 1250), storageStockId: null, storageArea: null },
-      { pieceNumber: 2, layoutId: "L-RHS275-02", stockSource: "StockOrder", stockTypeId: "Stock-E", stockLength: 7500, segments: partSequence([{ partId: "RHS-S275-Stiffener", length: 1100 }, ...Array.from({ length: 4 }, () => ({ partId: "RHS-S275-Tie", length: 750 }))], 7500, 1250), storageStockId: null, storageArea: null }
-    ],
-    storageRetrievals: [],
-    totals: { totalStockLengthConsumed: 15000, totalConsumedLength: 9722, totalOffcutLength: 5278, totalStorageStockLengthConsumed: 0, totalStockOrderLengthOrdered: 15000, totalReusableOffcutLength: 5278, storageStockPieceCount: 0, stockOrderPieceCount: 2 }
-  };
+  function canonicalize(value) {
+    if (Array.isArray(value)) return value.map(canonicalize);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalize(value[key])]));
+  }
 
-  const rhsS355Plan = {
-    groupId: "group-4", status: "Optimal", profileName: "RHS 100x50x5", steelGrade: "S355",
-    settings: { toolWidth: 3, trimStart: 20, trimEnd: 20, reusableMinimumLength: 1250, unit: "mm" },
-    requestedParts: [
-      { partId: "RHS-S355-Post", length: 2300, requestedQuantity: 4 },
-      { partId: "RHS-S355-Rail", length: 1450, requestedQuantity: 3 }
-    ],
-    stockOrderOptions: [
-      { stockTypeId: "Stock-D", length: 6000, isUnlimited: false, availableQuantity: 3, cost: 78, selectedPieceCount: 1, selectedStockLength: 6000, selectedPartLength: 5200, utilizationPercentage: 86.7, wasteLength: 745 },
-      { stockTypeId: "Stock-E", length: 7500, isUnlimited: true, availableQuantity: null, cost: 96, selectedPieceCount: 1, selectedStockLength: 7500, selectedPartLength: 3750, utilizationPercentage: 50, wasteLength: 3698 }
-    ],
-    stockPieces: [
-      { pieceNumber: 1, layoutId: "L-RHS355-S1", stockSource: "StorageStock", stockTypeId: "StorageStock:3100", stockLength: 3100, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }], 3100, 1250), storageStockId: "Storage-D", storageArea: "Bay C" },
-      { pieceNumber: 2, layoutId: "L-RHS355-S2", stockSource: "StorageStock", stockTypeId: "StorageStock:3100", stockLength: 3100, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }], 3100, 1250), storageStockId: "Storage-D", storageArea: "Bay C" },
-      { pieceNumber: 3, layoutId: "L-RHS355-6000", stockSource: "StockOrder", stockTypeId: "Stock-D", stockLength: 6000, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }, { partId: "RHS-S355-Rail", length: 1450 }, { partId: "RHS-S355-Rail", length: 1450 }], 6000, 1250), storageStockId: null, storageArea: null },
-      { pieceNumber: 4, layoutId: "L-RHS355-7500", stockSource: "StockOrder", stockTypeId: "Stock-E", stockLength: 7500, segments: partSequence([{ partId: "RHS-S355-Post", length: 2300 }, { partId: "RHS-S355-Rail", length: 1450 }], 7500, 1250), storageStockId: null, storageArea: null }
-    ],
-    storageRetrievals: [
-      { storageStockId: "Storage-D", quantity: 2, storageArea: "Bay C", stockLength: 3100, totalPartLength: 4600, utilizationPercentage: 74.2, wasteLength: 1502 }
-    ],
-    totals: { totalStockLengthConsumed: 19700, totalConsumedLength: 13755, totalOffcutLength: 5945, totalStorageStockLengthConsumed: 6200, totalStockOrderLengthOrdered: 13500, totalReusableOffcutLength: 3698, storageStockPieceCount: 2, stockOrderPieceCount: 2 }
-  };
+  function comparableRequest(value) {
+    const copy = clone(value || {});
+    delete copy.requestId;
+    return canonicalize(copy);
+  }
 
-  const batchResult = {
-    status: "Completed",
-    batchId: "demo-batch-001",
-    generatedAt: "2026-07-14T10:00:00Z",
-    currency: "Israeli New Shekel",
-    groups: [
-      {
-        groupId: "group-1", profileName: "HEA140", steelGrade: "S355", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-1",
-        profileKeilogramPerMeter: 24.6,
-        totalStockLengthConsumed: 28300, totalConsumedLength: 23870, totalOffcutLength: 4430, totalStorageStockLengthConsumed: 4300, totalReusableOffcutLength: 3384,
-        storageStockQuantity: 1, stockOrderQuantity: 3, weightTon: 2.42, storageStockWeightTon: 0.36,
-        stockOrders: [
-          { stockTypeId: "Stock-A", stockLength: 6000, requiredQuantity: 2, unitPrice: 105 },
-          { stockTypeId: "Stock-B", stockLength: 12000, requiredQuantity: 1, unitPrice: 195 }
-        ]
-      },
-      {
-        groupId: "group-2", profileName: "HEB240", steelGrade: "S275", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-2",
-        profileKeilogramPerMeter: 83.2,
-        totalStockLengthConsumed: 11000, totalConsumedLength: 10110, totalOffcutLength: 890, totalStorageStockLengthConsumed: 3500, totalReusableOffcutLength: 0,
-        storageStockQuantity: 1, stockOrderQuantity: 1, weightTon: 2.91, storageStockWeightTon: 0.93,
-        stockOrders: [{ stockTypeId: "Stock-C", stockLength: 7500, requiredQuantity: 1, unitPrice: 148 }]
-      },
-      {
-        groupId: "group-3", profileName: "RHS 100x50x5", steelGrade: "S275", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-3",
-        profileKeilogramPerMeter: null,
-        totalStockLengthConsumed: 15000, totalConsumedLength: 9722, totalOffcutLength: 5278, totalStorageStockLengthConsumed: 0, totalReusableOffcutLength: 5278,
-        storageStockQuantity: 0, stockOrderQuantity: 2, weightTon: 0.86, storageStockWeightTon: 0,
-        stockOrders: [{ stockTypeId: "Stock-E", stockLength: 7500, requiredQuantity: 2, unitPrice: 96 }]
-      },
-      {
-        groupId: "group-4", profileName: "RHS 100x50x5", steelGrade: "S355", detailedPlanUrl: "cutting-plan.html?demo=1&groupId=group-4",
-        profileKeilogramPerMeter: null,
-        totalStockLengthConsumed: 19700, totalConsumedLength: 13755, totalOffcutLength: 5945, totalStorageStockLengthConsumed: 6200, totalReusableOffcutLength: 3698,
-        storageStockQuantity: 2, stockOrderQuantity: 2, weightTon: 1.12, storageStockWeightTon: 0.35,
-        stockOrders: [
-          { stockTypeId: "Stock-D", stockLength: 6000, requiredQuantity: 1, unitPrice: 78 },
-          { stockTypeId: "Stock-E", stockLength: 7500, requiredQuantity: 1, unitPrice: 96 }
-        ]
-      }
-    ]
-  };
+  function matchesRequest(value) {
+    return JSON.stringify(comparableRequest(value)) === JSON.stringify(comparableRequest(request));
+  }
+
+  function createSolveResult(requestId) {
+    const rawResponse = clone(response);
+    rawResponse.batchId = `demo-batch-${window.NcNesting.createRequestId()}`;
+    rawResponse.requestId = requestId || rawResponse.requestId;
+    rawResponse.generatedAt = new Date().toISOString();
+    const normalized = window.NcNesting.normalizeSolveResponse(rawResponse);
+    if (!normalized.succeeded) throw new Error("The committed demo response could not be normalized.");
+    return normalized;
+  }
 
   window.NcNestingDemo = Object.freeze({
-    input,
-    batchResult,
-    plans: Object.freeze({ "group-1": heaPlan, "group-2": hebPlan, "group-3": rhsS275Plan, "group-4": rhsS355Plan }),
-    defaultPlan: heaPlan
+    input: Object.freeze(input),
+    request: Object.freeze(request),
+    response: Object.freeze(response),
+    matchesRequest,
+    createSolveResult
   });
 })();

@@ -3,7 +3,6 @@
 
         let data;
         let hasCost = false;
-        let hasAnyWeight = false;
         let hasCompleteWeight = false;
 
         const nf = new Intl.NumberFormat();
@@ -180,9 +179,9 @@
 
         async function load() {
             const params = new URLSearchParams(location.search);
-            if (params.get("demo") === "1") return normalize(NcNestingDemo.batchResult);
             const batchId = params.get("batchId");
-            if (!batchId) throw new Error("A batch ID is required. Return to Batch input or load the demo data.");
+            if (!batchId) throw new Error("A batch ID is required. Return to Batch input and solve a batch.");
+            document.getElementById("backInput").href = `index.html?batchId=${encodeURIComponent(batchId)}`;
             const stored = await NcNesting.getBatchResult(batchId);
             if (!stored) throw new Error("This solved batch is not available in this browser. Solve it again from Batch input.");
             const normalized = normalize(stored);
@@ -238,23 +237,25 @@
         ${data.currency ? `<span><strong>Currency:</strong> ${esc(data.currency)}</span>` : ""}
       `;
 
-            document.getElementById("status").textContent = data.status || "Completed";
         }
 
         function renderSummary() {
             const total = totals();
 
             const cards = [
+                ["Stock order quantity", n(total.order), `${n(total.quantity)} required`],
                 ["Utilization", `${d(pct(total.used, total.stock))}%`, `${len(total.used)} consumed`],
-                ["Waste", `${d(pct(total.waste, total.stock))}%`, `${len(total.waste)} offcut`],
-                ["Storage stock share", `${d(pct(total.storageLength, total.stock))}%`, `${len(total.storageLength)} from storage`],
-                ["Reusable returned", `${d(pct(total.reusable, total.stock))}%`, `${len(total.reusable)} reusable`],
-                ["Stock order quantity", n(total.order), `${n(total.quantity)} required`]
+                ["Waste", `${d(pct(total.waste, total.stock))}%`, `${len(total.waste)} offcut`]
             ];
 
-            if (hasAnyWeight) {
-                cards.splice(4, 0, ["Batch weight", hasCompleteWeight ? `${d(total.weight)} t` : "—", `${n(data.groups.length)} nesting groups`]);
+            if (hasCompleteWeight) {
+                cards.push(["Batch weight", `${d(total.weight)} t`, `${n(data.groups.length)} nesting groups`]);
             }
+
+            cards.push(
+                ["Storage stock share", `${d(pct(total.storageLength, total.stock))}%`, `${len(total.storageLength)} from storage`],
+                ["Reusable returned", `${d(pct(total.reusable, total.stock))}%`, `${len(total.reusable)} reusable`]
+            );
 
             document.getElementById("summary").innerHTML = cards.map(card => `
         <div class="metric">
@@ -277,7 +278,6 @@
 
         function renderTable() {
                         hasCost = data.groups.some(group => group.stockOrders.some(order => order.unitPrice != null));
-                        hasAnyWeight = data.groups.some(group => group.weightTon != null);
                         hasCompleteWeight = data.groups.length > 0 && data.groups.every(group => group.weightTon != null);
 
             const costHeader = document.getElementById("costHeader");
@@ -437,6 +437,7 @@
                             order.orderQuantity + Number(button.dataset.change)
                         );
 
+                        NcNesting.saveOrderQuantities(data.batchId, data.groups);
                         render();
                     });
                 });
@@ -449,6 +450,7 @@
                         Math.trunc(Number(input.value) || 0)
                     );
 
+                    NcNesting.saveOrderQuantities(data.batchId, data.groups);
                     render();
                 });
             });
@@ -482,7 +484,6 @@
 
         function render() {
             hasCost = data.groups.some(group => group.stockOrders.some(order => order.unitPrice != null));
-            hasAnyWeight = data.groups.some(group => group.weightTon != null);
             hasCompleteWeight = data.groups.length > 0 && data.groups.every(group => group.weightTon != null);
             renderMeta();
             renderSummary();
@@ -581,7 +582,7 @@
             const link = document.createElement("a");
 
             link.href = url;
-            link.download = `${data.batchId || "csp1d-batch-result"}.csv`;
+            link.download = `NcNesting-batch-result${data.batchId ? `-${data.batchId}` : ""}.csv`;
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -596,9 +597,20 @@
             render();
         }
 
+        async function printFullSet() {
+            try {
+                const calculation = await NcNesting.getSolvedBatch(data.batchId);
+                if (!calculation) throw new Error("The complete solved batch is not available in this browser.");
+                calculation.batchResult = structuredClone(data);
+                await NcNestingPrint.printFullSet(calculation);
+            } catch (error) {
+                window.alert(error.message || "Unable to create the full print set.");
+            }
+        }
+
         document.getElementById("csv").addEventListener("click", downloadCsv);
-        document.getElementById("print").addEventListener("click", () => print());
-        document.getElementById("demo").addEventListener("click", () => display(NcNestingDemo.batchResult));
+        document.getElementById("printPage").addEventListener("click", () => NcNestingPrint.printBatchPage(data));
+        document.getElementById("printFullSet").addEventListener("click", printFullSet);
 
         (async () => {
             try {

@@ -7,7 +7,7 @@
 ```json
 {
   "schemaVersion": "1.0",
-  "requestId": "demo-request-001",
+  "requestId": "6b964f13-1862-49ee-865f-21b378fcf637",
   "currency": "Israeli New Shekel",
   "cuttingSettings": {
     "toolWidth": 3,
@@ -19,74 +19,110 @@
     {
       "groupId": "group-1",
       "profileName": "HEA140",
-      "steelGrade": "S355",
+      "steelGrade": "S235",
       "partRequirements": [
         {
-          "partId": "HEA140-Column",
-          "length": 4200,
-          "quantity": 3
+          "partId": "HEA-S235-COLUMN#1",
+          "length": 7300,
+          "quantity": 8
         },
         {
-          "partId": "HEA140-Brace",
-          "length": 1650,
+          "partId": "HEA-S235-BRACE",
+          "length": 2800,
+          "quantity": 12
+        },
+        {
+          "partId": "HEA-S235-BEAM#1",
+          "length": 1450,
+          "quantity": 10
+        },
+        {
+          "partId": "HEA-S235-COLUMN#2",
+          "length": 3650,
           "quantity": 5
         },
         {
-          "partId": "HEA140-Cap",
-          "length": 700,
-          "quantity": 4
+          "partId": "HEA-S235-KNEE",
+          "length": 1800,
+          "quantity": 22
+        },
+        {
+          "partId": "HEA-S235-BEAM#2",
+          "length": 4450,
+          "quantity": 8
         }
       ],
       "stockOrders": [
         {
-          "stockOrderId": "Stock-A",
+          "stockOrderId": "Order-A",
           "length": 6000,
-          "availableQuantity": 3,
-          "price": 105
+          "availableQuantity": null,
+          "price": 1350
         },
         {
-          "stockOrderId": "Stock-B",
+          "stockOrderId": "Order-B",
+          "length": 7500,
+          "availableQuantity": 2,
+          "price": 1420
+        },
+        {
+          "stockOrderId": "Order-C",
           "length": 12000,
           "availableQuantity": null,
-          "price": 195
+          "price": 2740
         }
       ],
       "storageStock": [
         {
-          "groupedStorageStockId": "StorageStock:4300",
-          "length": 4300,
+          "groupedStorageStockId": "StorageStock:3700",
+          "length": 3700,
           "quantity": 1
+        },
+        {
+          "groupedStorageStockId": "StorageStock:2000",
+          "length": 2000,
+          "quantity": 2
         }
       ]
     },
     {
       "groupId": "group-2",
       "profileName": "HEB240",
-      "steelGrade": "S275",
+      "steelGrade": "S355",
       "partRequirements": [
         {
-          "partId": "HEB240-Rafter",
-          "length": 3200,
+          "partId": "HEB-S355-MAIN",
+          "length": 3600,
           "quantity": 2
         },
         {
-          "partId": "HEB240-Plate",
-          "length": 900,
+          "partId": "HEB-S355-BRACE",
+          "length": 1850,
           "quantity": 4
+        },
+        {
+          "partId": "HEB-S355-CLEAT",
+          "length": 2400,
+          "quantity": 3
         }
       ],
       "stockOrders": [
         {
-          "stockOrderId": "Stock-C",
+          "stockOrderId": "Order-D",
           "length": 7500,
-          "availableQuantity": 4,
-          "price": 148
+          "availableQuantity": 3,
+          "price": 3650
         }
       ],
       "storageStock": [
         {
-          "groupedStorageStockId": "StorageStock:3500",
-          "length": 3500,
+          "groupedStorageStockId": "StorageStock:2450",
+          "length": 2450,
+          "quantity": 1
+        },
+        {
+          "groupedStorageStockId": "StorageStock:1900",
+          "length": 1900,
           "quantity": 1
         }
       ]
@@ -94,64 +130,48 @@
     {
       "groupId": "group-3",
       "profileName": "RHS 100x50x5",
-      "steelGrade": "S275",
+      "steelGrade": "S235",
       "partRequirements": [
         {
-          "partId": "RHS-S275-Stiffener",
-          "length": 1100,
-          "quantity": 6
+          "partId": "RHS-S235-POST",
+          "length": 2900,
+          "quantity": 2
         },
         {
-          "partId": "RHS-S275-Tie",
-          "length": 750,
-          "quantity": 4
-        }
-      ],
-      "stockOrders": [
-        {
-          "stockOrderId": "Stock-E",
-          "length": 7500,
-          "availableQuantity": null,
-          "price": 96
-        }
-      ],
-      "storageStock": []
-    },
-    {
-      "groupId": "group-4",
-      "profileName": "RHS 100x50x5",
-      "steelGrade": "S355",
-      "partRequirements": [
-        {
-          "partId": "RHS-S355-Post",
-          "length": 2300,
-          "quantity": 4
-        },
-        {
-          "partId": "RHS-S355-Rail",
-          "length": 1450,
+          "partId": "RHS-S235-RAIL",
+          "length": 1950,
           "quantity": 3
+        },
+        {
+          "partId": "RHS-S235-GUSSET",
+          "length": 1450,
+          "quantity": 4
         }
       ],
       "stockOrders": [
         {
-          "stockOrderId": "Stock-D",
-          "length": 6000,
-          "availableQuantity": 3,
-          "price": 78
+          "stockOrderId": "Order-E",
+          "length": 12000,
+          "availableQuantity": null,
+          "price": 1120
         },
         {
-          "stockOrderId": "Stock-E",
-          "length": 7500,
+          "stockOrderId": "Order-F",
+          "length": 6000,
           "availableQuantity": null,
-          "price": 96
+          "price": 930
         }
       ],
       "storageStock": [
         {
-          "groupedStorageStockId": "StorageStock:3100",
-          "length": 3100,
+          "groupedStorageStockId": "StorageStock:3000",
+          "length": 3000,
           "quantity": 2
+        },
+        {
+          "groupedStorageStockId": "StorageStock:2050",
+          "length": 2050,
+          "quantity": 1
         }
       ]
     }
@@ -159,7 +179,7 @@
 }
 ```
 
-`availableQuantity: null` means unlimited stock-order availability. `price` remains in the request even though the current solver may not use it.
+`availableQuantity: null` means unlimited stock-order availability. Every stock order includes `price`: a positive whole-number JSON value, or `null` when the optional input is blank.
 
 The request deliberately excludes frontend-only data, including part sources, imported filenames, display metadata, storage-selection audits, storage source records, individual storage IDs, warehouse areas, locations, retrieval data, and repeated storage profile/grade values. The browser keeps those values in the persisted active project and matches them to results using stable IDs.
 
@@ -179,49 +199,55 @@ Return the summary and all plans in the same response:
 ```json
 {
   "succeeded": true,
-  "batchResult": {
-    "status": "Completed",
-    "batchId": "batch-123",
-    "generatedAt": "2026-07-14T10:00:10Z",
-    "currency": "Israeli New Shekel",
-    "groups": []
-  },
-  "plans": {
-    "group-1": {
+  "schemaVersion": "1.0",
+  "requestId": "request-123",
+  "batchId": "batch-123",
+  "currency": "Israeli New Shekel",
+  "batchResult": [
+    {
       "groupId": "group-1",
-      "status": "Optimal",
       "profileName": "HEA140",
-      "steelGrade": "S355",
-      "settings": {},
+      "steelGrade": "S235",
+      "status": "Succeeded",
+      "totalStockLength": 202700,
+      "actualConsumedLength": 201203,
+      "totalOffcutLength": 1497,
+      "storageStockLengthConsumed": 7700,
+      "reusableOffcutLength": 0,
+      "storageStockQuantityUsed": 3,
+      "stockOrderQuantity": 20,
+      "stockOrderCost": 43820,
+      "lengthSubgroups": []
+    }
+  ],
+  "plans": [
+    {
+      "groupId": "group-1",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "status": "Optimal",
+      "cuttingSettings": {
+        "toolWidth": 3,
+        "trimStart": 20,
+        "trimEnd": 20,
+        "reusableMinimumLength": 1250
+      },
       "requestedParts": [],
-      "stockOrderOptions": [],
+      "selectedStockOrders": [],
+      "selectedGroupedStorageStock": [],
       "stockPieces": [
         {
           "pieceNumber": 1,
-          "stockLength": 4300,
-          "segments": [
-            { "type": "StartTrim", "length": 20 },
-            { "type": "ToolCut", "length": 3 },
-            { "type": "Part", "partId": "HEA140-Column", "length": 4200 },
-            { "type": "ToolCut", "length": 3 },
-            { "type": "NonReusableOffcut", "length": 51 },
-            { "type": "ToolCut", "length": 3 },
-            { "type": "EndTrim", "length": 20 }
-          ]
-        }
-      ],
-      "storageRetrievals": [
-        {
-          "storageStockId": "Storage-A",
-          "quantity": 1,
-          "stockLength": 4300,
-          "utilizationPercentage": 97.7,
-          "wasteLength": 100
+          "stockSource": "StockOrder",
+          "stockOrderId": "Order-A",
+          "groupedStorageStockId": null,
+          "stockLength": 6000,
+          "segments": []
         }
       ],
       "totals": {}
     }
-  }
+  ]
 }
 ```
 

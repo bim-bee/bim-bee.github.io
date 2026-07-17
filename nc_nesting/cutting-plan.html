@@ -10,15 +10,12 @@
   <main>
     <section class="panel load-error" id="loadError" role="alert" hidden></section>
     <header class="job-header">
-      <div>
-        <div class="page-actions">
-          <a id="backLink" href="batch-result.html">← Batch result</a>
-          <button id="demo">Load demo data</button>
-        </div>
+      <div class="job-header-main">
+        <div class="page-actions no-print"><a id="backLink" href="batch-result.html">← Back to batch result</a></div>
         <h1 id="pageHeading">Cut Plan</h1>
         <div class="job-meta"><div id="jobSettings"></div></div>
       </div>
-      <div class="status" id="status">Plan</div>
+      <div class="actions no-print"><button id="printPage">Print Page</button><button id="printFullSet">Print Full Set</button></div>
     </header>
     <section class="panel"><h2>Plan summary</h2><div class="summary-grid" id="summary"></div></section>
     <section class="panel"><h2>Stocks matrix — parts per layout</h2><div class="table-wrap"><table id="layoutMatrix"></table></div></section>
@@ -32,6 +29,7 @@
   <script src="scripts/config.js"></script>
   <script src="scripts/app-storage.js"></script>
   <script src="scripts/demo-data.js"></script>
+  <script src="scripts/print-renderer.js"></script>
   <script src="scripts/cutting-plan.js"></script>
 </body>
 </html>

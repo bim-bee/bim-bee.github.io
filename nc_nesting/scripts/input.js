@@ -4,6 +4,8 @@
   const PROJECT_SCHEMA_VERSION = "1.0";
   let state = createProjectState();
   let isHydrating = false;
+  let isAutoFilling = false;
+  let autoFillMessages = [];
 
   function createProjectState() {
     return {
@@ -12,6 +14,7 @@
       parts: [],
       stockOrders: [],
       storage: [],
+      autoFillOrders: true,
       groupIds: {},
       nextIds: { stockOrders: 1, storage: 1, groups: 1 },
       projectGroups: [],
@@ -34,13 +37,13 @@
 
   const visual = {
     parts: [["position", "text"], ["steelGrade", "text"], ["quantity", "number"], ["profile", "text"], ["length", "number"], ["source", "text", true]],
-    stockOrders: [["stockId", "text"], ["profile", "text"], ["steelGrade", "text"], ["length", "number"], ["availability", "availability"], ["price", "number", false, true]],
+    stockOrders: [["stockId", "text"], ["profile", "text"], ["steelGrade", "text"], ["length", "number"], ["availability", "availability"], ["price", "price"]],
     storage: [["storageId", "text"], ["profile", "text"], ["steelGrade", "text"], ["length", "number"], ["quantity", "number"], ["storageArea", "text"]]
   };
 
   const csv = {
     parts: [["position", "Position", "text"], ["steelGrade", "Steel Grade", "text"], ["quantity", "Quantity", "number"], ["profile", "Profile", "text"], ["length", "Length", "number"], ["source", "Source", "text"]],
-    stockOrders: [["stockId", "Stock Order ID", "text"], ["profile", "Profile", "text"], ["steelGrade", "Steel Grade", "text"], ["length", "Length", "number"], ["quantity", "Quantity", "number"], ["unlimited", "Unlimited", "checkbox"], ["price", "Price", "decimal"]],
+    stockOrders: [["stockId", "Stock Order ID", "text"], ["profile", "Profile", "text"], ["steelGrade", "Steel Grade", "text"], ["length", "Length", "number"], ["quantity", "Quantity", "number"], ["unlimited", "Unlimited", "checkbox"], ["price", "Price", "price"]],
     storage: [["storageId", "Storage Stock ID", "text"], ["profile", "Profile", "text"], ["steelGrade", "Steel Grade", "text"], ["length", "Length", "number"], ["quantity", "Quantity", "number"], ["storageArea", "Storage Area", "text"]]
   };
 
@@ -57,9 +60,9 @@
   };
 
   const fileNames = {
-    parts: "nc-nesting-parts.csv",
-    stockOrders: "nc-nesting-stock-orders.csv",
-    storage: "nc-nesting-storage-stock.csv"
+    parts: "NcNesting-parts.csv",
+    stockOrders: "NcNesting-stock-orders.csv",
+    storage: "NcNesting-storage-stock.csv"
   };
 
   function letterSuffix(sequence) {
@@ -73,8 +76,14 @@
     return suffix;
   }
 
+  function migrateGeneratedOrderId(value) {
+    const text = String(value || "").trim();
+    const match = /^Stock-([A-Z]+)$/i.exec(text);
+    return match ? `Order-${match[1].toUpperCase()}` : text;
+  }
+
   function allocateGeneratedId(type) {
-    const prefix = type === "stockOrders" ? "Stock" : "Storage";
+    const prefix = type === "stockOrders" ? "Order" : "Storage";
     const key = type === "stockOrders" ? "stockId" : "storageId";
     const used = new Set((state[type] || []).flatMap(row => [row.generatedId, row[key]])
       .map(value => String(value || "").trim().toLowerCase())
@@ -96,6 +105,7 @@
   }
 
   function ensureGeneratedId(type, row) {
+    if (type === "stockOrders" && row.generatedId) row.generatedId = migrateGeneratedOrderId(row.generatedId);
     if (!row.generatedId) row.generatedId = allocateGeneratedId(type);
     return row.generatedId;
   }
@@ -121,22 +131,31 @@
         const td = document.createElement("td");
         if (inputType === "availability") {
           renderAvailability(td, row, rowIndex, columnIndex);
+        } else if (readOnly) {
+          const value = type === "parts" && field === "source"
+            ? (String(row[field] || "").trim() || "Manual")
+            : String(row[field] ?? "");
+          row[field] = value;
+          td.className = "read-only-cell";
+          const text = document.createElement("span");
+          text.className = "read-only-value";
+          text.textContent = value;
+          td.appendChild(text);
         } else {
           const input = document.createElement("input");
-          input.type = inputType === "number" ? "number" : "text";
-          if (inputType === "number") {
-            input.min = "0";
-            input.step = decimal ? "0.01" : "1";
+          input.type = inputType === "number" || inputType === "price" ? "number" : "text";
+          if (inputType === "number" || inputType === "price") {
+            input.min = inputType === "price" ? "1" : "0";
+            input.step = "1";
           }
           input.value = row[field] ?? "";
-          input.readOnly = Boolean(readOnly);
           setMeta(input, type, rowIndex, columnIndex, field);
           if ((type === "stockOrders" && field === "stockId") || (type === "storage" && field === "storageId")) {
             input.placeholder = defaultId(type, row);
           }
           input.oninput = event => {
             state[type][rowIndex][field] = event.target.value;
-            validate();
+            afterDataChange(type);
           };
           input.onpaste = pasteMatrix;
           if (inputType === "number" && !decimal) {
@@ -144,7 +163,7 @@
               if (input.value !== "") {
                 input.value = Math.ceil(Number(input.value));
                 row[field] = input.value;
-                validate();
+                afterDataChange(type);
               }
             };
           }
@@ -163,7 +182,7 @@
       removeButton.onclick = () => {
         state[type].splice(rowIndex, 1);
         render(type);
-        validate();
+        afterDataChange(type);
       };
       actionCell.appendChild(removeButton);
       tr.appendChild(actionCell);
@@ -174,6 +193,14 @@
   function positiveWholeNumber(value) {
     const number = Number(value);
     return Number.isInteger(number) && number > 0 ? number : null;
+  }
+
+  function optionalPositiveWholeNumber(value) {
+    const text = String(value ?? "").trim();
+    if (!text) return { blank: true, value: null };
+    if (!/^[1-9]\d*$/.test(text)) return { blank: false, value: null };
+    const number = Number(text);
+    return Number.isSafeInteger(number) ? { blank: false, value: number } : { blank: false, value: null };
   }
 
   function restoredQuantity(row) {
@@ -245,6 +272,7 @@
   function normalize(type, value) {
     const text = String(value ?? "").trim();
     if (type === "checkbox") return ["true", "yes", "y", "1", "unlimited", "∞"].includes(text.toLowerCase());
+    if (type === "price") return text;
     if (type === "number" || type === "decimal") {
       if (text === "") return "";
       const number = Number(text.replace(",", "."));
@@ -272,7 +300,7 @@
 
   function pasteMatrix(event) {
     const text = event.clipboardData.getData("text");
-    if (!/[\t\r\n]/.test(text) && event.target.dataset.field !== "availability") return;
+    if (!/[\t\r\n]/.test(text) && !["availability", "price"].includes(event.target.dataset.field)) return;
     event.preventDefault();
     const type = event.target.dataset.table;
     const startRow = Number(event.target.dataset.row);
@@ -287,13 +315,13 @@
       });
     });
     render(type);
-    validate();
+    afterDataChange(type);
   }
 
   function add(type) {
     state[type].push(blank(type));
     render(type);
-    validate();
+    afterDataChange(type);
   }
 
   function canonical(value) {
@@ -353,11 +381,11 @@
         row[field] = normalize(valueType, cell);
       });
       if (type === "stockOrders") row.lastFiniteQuantity = restoredQuantity(row);
-      if (type === "parts" && !String(row.source).trim()) row.source = "CSV";
+      if (type === "parts") row.source = "CSV";
       state[type].push(row);
     });
     render(type);
-    validate();
+    afterDataChange(type);
   }
 
   async function fileImport(type, input) {
@@ -397,23 +425,28 @@
 
   function parseNc(name, text) {
     const lines = text.replace(/^\uFEFF/, "").replace(/\r/g, "").split("\n").map(line => line.trim());
-    const startIndex = lines.findIndex(line => line === "ST");
+    const startIndex = lines.findIndex(line => line.startsWith("ST"));
     if (startIndex < 0) throw new Error(`${name}: ST header was not found.`);
     const get = offset => lines[startIndex + offset] || "";
-    const position = get(5);
+    const position = get(3);
     const steelGrade = get(6);
-    const quantity = parseInt(get(7), 10);
+    const quantityText = get(7);
+    const quantity = /^\d+$/.test(quantityText) ? Number(quantityText) : NaN;
     const profile = get(8);
-    const length = parseFloat(get(10).replace(",", "."));
-    if (!position || !steelGrade || !profile || !Number.isFinite(length)) {
-      throw new Error(`${name}: required ST fields could not be extracted.`);
+    const length = Number(get(10).replace(",", "."));
+    if (!position || !steelGrade || !profile || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(length) || length <= 0) {
+      throw new Error(`${name}: required ST fields are missing or invalid.`);
     }
-    return { position, steelGrade, quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1, profile, length: Math.ceil(length), source: name };
+    return { position, steelGrade, quantity, profile, length: Math.ceil(length), source: "NC file" };
   }
 
   async function importNc(files) {
     const errors = [];
     for (const file of files) {
+      if (!/\.nc1$/i.test(file.name)) {
+        errors.push(`${file.name}: unsupported file type; only .nc1 files are accepted.`);
+        continue;
+      }
       try {
         state.parts.push(parseNc(file.name, await file.text()));
       } catch (error) {
@@ -422,7 +455,7 @@
     }
     document.getElementById("ncErrors").textContent = errors.join("\n");
     render("parts");
-    validate();
+    afterDataChange("parts");
   }
 
   function numberFromInput(id) {
@@ -481,6 +514,161 @@
       });
   }
 
+
+  function sameNormalizedText(left, right) {
+    return String(left || "").trim().localeCompare(String(right || "").trim(), undefined, { sensitivity: "base" }) === 0;
+  }
+
+  function renderAutoFillState() {
+    const checkbox = document.getElementById("autoFillOrders");
+    const stateLabel = document.getElementById("autoFillState");
+    if (checkbox) checkbox.checked = state.autoFillOrders !== false;
+    if (stateLabel) stateLabel.textContent = state.autoFillOrders === false ? "Off" : "On";
+    const notice = document.getElementById("autoFillNotice");
+    if (!notice) return;
+    notice.hidden = autoFillMessages.length === 0;
+    notice.innerHTML = autoFillMessages.length
+      ? `<strong>Auto-fill needs attention.</strong><ul>${autoFillMessages.map(message => `<li>${escapeHtml(message)}</li>`).join("")}</ul>`
+      : "";
+  }
+
+  function autoFillPartGroups() {
+    const groups = new Map();
+    state.parts.forEach(row => {
+      const profile = String(row.profile || "").trim();
+      const steelGrade = String(row.steelGrade || "").trim();
+      const quantity = positiveWholeNumber(row.quantity);
+      const rawLength = Number(row.length);
+      const length = Number.isFinite(rawLength) && rawLength > 0 ? Math.ceil(rawLength) : null;
+      if (!profile || !steelGrade || quantity === null || length === null) return;
+      const key = groupKey(profile, steelGrade);
+      if (!groups.has(key)) groups.set(key, { profile, steelGrade, requiredLength: 0, longestPart: 0 });
+      const group = groups.get(key);
+      group.requiredLength += length * quantity;
+      group.longestPart = Math.max(group.longestPart, length);
+    });
+    return [...groups.values()];
+  }
+
+  function consumeSharedCapacity(sharedRows, requiredLength, needsLongPiece, longestPart) {
+    const planned = new Map();
+    let supplied = 0;
+
+    function take(record, quantity) {
+      const amount = Math.min(record.remaining, Math.max(0, Math.trunc(quantity)));
+      if (!amount) return;
+      planned.set(record, (planned.get(record) || 0) + amount);
+      supplied += record.length * amount;
+    }
+
+    if (needsLongPiece) {
+      const fitting = sharedRows
+        .filter(record => record.remaining > 0 && record.length >= longestPart)
+        .sort((left, right) => left.length - right.length)[0];
+      if (!fitting) return false;
+      take(fitting, 1);
+    }
+
+    const ordered = [...sharedRows].sort((left, right) => left.length - right.length);
+    for (const record of ordered) {
+      const alreadyPlanned = planned.get(record) || 0;
+      const available = record.remaining - alreadyPlanned;
+      if (available <= 0 || supplied >= requiredLength) continue;
+      const quantity = Math.min(available, Math.ceil((requiredLength - supplied) / record.length));
+      take(record, quantity);
+    }
+
+    if (supplied < requiredLength) return false;
+    planned.forEach((quantity, record) => { record.remaining -= quantity; });
+    return true;
+  }
+
+  function runAutoFill() {
+    if (isHydrating || isAutoFilling) return false;
+    autoFillMessages = [];
+    renderAutoFillState();
+    if (state.autoFillOrders === false) return false;
+
+    isAutoFilling = true;
+    let changed = false;
+    try {
+      const groups = autoFillPartGroups();
+      const sharedByProfile = new Map();
+
+      active("stockOrders").forEach(row => {
+        const profile = String(row.profile || "").trim();
+        const steelGrade = String(row.steelGrade || "").trim();
+        const length = Number(row.length);
+        const quantity = positiveWholeNumber(row.quantity);
+        if (!profile || steelGrade || row.unlimited || !Number.isFinite(length) || length <= 0 || quantity === null) return;
+        const key = profile.toLowerCase();
+        if (!sharedByProfile.has(key)) sharedByProfile.set(key, []);
+        sharedByProfile.get(key).push({ row, length: Math.ceil(length), remaining: quantity });
+      });
+
+      groups.forEach(group => {
+        const matching = active("stockOrders").filter(row => {
+          const rowProfile = String(row.profile || "").trim();
+          const rowGrade = String(row.steelGrade || "").trim();
+          return sameNormalizedText(rowProfile, group.profile)
+            && (!rowGrade || sameNormalizedText(rowGrade, group.steelGrade));
+        });
+
+        const unlimitedCover = matching.some(row => row.unlimited && Number(row.length) >= group.longestPart);
+        if (unlimitedCover) return;
+
+        const exactFinite = matching.filter(row => {
+          const rowGrade = String(row.steelGrade || "").trim();
+          return rowGrade && sameNormalizedText(rowGrade, group.steelGrade) && !row.unlimited && positiveWholeNumber(row.quantity) !== null && Number(row.length) > 0;
+        });
+        const exactLength = exactFinite.reduce((total, row) => total + Math.ceil(Number(row.length)) * positiveWholeNumber(row.quantity), 0);
+        const exactFits = exactFinite.some(row => Number(row.length) >= group.longestPart);
+        const sharedRows = sharedByProfile.get(group.profile.toLowerCase()) || [];
+        const sharedLength = sharedRows.reduce((total, row) => total + row.length * row.remaining, 0);
+        const sharedFits = sharedRows.some(row => row.remaining > 0 && row.length >= group.longestPart);
+        const enoughLength = exactLength + sharedLength >= group.requiredLength;
+        const hasFit = exactFits || sharedFits;
+
+        if (enoughLength && hasFit) {
+          const requiredShared = Math.max(0, group.requiredLength - exactLength);
+          const needsSharedFit = !exactFits;
+          if (consumeSharedCapacity(sharedRows, requiredShared, needsSharedFit, group.longestPart)) return;
+        }
+
+        if (group.longestPart > 12000) {
+          autoFillMessages.push(`${group.profile} · ${group.steelGrade}: the longest part is ${group.longestPart} mm. Provide a stock order longer than 12000 mm.`);
+          return;
+        }
+
+        state.stockOrders.push({
+          generatedId: allocateGeneratedId("stockOrders"),
+          stockId: "",
+          profile: group.profile,
+          steelGrade: group.steelGrade,
+          length: group.longestPart <= 6000 ? 6000 : 12000,
+          quantity: 1,
+          lastFiniteQuantity: 1,
+          unlimited: true,
+          price: "",
+          autoFilled: true
+        });
+        changed = true;
+      });
+    } finally {
+      isAutoFilling = false;
+      renderAutoFillState();
+    }
+    return changed;
+  }
+
+  function afterDataChange(type) {
+    if (type === "parts") {
+      const stockChanged = runAutoFill();
+      if (stockChanged) render("stockOrders");
+    }
+    validate();
+  }
+
   function validate(clearBackendErrors = true) {
     if (clearBackendErrors) backendErrors = [];
     const errors = [];
@@ -500,6 +688,7 @@
     if (!parts.length) errors.push("Add at least one part.");
 
     parts.forEach((row, index) => {
+      row.source = String(row.source || "").trim() || "Manual";
       if (!String(row.position || "").trim()) errors.push(`Part row ${index + 1}: position is required.`);
       if (!String(row.steelGrade || "").trim()) errors.push(`Part row ${index + 1}: steel grade is required.`);
       if (!String(row.profile || "").trim()) errors.push(`Part row ${index + 1}: profile is required.`);
@@ -528,7 +717,8 @@
       if (!String(row.profile || "").trim()) errors.push(`Stock order row ${index + 1}: profile is required.`);
       if (!(rowNumber(row, "length") > 0)) errors.push(`Stock order row ${index + 1}: length must be greater than zero.`);
       if (!row.unlimited && positiveWholeNumber(row.quantity) === null) errors.push(`Stock order row ${index + 1}: enter a positive whole quantity or select Unlimited.`);
-      if (String(row.price || "").trim() && rowNumber(row, "price") < 0) errors.push(`Stock order row ${index + 1}: price cannot be negative.`);
+      const parsedPrice = optionalPositiveWholeNumber(row.price);
+      if (!parsedPrice.blank && parsedPrice.value === null) errors.push(`Stock order row ${index + 1}: price must be blank or a positive whole number.`);
     });
 
     const storageIds = new Set();
@@ -574,7 +764,7 @@
       steelGrade: String(row.steelGrade || "").trim(),
       length: Math.ceil(Number(row.length)),
       availableQuantity: row.unlimited ? null : Math.ceil(Number(row.quantity)),
-      price: String(row.price || "").trim() === "" ? null : Number(row.price)
+      price: optionalPositiveWholeNumber(row.price).value
     }));
   }
 
@@ -694,10 +884,11 @@
       currency: document.getElementById("currency").value,
       cuttingSettings: inputSettingsSnapshot(),
       inputs: {
-        parts: clone(state.parts),
+        parts: clone(state.parts.map(row => ({ ...row, source: String(row.source || "").trim() || "Manual" }))),
         stockOrders: clone(state.stockOrders),
         storageStock: clone(state.storage)
       },
+      autoFillOrders: state.autoFillOrders !== false,
       groupIds: clone(state.groupIds),
       nextIds: clone(state.nextIds),
       groups: clone(groups || []),
@@ -713,6 +904,9 @@
 
   function applyInput(input, resetProject = true) {
     isHydrating = true;
+    backendErrors = [];
+    autoFillMessages = [];
+    document.getElementById("ncErrors").textContent = "";
     if (resetProject) state = createProjectState();
     const settings = input.cuttingSettings || {};
     document.getElementById("toolWidth").value = settings.toolWidth ?? 3;
@@ -723,8 +917,9 @@
       ? input.currency
       : "Israeli New Shekel";
     document.getElementById("currency").value = currency;
-    state.parts = (input.parts || []).map(row => ({ position: row.positionId || row.position || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", quantity: row.quantity ?? 1, length: row.length ?? "", source: row.source || "Manual" }));
-    state.stockOrders = (input.stockOrders || []).map(row => ({ generatedId: row.generatedId || allocateGeneratedId("stockOrders"), stockId: row.stockOrderId || row.stockId || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", length: row.length ?? "", quantity: row.availableQuantity ?? 1, lastFiniteQuantity: positiveWholeNumber(row.availableQuantity) ?? 1, unlimited: row.availableQuantity == null, price: row.price ?? "" }));
+    state.autoFillOrders = input.autoFillOrders !== false;
+    state.parts = (input.parts || []).map(row => ({ position: row.positionId || row.position || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", quantity: row.quantity ?? 1, length: row.length ?? "", source: String(row.source || "").trim() || "Manual" }));
+    state.stockOrders = (input.stockOrders || []).map(row => ({ generatedId: migrateGeneratedOrderId(row.generatedId) || allocateGeneratedId("stockOrders"), stockId: row.stockOrderId || row.stockId || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", length: row.length ?? "", quantity: row.availableQuantity ?? row.quantity ?? 1, lastFiniteQuantity: positiveWholeNumber(row.availableQuantity ?? row.quantity) ?? 1, unlimited: typeof row.unlimited === "boolean" ? row.unlimited : row.availableQuantity == null, price: row.price ?? "", autoFilled: Boolean(row.autoFilled) }));
     state.storage = (input.storageStock || input.storage || []).map(row => ({ generatedId: row.generatedId || allocateGeneratedId("storage"), storageId: row.storageStockId || row.storageId || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", length: row.length ?? "", quantity: row.quantity ?? 1, storageArea: row.storageArea || "" }));
     state.groupIds = clone(input.groupIds || state.groupIds || {});
     state.nextIds = { ...state.nextIds, ...(input.nextIds || {}) };
@@ -733,6 +928,9 @@
     state.solveResponse = clone(input.solveResponse || null);
     ["parts", "stockOrders", "storage"].forEach(render);
     isHydrating = false;
+    renderAutoFillState();
+    const stockChanged = runAutoFill();
+    if (stockChanged) render("stockOrders");
     validate();
   }
 
@@ -743,6 +941,7 @@
     applyInput({
       cuttingSettings: project.cuttingSettings || {},
       currency: project.currency,
+      autoFillOrders: project.autoFillOrders !== false,
       parts: project.inputs?.parts || project.parts || [],
       stockOrders: project.inputs?.stockOrders || project.stockOrders || [],
       storageStock: project.inputs?.storageStock || project.storageStock || [],
@@ -752,6 +951,35 @@
       solveRequest: project.solveRequest || null,
       solveResponse: project.solveResponse || null
     }, false);
+  }
+
+  function clearAllInput() {
+    isHydrating = true;
+    state = createProjectState();
+    backendErrors = [];
+    autoFillMessages = [];
+    isSolving = false;
+
+    document.getElementById("toolWidth").value = 3;
+    document.getElementById("trimStart").value = 20;
+    document.getElementById("trimEnd").value = 20;
+    document.getElementById("reusableMinimum").value = 1250;
+    document.getElementById("currency").value = "Israeli New Shekel";
+    document.getElementById("ncErrors").textContent = "";
+    document.getElementById("previewJson").textContent = "";
+    const dialog = document.getElementById("previewDialog");
+    if (dialog.open) dialog.close();
+    ["partsCsv", "stockCsv", "storageCsv", "ncFiles"].forEach(id => {
+      const input = document.getElementById(id);
+      if (input) input.value = "";
+    });
+
+    ["parts", "stockOrders", "storage"].forEach(render);
+    renderAutoFillState();
+    NcNesting.clearActiveProject();
+    history.replaceState({}, "", `${location.pathname}${location.hash}`);
+    isHydrating = false;
+    validate();
   }
 
   function showPreview() {
@@ -770,7 +998,9 @@
     isSolving = true;
     validate(false);
     try {
-      const result = await NcNesting.postSolve(request);
+      const result = NcNestingDemo.matchesRequest(request)
+        ? NcNestingDemo.createSolveResult(request.requestId)
+        : await NcNesting.postSolve(request);
       if (!result.succeeded) {
         backendErrors = (result.errors || []).map(error => `${error.profileName || "Batch"}${error.steelGrade ? ` · ${error.steelGrade}` : ""}${error.category ? ` — ${error.category}` : ""}: ${error.message || "Unknown error"}`);
         return;
@@ -796,9 +1026,10 @@
 
   document.querySelectorAll("[data-add]").forEach(button => button.onclick = () => add(button.dataset.add));
   document.querySelectorAll("[data-clear]").forEach(button => button.onclick = () => {
-    state[button.dataset.clear] = [];
-    render(button.dataset.clear);
-    validate();
+    const type = button.dataset.clear;
+    state[type] = [];
+    render(type);
+    afterDataChange(type);
   });
   document.querySelectorAll("[data-download]").forEach(button => button.onclick = () => download(button.dataset.download));
   document.getElementById("partsCsv").onchange = event => fileImport("parts", event.target);
@@ -831,21 +1062,55 @@
     event.preventDefault();
     drop.classList.remove("drag");
   }));
-  drop.addEventListener("drop", event => importNc([...event.dataTransfer.files].filter(file => /\.(nc1|nc|txt)$/i.test(file.name))));
+  drop.addEventListener("drop", event => importNc([...event.dataTransfer.files]));
 
+  document.getElementById("autoFillOrders").onchange = event => {
+    state.autoFillOrders = event.target.checked;
+    autoFillMessages = [];
+    renderAutoFillState();
+    if (state.autoFillOrders) {
+      const stockChanged = runAutoFill();
+      if (stockChanged) render("stockOrders");
+    }
+    validate();
+  };
+
+  document.getElementById("clearAll").onclick = clearAllInput;
   document.getElementById("demo").onclick = () => applyInput(NcNestingDemo.input);
   document.getElementById("preview").onclick = showPreview;
   document.getElementById("closePreview").onclick = () => document.getElementById("previewDialog").close();
   document.getElementById("copyPreview").onclick = async () => navigator.clipboard.writeText(document.getElementById("previewJson").textContent);
   document.getElementById("solve").onclick = solveBatch;
+  document.getElementById("printPage").onclick = () => NcNestingPrint.printInput(projectSnapshot());
 
-  window.NcNestingInput = Object.freeze({ buildPayload: buildSolveRequest, buildSolveRequest, applyInput, projectSnapshot });
-  ["parts", "stockOrders", "storage"].forEach(render);
-  if (new URLSearchParams(location.search).get("demo") === "1") {
-    applyInput(NcNestingDemo.input);
-  } else {
+  window.NcNestingInput = Object.freeze({ buildPayload: buildSolveRequest, buildSolveRequest, applyInput, projectSnapshot, clearAllInput });
+
+  async function initialize() {
+    ["parts", "stockOrders", "storage"].forEach(render);
+    renderAutoFillState();
+
+    const params = new URLSearchParams(location.search);
+    const batchId = params.get("batchId");
+    if (batchId) {
+      const solvedProject = await NcNesting.getProject(batchId);
+      if (!solvedProject) {
+        backendErrors = [`Unable to restore input for batch '${batchId}'. Its project snapshot is not available in this browser.`];
+        validate(false);
+        return;
+      }
+      restoreProject(solvedProject);
+      history.replaceState({}, "", `${location.pathname}${location.hash}`);
+      persistProject(state.projectGroups);
+      return;
+    }
+
     const storedProject = NcNesting.getActiveProject();
     if (storedProject) restoreProject(storedProject);
     else validate();
   }
+
+  initialize().catch(error => {
+    backendErrors = [error.message || "Unable to load the active input project."];
+    validate(false);
+  });
 })();

@@ -1,0 +1,230 @@
+{
+  "cuttingSettings": {
+    "toolWidth": 3,
+    "trimStart": 20,
+    "trimEnd": 20,
+    "reusableMinimumLength": 1250
+  },
+  "currency": "Israeli New Shekel",
+  "autoFillOrders": true,
+  "parts": [
+    {
+      "positionId": "HEA-S235-COLUMN#1",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 8,
+      "length": 7300,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-BRACE",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 12,
+      "length": 2800,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-BEAM#1",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 10,
+      "length": 1450,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-COLUMN#2",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 5,
+      "length": 3650,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-KNEE",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 22,
+      "length": 1800,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEA-S235-BEAM#2",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "quantity": 8,
+      "length": 4450,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEB-S355-MAIN",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "quantity": 2,
+      "length": 3600,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEB-S355-BRACE",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "quantity": 4,
+      "length": 1850,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "HEB-S355-CLEAT",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "quantity": 3,
+      "length": 2400,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "RHS-S235-POST",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "quantity": 2,
+      "length": 2900,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "RHS-S235-RAIL",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "quantity": 3,
+      "length": 1950,
+      "source": "Demo data"
+    },
+    {
+      "positionId": "RHS-S235-GUSSET",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "quantity": 4,
+      "length": 1450,
+      "source": "Demo data"
+    }
+  ],
+  "stockOrders": [
+    {
+      "generatedId": "Order-A",
+      "stockOrderId": "Order-A",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 6000,
+      "availableQuantity": null,
+      "price": 1350
+    },
+    {
+      "generatedId": "Order-B",
+      "stockOrderId": "Order-B",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 7500,
+      "availableQuantity": 2,
+      "price": 1420
+    },
+    {
+      "generatedId": "Order-C",
+      "stockOrderId": "Order-C",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 12000,
+      "availableQuantity": null,
+      "price": 2740
+    },
+    {
+      "generatedId": "Order-D",
+      "stockOrderId": "Order-D",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "length": 7500,
+      "availableQuantity": 3,
+      "price": 3650
+    },
+    {
+      "generatedId": "Order-E",
+      "stockOrderId": "Order-E",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 12000,
+      "availableQuantity": null,
+      "price": 1120
+    },
+    {
+      "generatedId": "Order-F",
+      "stockOrderId": "Order-F",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 6000,
+      "availableQuantity": null,
+      "price": 930
+    }
+  ],
+  "storageStock": [
+    {
+      "generatedId": "Storage-A",
+      "storageStockId": "Storage-A",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 3700,
+      "quantity": 1,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-B",
+      "storageStockId": "Storage-B",
+      "profileName": "HEA140",
+      "steelGrade": "S235",
+      "length": 2000,
+      "quantity": 2,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-C",
+      "storageStockId": "Storage-C",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "length": 2450,
+      "quantity": 1,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-D",
+      "storageStockId": "Storage-D",
+      "profileName": "HEB240",
+      "steelGrade": "S355",
+      "length": 1900,
+      "quantity": 1,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-E",
+      "storageStockId": "Storage-E",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 3000,
+      "quantity": 2,
+      "storageArea": ""
+    },
+    {
+      "generatedId": "Storage-F",
+      "storageStockId": "Storage-F",
+      "profileName": "RHS 100x50x5",
+      "steelGrade": "S235",
+      "length": 2050,
+      "quantity": 1,
+      "storageArea": ""
+    }
+  ],
+  "groupIds": {
+    "HEA140\u0000S235": "group-1",
+    "HEB240\u0000S355": "group-2",
+    "RHS 100X50X5\u0000S235": "group-3"
+  },
+  "nextIds": {
+    "stockOrders": 7,
+    "storage": 7,
+    "groups": 4
+  }
+}

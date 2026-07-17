@@ -83,11 +83,8 @@
   }
 
   async function loadPlan() {
-    if (pageParams.get("demo") === "1") {
-      return normalizePlan(NcNestingDemo.plans[groupId] || NcNestingDemo.defaultPlan);
-    }
     if (!batchId || !groupId) {
-      throw new Error("A batch ID and group ID are required. Return to the batch result or load demo data.");
+      throw new Error("A batch ID and group ID are required. Return to the batch result.");
     }
     const stored = await NcNesting.getPlan(batchId, groupId);
     if (!stored) throw new Error("This cutting plan is not available in this browser. Solve the batch again.");
@@ -179,7 +176,6 @@
 
     document.getElementById("pageHeading").textContent = `${data.profileName} · ${data.steelGrade} · Cut Plan`;
     document.title = `${data.profileName} · ${data.steelGrade} · Cut Plan — NC Nesting`;
-    document.getElementById("status").textContent = `${data.status} plan`;
     document.getElementById("jobSettings").innerHTML = `
       Tool width: <strong>${mm(data.settings.toolWidth)}</strong> ·
       Start trim: <strong>${mm(data.settings.trimStart)}</strong> ·
@@ -257,7 +253,9 @@
     const displayPieces = [...pieces].sort((left, right) => {
       const leftSourceOrder = left.stockSource === "StorageStock" ? 0 : 1;
       const rightSourceOrder = right.stockSource === "StorageStock" ? 0 : 1;
-      return leftSourceOrder - rightSourceOrder || left.pieceNumber - right.pieceNumber;
+      return leftSourceOrder - rightSourceOrder
+        || finiteNumber(left.stockLength) - finiteNumber(right.stockLength)
+        || finiteNumber(left.pieceNumber) - finiteNumber(right.pieceNumber);
     });
 
     document.getElementById("pieces").innerHTML = displayPieces.map(piece => {
@@ -470,7 +468,18 @@
       </tbody>`;
   }
 
+  async function printFullSet() {
+    try {
+      const calculation = await NcNesting.getSolvedBatch(batchId);
+      if (!calculation) throw new Error("The complete solved batch is not available in this browser.");
+      await NcNestingPrint.printFullSet(calculation);
+    } catch (error) {
+      window.alert(error.message || "Unable to create the full print set.");
+    }
+  }
+
   if (batchId) document.getElementById("backLink").href = `batch-result.html?batchId=${encodeURIComponent(batchId)}`;
-  document.getElementById("demo").addEventListener("click", () => loadAndRender(NcNestingDemo.defaultPlan).catch(showLoadError));
+  document.getElementById("printPage").addEventListener("click", () => NcNestingPrint.printPlanPage(data));
+  document.getElementById("printFullSet").addEventListener("click", printFullSet);
   loadAndRender().catch(showLoadError);
 })();

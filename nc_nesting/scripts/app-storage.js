@@ -5,6 +5,7 @@
   const DB_VERSION = 1;
   const STORE_NAME = "solved-batches";
   const ACTIVE_PROJECT_KEY = `${DB_NAME}:active-project`;
+  const ORDER_QUANTITIES_KEY = batchId => `${DB_NAME}:order-quantities:${batchId}`;
 
   function config() {
     return window.NcNestingConfig || {};
@@ -241,6 +242,77 @@
       try { localStorage.removeItem(ACTIVE_PROJECT_KEY); } catch { /* Storage is unavailable. */ }
       return null;
     }
+  }
+
+  function clearActiveProject() {
+    try { localStorage.removeItem(ACTIVE_PROJECT_KEY); } catch { /* Storage is unavailable. */ }
+  }
+
+
+  function orderQuantityKey(group, order, orderIndex) {
+    return [
+      group?.groupId || "",
+      order?.stockOrderId || order?.stockTypeId || "",
+      order?.stockLength ?? order?.length ?? "",
+      orderIndex
+    ].join("\u0000");
+  }
+
+  function collectOrderQuantities(groups) {
+    const quantities = {};
+    (groups || []).forEach(group => {
+      (group.stockOrders || []).forEach((order, orderIndex) => {
+        quantities[orderQuantityKey(group, order, orderIndex)] = Math.max(0, Math.trunc(Number(order.orderQuantity) || 0));
+      });
+    });
+    return quantities;
+  }
+
+  function readOrderQuantities(batchId, record) {
+    if (!batchId) return record?.orderQuantities || {};
+    try {
+      const raw = localStorage.getItem(ORDER_QUANTITIES_KEY(batchId));
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // Use the solved-batch record fallback below.
+    }
+    return record?.orderQuantities || record?.project?.orderQuantities || {};
+  }
+
+  function applyOrderQuantities(batchResult, batchId, record) {
+    const adjusted = clone(batchResult);
+    const quantities = readOrderQuantities(batchId || adjusted?.batchId, record);
+    (adjusted?.groups || []).forEach(group => {
+      (group.stockOrders || []).forEach((order, orderIndex) => {
+        const key = orderQuantityKey(group, order, orderIndex);
+        if (Object.prototype.hasOwnProperty.call(quantities, key)) {
+          order.orderQuantity = Math.max(0, Math.trunc(Number(quantities[key]) || 0));
+        }
+      });
+    });
+    return adjusted;
+  }
+
+  function saveOrderQuantities(batchId, groups) {
+    if (!batchId) return {};
+    const quantities = collectOrderQuantities(groups);
+    try { localStorage.setItem(ORDER_QUANTITIES_KEY(batchId), JSON.stringify(quantities)); } catch { /* Storage is unavailable. */ }
+
+    const activeProject = getActiveProject();
+    if (activeProject && (!activeProject.batchId || activeProject.batchId === batchId)) {
+      activeProject.batchId = batchId;
+      activeProject.orderQuantities = clone(quantities);
+      saveActiveProject(activeProject);
+    }
+
+    getRecord(batchId).then(record => {
+      if (!record) return;
+      record.orderQuantities = clone(quantities);
+      if (record.project) record.project.orderQuantities = clone(quantities);
+      return putRecord(record);
+    }).catch(() => { /* The localStorage copy is already current. */ });
+
+    return quantities;
   }
 
   function normalizeSolveResponse(response) {
@@ -495,7 +567,7 @@
   async function getBatchResult(batchId) {
     const record = await getRecord(batchId);
     if (!record?.batchResult) return null;
-    return enrichBatchResult(
+    const enriched = enrichBatchResult(
       normalizeBatchResultShape(record.batchResult, {
         batchId: record.batchId,
         currency: record.project?.currency || record.batchResult?.currency || null,
@@ -504,6 +576,7 @@
       }),
       record.project
     );
+    return applyOrderQuantities(enriched, batchId, record);
   }
 
   async function getPlan(batchId, groupId) {
@@ -519,6 +592,42 @@
     return plan ? enrichPlan(plan, record.project, groupId) : null;
   }
 
+
+  async function getSolvedBatch(batchId) {
+    const record = await getRecord(batchId);
+    if (!record?.batchResult) return null;
+
+    const batchResult = applyOrderQuantities(enrichBatchResult(
+      normalizeBatchResultShape(record.batchResult, {
+        batchId: record.batchId,
+        currency: record.project?.currency || record.batchResult?.currency || null,
+        generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
+        status: record.batchResult?.status || "Completed"
+      }),
+      record.project
+    ), batchId, record);
+
+    const normalizedPlans = normalizePlansShape(record.plans || {});
+    const plans = {};
+    (batchResult.groups || []).forEach(group => {
+      const rawPlan = Array.isArray(normalizedPlans)
+        ? normalizedPlans.find(item => item.groupId === group.groupId || item.id === group.groupId)
+        : normalizedPlans[group.groupId];
+      if (rawPlan) plans[group.groupId] = enrichPlan(rawPlan, record.project, group.groupId);
+    });
+
+    return {
+      batchId,
+      project: clone(record.project || null),
+      batchResult,
+      plans
+    };
+  }
+
+  function applyStoredOrderQuantities(batchResult, batchId) {
+    return applyOrderQuantities(batchResult, batchId || batchResult?.batchId, null);
+  }
+
   async function getProject(batchId) {
     return clone((await getRecord(batchId))?.project || null);
   }
@@ -528,11 +637,16 @@
     createRequestId,
     createProjectId,
     postSolve,
+    normalizeSolveResponse,
     saveActiveProject,
     getActiveProject,
+    clearActiveProject,
     saveSolveResponse,
+    saveOrderQuantities,
+    applyStoredOrderQuantities,
     getBatchResult,
     getPlan,
+    getSolvedBatch,
     getProject
   });
 })();
