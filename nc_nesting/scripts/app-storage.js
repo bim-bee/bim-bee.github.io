@@ -31,6 +31,14 @@
     return Array.isArray(value) ? value : [];
   }
 
+  function hasOwn(object, key) {
+    return Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
+  }
+
+  function cleanName(value) {
+    return String(value || "").trim();
+  }
+
   function pickFirstNumber(...values) {
     for (const value of values) {
       if (value == null || (typeof value === "string" && !value.trim())) continue;
@@ -326,7 +334,7 @@
     if (!rawBatchResult) {
       return {
         succeeded: false,
-        errors: [{ profileName: "Batch", category: "Response", message: "The solve response did not contain batchResult." }]
+        errors: [{ profileName: "Batch", message: "The returned result could not be processed." }]
       };
     }
 
@@ -337,7 +345,7 @@
     if (!batchId) {
       return {
         succeeded: false,
-        errors: [{ profileName: "Batch", category: "Response", message: "The solve response did not contain a batchId." }]
+        errors: [{ profileName: "Batch", message: "The returned result could not be processed." }]
       };
     }
 
@@ -345,10 +353,16 @@
     return { succeeded: true, batchId, batchResult, plans };
   }
 
+  function serviceError(message, code) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+  }
+
   async function postSolve(payload) {
     const solveUrl = String(config().solveUrl || "").trim();
     if (!solveUrl || solveUrl.includes("YOUR_FUNCTION_APP")) {
-      throw new Error("Set NcNestingConfig.solveUrl in scripts/config.js before solving.");
+      throw serviceError("The calculation service is currently unavailable.", "SERVICE_UNAVAILABLE");
     }
 
     const controller = new AbortController();
@@ -365,19 +379,20 @@
 
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        const message = body?.message || body?.title || `Solve request failed: HTTP ${response.status}`;
-        const error = new Error(message);
-        error.responseBody = body;
-        throw error;
+        throw serviceError("The job could not be solved. Please try again.", "JOB_FAILED");
       }
 
-      return normalizeSolveResponse(body);
-    } catch (error) {
-      if (error?.name === "AbortError") throw new Error("The solve request timed out.");
-      if (error instanceof TypeError) {
-        throw new Error(`The browser could not complete the request to ${solveUrl}. The Azure Function is likely reachable, but the response is being blocked for origin ${window.location.origin}. Make sure the function allows CORS from that exact origin.`);
+      const normalized = normalizeSolveResponse(body);
+      if (!normalized.succeeded && (!Array.isArray(normalized.errors) || !normalized.errors.length)) {
+        throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
       }
-      throw error;
+      return normalized;
+    } catch (error) {
+      if (error?.code) throw error;
+      if (error?.name === "AbortError" || error instanceof TypeError) {
+        throw serviceError("The calculation service is currently unavailable.", "SERVICE_UNAVAILABLE");
+      }
+      throw serviceError("The job could not be solved. Please try again.", "JOB_FAILED");
     } finally {
       clearTimeout(timeout);
     }
@@ -389,7 +404,9 @@
 
   function enrichBatchResult(batchResult, project) {
     const enriched = clone(batchResult);
-    enriched.currency = enriched.currency || project?.currency || null;
+    enriched.currency = hasOwn(project, "currency")
+      ? (cleanName(project.currency) || null)
+      : (cleanName(enriched.currency) || null);
     enriched.groups = (enriched.groups || []).map(group => {
       const frontendGroup = projectGroup(project, group.groupId);
       const ordersById = new Map((frontendGroup?.stockOrders || []).map(order => [order.stockOrderId, order]));
@@ -541,6 +558,24 @@
     return enriched;
   }
 
+  function applyRecordMetadataToBatch(batchResult, record) {
+    const enriched = clone(batchResult);
+    enriched.projectName = cleanName(record?.project?.projectName || record?.batchResult?.projectName);
+    enriched.batchName = cleanName(record?.batchName || record?.project?.batchName || record?.batchResult?.batchName);
+    if (hasOwn(record?.project, "currency")) enriched.currency = cleanName(record.project.currency) || null;
+    return enriched;
+  }
+
+  function applyRecordMetadataToPlan(plan, record) {
+    const enriched = clone(plan);
+    enriched.projectName = cleanName(record?.project?.projectName || record?.batchResult?.projectName);
+    enriched.batchName = cleanName(record?.batchName || record?.project?.batchName || record?.batchResult?.batchName);
+    enriched.currency = hasOwn(record?.project, "currency")
+      ? (cleanName(record.project.currency) || null)
+      : (cleanName(enriched.currency) || null);
+    return enriched;
+  }
+
   async function saveSolveResponse(normalized, project) {
     const projectSnapshot = clone(project || getActiveProject());
     if (projectSnapshot) {
@@ -553,11 +588,13 @@
       saveActiveProject(projectSnapshot);
     }
 
+    const batchName = cleanName(projectSnapshot?.batchName || normalized.batchResult?.batchName);
     const record = {
       batchId: normalized.batchId,
-      batchResult: normalized.batchResult,
+      batchName,
+      batchResult: { ...normalized.batchResult, batchName },
       plans: normalized.plans || {},
-      project: projectSnapshot,
+      project: projectSnapshot ? { ...projectSnapshot, batchName } : projectSnapshot,
       storedAtUtc: new Date().toISOString()
     };
     await putRecord(record);
@@ -567,15 +604,15 @@
   async function getBatchResult(batchId) {
     const record = await getRecord(batchId);
     if (!record?.batchResult) return null;
-    const enriched = enrichBatchResult(
+    const enriched = applyRecordMetadataToBatch(enrichBatchResult(
       normalizeBatchResultShape(record.batchResult, {
         batchId: record.batchId,
-        currency: record.project?.currency || record.batchResult?.currency || null,
+        currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
         generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
         status: record.batchResult?.status || "Completed"
       }),
       record.project
-    );
+    ), record);
     return applyOrderQuantities(enriched, batchId, record);
   }
 
@@ -589,7 +626,7 @@
     } else {
       plan = normalizedPlans?.[groupId] || null;
     }
-    return plan ? enrichPlan(plan, record.project, groupId) : null;
+    return plan ? applyRecordMetadataToPlan(enrichPlan(plan, record.project, groupId), record) : null;
   }
 
 
@@ -597,15 +634,15 @@
     const record = await getRecord(batchId);
     if (!record?.batchResult) return null;
 
-    const batchResult = applyOrderQuantities(enrichBatchResult(
+    const batchResult = applyOrderQuantities(applyRecordMetadataToBatch(enrichBatchResult(
       normalizeBatchResultShape(record.batchResult, {
         batchId: record.batchId,
-        currency: record.project?.currency || record.batchResult?.currency || null,
+        currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
         generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
         status: record.batchResult?.status || "Completed"
       }),
       record.project
-    ), batchId, record);
+    ), record), batchId, record);
 
     const normalizedPlans = normalizePlansShape(record.plans || {});
     const plans = {};
@@ -613,15 +650,34 @@
       const rawPlan = Array.isArray(normalizedPlans)
         ? normalizedPlans.find(item => item.groupId === group.groupId || item.id === group.groupId)
         : normalizedPlans[group.groupId];
-      if (rawPlan) plans[group.groupId] = enrichPlan(rawPlan, record.project, group.groupId);
+      if (rawPlan) plans[group.groupId] = applyRecordMetadataToPlan(enrichPlan(rawPlan, record.project, group.groupId), record);
     });
 
     return {
       batchId,
-      project: clone(record.project || null),
+      project: record.project ? { ...clone(record.project), batchName: cleanName(record.batchName || record.project.batchName) } : null,
       batchResult,
       plans
     };
+  }
+
+  async function saveBatchName(batchId, batchName) {
+    if (!batchId) return "";
+    const name = cleanName(batchName);
+    const record = await getRecord(batchId);
+    if (!record) throw new Error("This solved batch is not available in this browser.");
+    record.batchName = name;
+    if (record.batchResult) record.batchResult.batchName = name;
+    if (record.project) record.project.batchName = name;
+    await putRecord(record);
+
+    const activeProject = getActiveProject();
+    if (activeProject && (!activeProject.batchId || activeProject.batchId === batchId)) {
+      activeProject.batchId = batchId;
+      activeProject.batchName = name;
+      saveActiveProject(activeProject);
+    }
+    return name;
   }
 
   function applyStoredOrderQuantities(batchResult, batchId) {
@@ -629,9 +685,27 @@
   }
 
   async function getProject(batchId) {
-    return clone((await getRecord(batchId))?.project || null);
+    const record = await getRecord(batchId);
+    if (!record?.project) return null;
+    return { ...clone(record.project), batchName: cleanName(record.batchName || record.project.batchName) };
   }
 
+
+  function calculateBatchOrderTotals(source) {
+    const groups = Array.isArray(source) ? source : (source?.groups || []);
+    return groups.reduce((totals, group) => {
+      (group?.stockOrders || []).forEach(order => {
+        const required = Math.max(0, Math.trunc(Number(order?.requiredQuantity) || 0));
+        const ordered = Math.max(0, Math.trunc(order?.orderQuantity == null
+          ? required
+          : Number(order.orderQuantity) || 0));
+        totals.orderQuantity += required;
+        totals.ordered += ordered;
+      });
+      totals.leftover = totals.ordered - totals.orderQuantity;
+      return totals;
+    }, { orderQuantity: 0, ordered: 0, leftover: 0 });
+  }
   window.NcNesting = Object.freeze({
     config,
     createRequestId,
@@ -642,6 +716,8 @@
     getActiveProject,
     clearActiveProject,
     saveSolveResponse,
+    saveBatchName,
+    calculateBatchOrderTotals,
     saveOrderQuantities,
     applyStoredOrderQuantities,
     getBatchResult,

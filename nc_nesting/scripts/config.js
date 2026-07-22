@@ -11,6 +11,7 @@
     solveUrl: querySolveUrl || (isLocalPreview ? localSolveUrl : productionSolveUrl),
     productionSolveUrl,
     localSolveUrl,
-    requestTimeoutMs: 120000
+    requestTimeoutMs: 120000,
+    termsVersion: "2026-04-01"
   });
 })();

@@ -4,18 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>NC Nesting — Cutting Plan</title>
+  <link rel="stylesheet" href="styles/navbar.css">
+  <site-navbar data-root="../"></site-navbar>
+  <script src="scripts/navbar.js"></script>
   <link rel="stylesheet" href="styles/cutting-plan.css">
 </head>
 <body>
+  <site-navbar data-root="../"></site-navbar>
   <main>
     <section class="panel load-error" id="loadError" role="alert" hidden></section>
     <header class="job-header">
       <div class="job-header-main">
-        <div class="page-actions no-print"><a id="backLink" href="batch-result.html">← Back to batch result</a></div>
+        <div class="page-actions no-print"><a id="backLink" class="action-button" href="batch-result.html">← Back to batch result</a></div>
         <h1 id="pageHeading">Cut Plan</h1>
+        <div id="jobNames" class="job-meta job-names"></div>
         <div class="job-meta"><div id="jobSettings"></div></div>
       </div>
-      <div class="actions no-print"><button id="printPage">Print Page</button><button id="printFullSet">Print Full Set</button></div>
+      <div class="actions no-print"><button type="button" data-terms-button>Terms of Use</button><button id="printPage">Print Page</button><button id="printFullSet">Print Full Set</button></div>
     </header>
     <section class="panel"><h2>Plan summary</h2><div class="summary-grid" id="summary"></div></section>
     <section class="panel"><h2>Stocks matrix — parts per layout</h2><div class="table-wrap"><table id="layoutMatrix"></table></div></section>
@@ -26,8 +31,10 @@
     </div>
     <section class="panel"><h2>Waste list</h2><div class="table-wrap"><table id="wasteList"></table></div></section>
   </main>
+  <script src="../scripts/navbar.js"></script>
   <script src="scripts/config.js"></script>
   <script src="scripts/app-storage.js"></script>
+  <script src="scripts/terms.js"></script>
   <script src="scripts/demo-data.js"></script>
   <script src="scripts/print-renderer.js"></script>
   <script src="scripts/cutting-plan.js"></script>

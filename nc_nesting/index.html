@@ -3,36 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>NC Nesting — Batch Input</title>
+  <title>NC Nesting Input Page</title>
+  <link rel="stylesheet" href="styles/navbar.css">
+  <site-navbar data-root="../"></site-navbar>
+  <script src="scripts/navbar.js"></script>
   <link rel="stylesheet" href="styles/input.css">
 </head>
 <body>
+  <site-navbar data-root="../"></site-navbar>
   <main>
     <header class="head">
       <div>
-        <h1>1D Cutting Stock — Batch Input</h1>
+        <h1>NC Nesting Input Page</h1>
         <p>Prepare the complete nesting batch before solving.</p>
       </div>
-      <div class="actions no-print"><button id="clearAll" class="danger">Clear all input</button><button id="preview">Preview solve JSON</button><button id="demo">Load demo data</button><button id="printPage">Print Page</button></div>
+      <div class="actions no-print"><button type="button" data-terms-button>Terms of Use</button><button id="clearAll" class="danger">Clear all input</button><button id="demo">Load dummy demo data</button><button id="printPage">Print Page</button></div>
     </header>
 
     <section class="panel">
       <div class="panel-head"><div><h2>Job parameters</h2><p>All physical lengths use integer millimetres.</p></div></div>
       <div class="settings">
-        <div class="field"><label for="toolWidth">Tool width</label><div class="input-shell"><input id="toolWidth" type="number" min="0" step="1" value="3"><span class="unit">mm</span></div></div>
-        <div class="field"><label for="trimStart">Start trim</label><div class="input-shell"><input id="trimStart" type="number" min="0" step="1" value="20"><span class="unit">mm</span></div></div>
-        <div class="field"><label for="trimEnd">End trim</label><div class="input-shell"><input id="trimEnd" type="number" min="0" step="1" value="20"><span class="unit">mm</span></div></div>
-        <div class="field"><label for="reusableMinimum">Reusable minimum</label><div class="input-shell"><input id="reusableMinimum" type="number" min="0" step="1" value="1250"><span class="unit">mm</span></div></div>
-        <div class="field"><label for="currency">Currency <span class="optional">(optional)</span></label><div class="input-shell"><select id="currency"><option selected>Israeli New Shekel</option><option>US Dollar</option><option>Euro</option></select></div></div>
+        <div class="field job-name-field"><label for="projectName">Project <span class="optional">(optional)</span></label><div class="input-shell"><input id="projectName" type="text" maxlength="200" autocomplete="off"></div></div>
+        <div class="field job-name-field"><label for="batchName">Batch name <span class="optional">(optional)</span></label><div class="input-shell"><input id="batchName" type="text" maxlength="200" autocomplete="off"></div></div>
+        <div class="field physical-setting-field"><label for="toolWidth">Tool width</label><div class="input-shell"><input id="toolWidth" type="number" min="0" step="1" value="3"><span class="unit">mm</span></div></div>
+        <div class="field physical-setting-field"><label for="trimStart">Start trim</label><div class="input-shell"><input id="trimStart" type="number" min="0" step="1" value="20"><span class="unit">mm</span></div></div>
+        <div class="field physical-setting-field"><label for="trimEnd">End trim</label><div class="input-shell"><input id="trimEnd" type="number" min="0" step="1" value="20"><span class="unit">mm</span></div></div>
+        <div class="field final-setting-field"><label for="reusableMinimum">Reusable minimum</label><div class="input-shell"><input id="reusableMinimum" type="number" min="0" step="1" value="1250"><span class="unit">mm</span></div></div>
+        <div class="field final-setting-field"><label for="currency">Currency <span class="optional">(optional)</span></label><div class="input-shell"><select id="currency"><option value="" selected></option><option>Israeli New Shekel</option><option>US Dollar</option><option>Euro</option><option>Chinese Yuan (CNY)</option></select></div></div>
       </div>
     </section>
 
     <section class="panel">
-      <div class="solve-head"><div><h2>Solve job</h2><p>Import the project NC1 files, review the parts, then send the complete prepared batch in one request.</p></div><button id="solve" class="primary" disabled>Solve</button></div>
+      <div class="solve-head"><div><h2>Solve job</h2><p>Enter or import the required data, review the inputs, then select Solve.</p></div><button id="solve" class="primary" disabled>Solve</button></div>
       <div id="drop" class="drop"><strong>Drop NC1 files here</strong><span>or click to select a batch of .nc1 files</span><input id="ncFiles" type="file" accept=".nc1" multiple></div>
       <div class="badges"><span id="partBadge" class="badge">0 part rows</span><span id="groupBadge" class="badge warn">No nesting groups detected</span></div>
       <div id="ncErrors" class="errors"></div><div id="validation" class="validation bad"></div>
-      <div class="backend-note">Set the Azure Function URL in <code>scripts/config.js</code>. The function must return CORS headers for the exact page origin that is opening this site.</div>
     </section>
 
     <div class="two-col">
@@ -45,7 +50,7 @@
             <button data-download="stockOrders">Download CSV / template</button><button data-add="stockOrders">Add row</button><button class="danger" data-clear="stockOrders">Clear</button>
           </div>
         </div>
-        <div class="wrap"><table class="stock-table"><thead><tr><th>Stock order ID</th><th>Profile</th><th>Steel grade</th><th>Length (mm)</th><th>Quantity</th><th>Price <span class="optional">(optional)</span></th><th></th></tr></thead><tbody id="stockBody"></tbody></table></div>
+        <div class="wrap"><table id="stockOrdersTable" class="stock-table prices-hidden"><thead><tr><th>Stock order ID</th><th>Profile</th><th>Steel grade</th><th>Length (mm)</th><th>Quantity</th><th class="price-column">Price <span class="optional">(optional)</span></th><th></th></tr></thead><tbody id="stockBody"></tbody></table></div>
         <div class="note">Profile is required. Steel grade is optional: a blank value matches every grade of that profile. Blank IDs receive stable defaults such as Order-A and Order-B.</div>
         <div id="autoFillNotice" class="auto-fill-notice" hidden></div>
       </section>
@@ -59,7 +64,7 @@
           </div>
         </div>
         <div class="wrap"><table class="storage-table"><thead><tr><th>Storage ID</th><th>Profile</th><th>Steel grade</th><th>Length (mm)</th><th>Quantity</th><th>Storage area</th><th></th></tr></thead><tbody id="storageBody"></tbody></table></div>
-        <div class="note">Only storage stocks that exactly match a nesting group and can fit at least one requested part are grouped for solving. Blank IDs receive stable defaults such as Storage-A and Storage-B. Storage-area details remain in the browser project and are not sent to the solver.</div>
+        <div class="note">Only storage stocks that exactly match a nesting group and can fit at least one requested part are grouped for solving. Blank IDs receive stable defaults such as Storage-A and Storage-B. Storage-area details remain in the browser project and are not sent for calculation.</div>
       </section>
     </div>
 
@@ -73,16 +78,24 @@
     </section>
   </main>
 
-  <dialog id="previewDialog">
-    <div class="dialog-head"><strong>Prepared solve request</strong><button id="closePreview">Close</button></div>
-    <div class="dialog-body"><pre id="previewJson"></pre><div class="preview-actions"><button id="copyPreview">Copy JSON</button></div></div>
+  <dialog id="termsDialog" class="terms-dialog" aria-labelledby="termsDialogTitle">
+    <div class="dialog-head"><strong id="termsDialogTitle">Agreement to Terms of Use</strong><button id="termsCloseButton" type="button">Close</button></div>
+    <div class="dialog-body terms-dialog-body">
+      <p>Before using this calculator, please read the <a href="terms.html" target="_blank" rel="noopener" data-open-terms>Terms of Use</a>.</p>
+      <p>By checking the box below and selecting Agree and Proceed, you confirm that you have read, understood, and agree to be bound by the Terms of Use governing your use of this calculator.</p>
+      <label class="terms-agreement" for="termsAgreementCheckbox"><input id="termsAgreementCheckbox" type="checkbox"><span>I have read and agree to the <a href="terms.html" target="_blank" rel="noopener" data-open-terms>Terms of Use</a>.</span></label>
+      <div class="terms-dialog-actions"><button id="termsAgreeButton" class="primary" type="button" disabled>Agree and Proceed</button></div>
+    </div>
   </dialog>
 
+  <script src="../scripts/navbar.js"></script>
   <script src="scripts/config.js"></script>
   <script src="scripts/app-storage.js"></script>
+  <script src="scripts/terms.js"></script>
   <script src="scripts/demo-data.js"></script>
   <script src="scripts/relevant-storage-stock-selector.js"></script>
   <script src="scripts/print-renderer.js"></script>
+  <script src="scripts/telemetry.js"></script>
   <script src="scripts/input.js"></script>
 </body>
 </html>

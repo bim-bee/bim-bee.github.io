@@ -10,6 +10,8 @@
   function createProjectState() {
     return {
       projectId: NcNesting.createProjectId(),
+      projectName: "",
+      batchName: "",
       createdAtUtc: new Date().toISOString(),
       parts: [],
       stockOrders: [],
@@ -129,6 +131,7 @@
       const tr = document.createElement("tr");
       visual[type].forEach(([field, inputType, readOnly, decimal], columnIndex) => {
         const td = document.createElement("td");
+        if (type === "stockOrders" && field === "price") td.classList.add("price-column");
         if (inputType === "availability") {
           renderAvailability(td, row, rowIndex, columnIndex);
         } else if (readOnly) {
@@ -661,6 +664,14 @@
     return changed;
   }
 
+  function currencySelected() {
+    return Boolean(String(document.getElementById("currency")?.value || "").trim());
+  }
+
+  function updatePriceVisibility() {
+    document.getElementById("stockOrdersTable")?.classList.toggle("prices-hidden", !currencySelected());
+  }
+
   function afterDataChange(type) {
     if (type === "parts") {
       const stockChanged = runAutoFill();
@@ -717,8 +728,10 @@
       if (!String(row.profile || "").trim()) errors.push(`Stock order row ${index + 1}: profile is required.`);
       if (!(rowNumber(row, "length") > 0)) errors.push(`Stock order row ${index + 1}: length must be greater than zero.`);
       if (!row.unlimited && positiveWholeNumber(row.quantity) === null) errors.push(`Stock order row ${index + 1}: enter a positive whole quantity or select Unlimited.`);
-      const parsedPrice = optionalPositiveWholeNumber(row.price);
-      if (!parsedPrice.blank && parsedPrice.value === null) errors.push(`Stock order row ${index + 1}: price must be blank or a positive whole number.`);
+      if (currencySelected()) {
+        const parsedPrice = optionalPositiveWholeNumber(row.price);
+        if (!parsedPrice.blank && parsedPrice.value === null) errors.push(`Stock order row ${index + 1}: price must be blank or a positive whole number.`);
+      }
     });
 
     const storageIds = new Set();
@@ -746,7 +759,7 @@
       validation.innerHTML = `<strong>${allErrors.length} issue${allErrors.length === 1 ? "" : "s"} must be corrected.</strong><ul>${allErrors.map(error => `<li>${escapeHtml(error)}</li>`).join("")}</ul>`;
     } else {
       validation.className = "validation good";
-      validation.innerHTML = "<strong>Input is ready to solve.</strong><span>The browser will send one pre-grouped batch request.</span>";
+      validation.innerHTML = "<strong>Input is ready to solve.</strong><span>Select Solve to calculate the nesting batch.</span>";
     }
 
     persistProject(groups.length ? groups : state.projectGroups);
@@ -757,14 +770,14 @@
     return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
   }
 
-  function normalizeStockOrders(rows) {
-    return rows.map((row, index) => ({
+  function normalizeStockOrders(rows, includePrices) {
+    return rows.map(row => ({
       stockOrderId: finalId("stockOrders", row),
       profileName: String(row.profile).trim(),
       steelGrade: String(row.steelGrade || "").trim(),
       length: Math.ceil(Number(row.length)),
       availableQuantity: row.unlimited ? null : Math.ceil(Number(row.quantity)),
-      price: optionalPositiveWholeNumber(row.price).value
+      ...(includePrices ? { price: optionalPositiveWholeNumber(row.price).value } : {})
     }));
   }
 
@@ -784,7 +797,8 @@
   }
 
   function prepareProjectGroups(input) {
-    const stockOrders = normalizeStockOrders(input.stockOrders);
+    const includePrices = currencySelected();
+    const stockOrders = normalizeStockOrders(input.stockOrders, includePrices);
     const storageRecords = normalizeStorage(input.storage);
     const selector = new RelevantStorageStockSelector();
 
@@ -795,7 +809,7 @@
           stockOrderId: stock.stockOrderId,
           length: stock.length,
           availableQuantity: stock.availableQuantity,
-          price: stock.price
+          ...(includePrices ? { price: stock.price } : {})
         }));
 
       const selectorRecords = storageRecords.map(record => sameText(record.profileName, group.profileName) && sameText(record.steelGrade, group.steelGrade)
@@ -836,7 +850,7 @@
         stockOrderId: order.stockOrderId,
         length: order.length,
         availableQuantity: order.availableQuantity,
-        price: order.price
+        ...(currencySelected() ? { price: order.price } : {})
       })),
       storageStock: group.storageStock.map(grouped => ({
         groupedStorageStockId: grouped.groupedStorageStockId,
@@ -861,7 +875,7 @@
         groups: solveGroups(state.projectGroups)
       };
     } catch (error) {
-      backendErrors = [error.message || "Unable to prepare the solve request."];
+      backendErrors = [error.message || "The job could not be prepared. Please review the input."];
       validate(false);
       return null;
     }
@@ -879,6 +893,8 @@
   function projectSnapshot(groups = state.projectGroups) {
     return {
       projectId: state.projectId,
+      projectName: String(document.getElementById("projectName")?.value || "").trim(),
+      batchName: String(document.getElementById("batchName")?.value || "").trim(),
       schemaVersion: PROJECT_SCHEMA_VERSION,
       createdAtUtc: state.createdAtUtc,
       currency: document.getElementById("currency").value,
@@ -909,14 +925,19 @@
     document.getElementById("ncErrors").textContent = "";
     if (resetProject) state = createProjectState();
     const settings = input.cuttingSettings || {};
+    state.projectName = String(input.projectName || "").trim();
+    state.batchName = String(input.batchName || "").trim();
+    document.getElementById("projectName").value = state.projectName;
+    document.getElementById("batchName").value = state.batchName;
     document.getElementById("toolWidth").value = settings.toolWidth ?? 3;
     document.getElementById("trimStart").value = settings.trimStart ?? 20;
     document.getElementById("trimEnd").value = settings.trimEnd ?? 20;
     document.getElementById("reusableMinimum").value = settings.reusableMinimumLength ?? 1250;
-    const currency = ["Israeli New Shekel", "US Dollar", "Euro"].includes(input.currency)
+    const currency = ["", "Israeli New Shekel", "US Dollar", "Euro", "Chinese Yuan (CNY)"].includes(input.currency)
       ? input.currency
-      : "Israeli New Shekel";
+      : "";
     document.getElementById("currency").value = currency;
+    updatePriceVisibility();
     state.autoFillOrders = input.autoFillOrders !== false;
     state.parts = (input.parts || []).map(row => ({ position: row.positionId || row.position || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", quantity: row.quantity ?? 1, length: row.length ?? "", source: String(row.source || "").trim() || "Manual" }));
     state.stockOrders = (input.stockOrders || []).map(row => ({ generatedId: migrateGeneratedOrderId(row.generatedId) || allocateGeneratedId("stockOrders"), stockId: row.stockOrderId || row.stockId || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", length: row.length ?? "", quantity: row.availableQuantity ?? row.quantity ?? 1, lastFiniteQuantity: positiveWholeNumber(row.availableQuantity ?? row.quantity) ?? 1, unlimited: typeof row.unlimited === "boolean" ? row.unlimited : row.availableQuantity == null, price: row.price ?? "", autoFilled: Boolean(row.autoFilled) }));
@@ -939,6 +960,8 @@
     state.projectId = project.projectId || state.projectId;
     state.createdAtUtc = project.createdAtUtc || state.createdAtUtc;
     applyInput({
+      projectName: project.projectName || "",
+      batchName: project.batchName || "",
       cuttingSettings: project.cuttingSettings || {},
       currency: project.currency,
       autoFillOrders: project.autoFillOrders !== false,
@@ -960,15 +983,15 @@
     autoFillMessages = [];
     isSolving = false;
 
+    document.getElementById("projectName").value = "";
+    document.getElementById("batchName").value = "";
     document.getElementById("toolWidth").value = 3;
     document.getElementById("trimStart").value = 20;
     document.getElementById("trimEnd").value = 20;
     document.getElementById("reusableMinimum").value = 1250;
-    document.getElementById("currency").value = "Israeli New Shekel";
+    document.getElementById("currency").value = "";
+    updatePriceVisibility();
     document.getElementById("ncErrors").textContent = "";
-    document.getElementById("previewJson").textContent = "";
-    const dialog = document.getElementById("previewDialog");
-    if (dialog.open) dialog.close();
     ["partsCsv", "stockCsv", "storageCsv", "ncFiles"].forEach(id => {
       const input = document.getElementById(id);
       if (input) input.value = "";
@@ -982,27 +1005,49 @@
     validate();
   }
 
-  function showPreview() {
-    const request = buildSolveRequest();
-    if (!request) return;
-    document.getElementById("previewJson").textContent = JSON.stringify(request, null, 2);
-    document.getElementById("previewDialog").showModal();
+  function releaseSolveLock() {
+    isSolving = false;
+    validate(false);
   }
 
-  async function solveBatch() {
-    const request = buildSolveRequest();
-    if (!request || isSolving) return;
+  function solveFailureMessage(error) {
+    if (error?.code === "INVALID_RESULT") return "The returned result could not be processed.";
+    if (error?.code === "SERVICE_UNAVAILABLE" || error?.name === "AbortError") return "The calculation service is currently unavailable.";
+    return "The job could not be solved. Please try again.";
+  }
+
+  function visitorGroupError(error) {
+    const profile = String(error?.profileName || "").trim();
+    const grade = String(error?.steelGrade || "").trim();
+    const context = [profile, grade].filter(Boolean).join(" · ") || "Batch";
+    const rawMessage = String(error?.message || "").trim();
+    const technical = /(?:azure|function url|endpoint|cors|https?|status code|schema|json|exception|stack trace|configuration|internal server|api)/i.test(rawMessage);
+    const message = rawMessage && rawMessage.length <= 300 && !technical
+      ? rawMessage
+      : "The job could not be solved. Please review this nesting group.";
+    return `${context}: ${message}`;
+  }
+
+  async function executePreparedSolve(request, isDemoRequest) {
     state.solveRequest = clone(request);
     state.solveResponse = null;
     const projectBeforeSolve = persistProject(state.projectGroups) || projectSnapshot();
-    isSolving = true;
-    validate(false);
+
     try {
-      const result = NcNestingDemo.matchesRequest(request)
+      const result = isDemoRequest
         ? NcNestingDemo.createSolveResult(request.requestId)
-        : await NcNesting.postSolve(request);
+        : await NcNesting.postSolve({
+            batch: request,
+            telemetry: NcNestingTelemetry.createSolveTelemetry({
+              request,
+              projectId: state.projectId
+            })
+          });
       if (!result.succeeded) {
-        backendErrors = (result.errors || []).map(error => `${error.profileName || "Batch"}${error.steelGrade ? ` · ${error.steelGrade}` : ""}${error.category ? ` — ${error.category}` : ""}: ${error.message || "Unknown error"}`);
+        const resultErrors = Array.isArray(result.errors) ? result.errors : [];
+        backendErrors = resultErrors.length
+          ? resultErrors.map(visitorGroupError)
+          : ["The job could not be solved. Please try again."];
         return;
       }
       state.solveResponse = {
@@ -1014,13 +1059,34 @@
       await NcNesting.saveSolveResponse(result, solvedProject || projectBeforeSolve);
       location.href = `batch-result.html?batchId=${encodeURIComponent(result.batchId)}`;
     } catch (error) {
-      const responseErrors = error.responseBody?.errors;
-      backendErrors = Array.isArray(responseErrors) && responseErrors.length
-        ? responseErrors.map(item => `${item.profileName || "Batch"}${item.steelGrade ? ` · ${item.steelGrade}` : ""}${item.category ? ` — ${item.category}` : ""}: ${item.message || "Unknown error"}`)
-        : [error.message || "Unable to submit the batch solve request."];
+      backendErrors = [solveFailureMessage(error)];
     } finally {
-      isSolving = false;
-      validate(false);
+      releaseSolveLock();
+    }
+  }
+
+  function solveBatch() {
+    if (isSolving) return;
+    const request = buildSolveRequest();
+    if (!request) return;
+
+    const isDemoRequest = NcNestingDemo.matchesRequest(request);
+    isSolving = true;
+    validate(false);
+
+    if (isDemoRequest || NcNestingTerms.isAccepted()) {
+      executePreparedSolve(request, isDemoRequest);
+      return;
+    }
+
+    try {
+      NcNestingTerms.requestAcceptance(
+        () => executePreparedSolve(request, false),
+        releaseSolveLock
+      );
+    } catch (error) {
+      backendErrors = ["The Terms of Use agreement could not be opened."];
+      releaseSolveLock();
     }
   }
 
@@ -1035,7 +1101,22 @@
   document.getElementById("partsCsv").onchange = event => fileImport("parts", event.target);
   document.getElementById("stockCsv").onchange = event => fileImport("stockOrders", event.target);
   document.getElementById("storageCsv").onchange = event => fileImport("storage", event.target);
-  document.getElementById("currency").onchange = validate;
+  document.getElementById("currency").onchange = () => {
+    updatePriceVisibility();
+    validate();
+  };
+  ["projectName", "batchName"].forEach(id => {
+    document.getElementById(id).oninput = event => {
+      state[id] = event.target.value;
+      persistProject();
+    };
+    document.getElementById(id).onblur = event => {
+      const value = String(event.target.value || "").trim();
+      event.target.value = value;
+      state[id] = value;
+      persistProject();
+    };
+  });
   ["toolWidth", "trimStart", "trimEnd", "reusableMinimum"].forEach(id => {
     const element = document.getElementById(id);
     element.oninput = validate;
@@ -1077,9 +1158,6 @@
 
   document.getElementById("clearAll").onclick = clearAllInput;
   document.getElementById("demo").onclick = () => applyInput(NcNestingDemo.input);
-  document.getElementById("preview").onclick = showPreview;
-  document.getElementById("closePreview").onclick = () => document.getElementById("previewDialog").close();
-  document.getElementById("copyPreview").onclick = async () => navigator.clipboard.writeText(document.getElementById("previewJson").textContent);
   document.getElementById("solve").onclick = solveBatch;
   document.getElementById("printPage").onclick = () => NcNestingPrint.printInput(projectSnapshot());
 
@@ -1094,7 +1172,7 @@
     if (batchId) {
       const solvedProject = await NcNesting.getProject(batchId);
       if (!solvedProject) {
-        backendErrors = [`Unable to restore input for batch '${batchId}'. Its project snapshot is not available in this browser.`];
+        backendErrors = ["The saved input for this solved batch is not available in this browser."];
         validate(false);
         return;
       }
@@ -1110,7 +1188,7 @@
   }
 
   initialize().catch(error => {
-    backendErrors = [error.message || "Unable to load the active input project."];
+    backendErrors = ["The saved input could not be loaded. Please enter the job data again."];
     validate(false);
   });
 })();
