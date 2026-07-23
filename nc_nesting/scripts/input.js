@@ -2,6 +2,28 @@
   "use strict";
 
   const PROJECT_SCHEMA_VERSION = "1.0";
+  const I18N = window.NCNestingI18n;
+  const t = (key, params = {}, language) => I18N.t(key, params, language);
+  const isolate = value => I18N.isolate(value);
+  const errorDescriptor = (key, params = {}, context = "", htmlParams = {}) => ({ key, params, context, htmlParams });
+  const normalizedErrorParams = error => {
+    const params = { ...(error?.params || {}) };
+    if (params.fieldKey) { params.field = t(params.fieldKey); delete params.fieldKey; }
+    if (params.id) params.id = isolate(params.id);
+    return params;
+  };
+  const errorText = error => {
+    if (typeof error === "string") return error;
+    const message = t(error?.key || "error.prepare", normalizedErrorParams(error));
+    return error?.context ? `${isolate(error.context)}: ${message}` : message;
+  };
+  const errorHtml = error => {
+    if (typeof error === "string") return escapeHtml(error);
+    const params = Object.fromEntries(Object.entries(normalizedErrorParams(error)).map(([key, value]) => [key, escapeHtml(value)]));
+    Object.assign(params, error?.htmlParams || {});
+    const message = I18N.richText(error?.key || "error.prepare", params);
+    return error?.context ? `${escapeHtml(isolate(error.context))}: ${message}` : message;
+  };
   let state = createProjectState();
   let isHydrating = false;
   let isAutoFilling = false;
@@ -29,6 +51,7 @@
     return globalThis.structuredClone ? structuredClone(value) : JSON.parse(JSON.stringify(value));
   }
   let backendErrors = [];
+  let ncImportErrors = [];
   let isSolving = false;
 
   const body = {
@@ -44,9 +67,9 @@
   };
 
   const csv = {
-    parts: [["position", "Position", "text"], ["steelGrade", "Steel Grade", "text"], ["quantity", "Quantity", "number"], ["profile", "Profile", "text"], ["length", "Length", "number"], ["source", "Source", "text"]],
-    stockOrders: [["stockId", "Stock Order ID", "text"], ["profile", "Profile", "text"], ["steelGrade", "Steel Grade", "text"], ["length", "Length", "number"], ["quantity", "Quantity", "number"], ["unlimited", "Unlimited", "checkbox"], ["price", "Price", "price"]],
-    storage: [["storageId", "Storage Stock ID", "text"], ["profile", "Profile", "text"], ["steelGrade", "Steel Grade", "text"], ["length", "Length", "number"], ["quantity", "Quantity", "number"], ["storageArea", "Storage Area", "text"]]
+    parts: [["position", "csv.position", "text"], ["steelGrade", "csv.steelGrade", "text"], ["quantity", "csv.quantity", "number"], ["profile", "csv.profile", "text"], ["length", "csv.length", "number"], ["source", "csv.source", "text"]],
+    stockOrders: [["stockId", "csv.stockOrderId", "text"], ["profile", "csv.profile", "text"], ["steelGrade", "csv.steelGrade", "text"], ["length", "csv.length", "number"], ["quantity", "csv.quantity", "number"], ["unlimited", "csv.unlimited", "checkbox"], ["price", "csv.price", "price"]],
+    storage: [["storageId", "csv.storageStockId", "text"], ["profile", "csv.profile", "text"], ["steelGrade", "csv.steelGrade", "text"], ["length", "csv.length", "number"], ["quantity", "csv.quantity", "number"], ["storageArea", "csv.storageArea", "text"]]
   };
 
   const aliases = {
@@ -121,6 +144,22 @@
     return String(row[key] || "").trim() || defaultId(type, row);
   }
 
+
+  function sourceLabel(value) {
+    const source = String(value || "").trim() || "Manual";
+    if (source === "Manual") return t("common.manual");
+    if (source === "Demo data") return t("common.demoData");
+    if (source === "NC file") return t("common.ncFile");
+    if (source === "CSV") return t("common.csv");
+    return source;
+  }
+
+  function translateCurrencyOptions() {
+    document.querySelectorAll("#currency option[data-currency-label]").forEach(option => {
+      option.textContent = I18N.currencyLabel(option.dataset.currencyLabel);
+    });
+  }
+
   function setMeta(element, table, row, column, field) {
     Object.assign(element.dataset, { table, row, column, field });
   }
@@ -142,7 +181,8 @@
           td.className = "read-only-cell";
           const text = document.createElement("span");
           text.className = "read-only-value";
-          text.textContent = value;
+          text.dataset.sourceValue = type === "parts" && field === "source" ? value : "";
+          text.textContent = type === "parts" && field === "source" ? sourceLabel(value) : value;
           td.appendChild(text);
         } else {
           const input = document.createElement("input");
@@ -181,7 +221,8 @@
       removeButton.className = "remove";
       removeButton.type = "button";
       removeButton.textContent = "×";
-      removeButton.title = "Remove row";
+      removeButton.title = t("action.removeRow");
+      removeButton.setAttribute("aria-label", t("action.removeRow"));
       removeButton.onclick = () => {
         state[type].splice(rowIndex, 1);
         render(type);
@@ -267,7 +308,10 @@
       render("stockOrders");
       validate();
     };
-    label.append(checkbox, document.createTextNode("Unlimited"));
+    const labelText = document.createElement("span");
+    labelText.className = "unlimited-label";
+    labelText.textContent = t("common.unlimited");
+    label.append(checkbox, labelText);
     wrapper.append(quantity, label);
     td.appendChild(wrapper);
   }
@@ -328,7 +372,7 @@
   }
 
   function canonical(value) {
-    return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+    return String(value || "").normalize("NFKC").trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
   }
 
   function detectDelimiter(text) {
@@ -369,7 +413,9 @@
     first.forEach((cell, index) => {
       const key = canonical(cell);
       Object.entries(aliases[type]).forEach(([field, names]) => {
-        if (names.includes(key)) map[index] = field;
+        const column = csv[type].find(item => item[0] === field);
+        const localizedHeaders = column ? [t(column[1], {}, "en"), t(column[1], {}, "he")].map(canonical) : [];
+        if ([...names, ...localizedHeaders].includes(key)) map[index] = field;
       });
     });
     const hasHeader = Object.keys(map).length >= 2;
@@ -413,7 +459,8 @@
     const rows = active(type).map((row, index) => type === "stockOrders"
       ? { ...row, stockId: finalId(type, row), unlimited: Boolean(row.unlimited) }
       : type === "storage" ? { ...row, storageId: finalId(type, row) } : row);
-    const lines = [csv[type].map(column => csvEscape(column[1])).join(",")];
+    const language = I18N.getLanguage();
+    const lines = [csv[type].map(column => csvEscape(t(column[1], {}, language))).join(",")];
     rows.forEach(row => lines.push(csv[type].map(([field, , valueType]) => csvEscape(valueType === "checkbox" ? (row[field] ? "true" : "false") : row[field])).join(",")));
     const blob = new Blob(["\uFEFF" + lines.join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -426,10 +473,17 @@
     setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
+  function renderNcErrors() {
+    document.getElementById("ncErrors").textContent = ncImportErrors.map(error => {
+      const fileName = isolate(error.fileName);
+      return `${fileName}: ${t(error.key, error.params || {})}`;
+    }).join("\n");
+  }
+
   function parseNc(name, text) {
     const lines = text.replace(/^\uFEFF/, "").replace(/\r/g, "").split("\n").map(line => line.trim());
     const startIndex = lines.findIndex(line => line.startsWith("ST"));
-    if (startIndex < 0) throw new Error(`${name}: ST header was not found.`);
+    if (startIndex < 0) throw errorDescriptor("nc.stMissing", {}, name);
     const get = offset => lines[startIndex + offset] || "";
     const position = get(3);
     const steelGrade = get(6);
@@ -438,25 +492,25 @@
     const profile = get(8);
     const length = Number(get(10).replace(",", "."));
     if (!position || !steelGrade || !profile || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(length) || length <= 0) {
-      throw new Error(`${name}: required ST fields are missing or invalid.`);
+      throw errorDescriptor("nc.invalidFields", {}, name);
     }
     return { position, steelGrade, quantity, profile, length: Math.ceil(length), source: "NC file" };
   }
 
   async function importNc(files) {
-    const errors = [];
+    ncImportErrors = [];
     for (const file of files) {
       if (!/\.nc1$/i.test(file.name)) {
-        errors.push(`${file.name}: unsupported file type; only .nc1 files are accepted.`);
+        ncImportErrors.push({ fileName: file.name, key: "nc.unsupported" });
         continue;
       }
       try {
         state.parts.push(parseNc(file.name, await file.text()));
       } catch (error) {
-        errors.push(error.message);
+        ncImportErrors.push({ fileName: error.context || file.name, key: error.key || "nc.invalidFields", params: error.params || {} });
       }
     }
-    document.getElementById("ncErrors").textContent = errors.join("\n");
+    renderNcErrors();
     render("parts");
     afterDataChange("parts");
   }
@@ -489,7 +543,7 @@
       const existing = partsById.get(partId.toLowerCase());
 
       if (existing && (existing.key !== key || existing.length !== length)) {
-        throw new Error(`Part position '${partId}' conflicts with an earlier row because its profile, grade, or length differs.`);
+        throw errorDescriptor("validation.partConflict", { id: partId });
       }
 
       if (!groups.has(key)) {
@@ -526,12 +580,12 @@
     const checkbox = document.getElementById("autoFillOrders");
     const stateLabel = document.getElementById("autoFillState");
     if (checkbox) checkbox.checked = state.autoFillOrders !== false;
-    if (stateLabel) stateLabel.textContent = state.autoFillOrders === false ? "Off" : "On";
+    if (stateLabel) stateLabel.textContent = state.autoFillOrders === false ? t("common.off") : t("common.on");
     const notice = document.getElementById("autoFillNotice");
     if (!notice) return;
     notice.hidden = autoFillMessages.length === 0;
     notice.innerHTML = autoFillMessages.length
-      ? `<strong>Auto-fill needs attention.</strong><ul>${autoFillMessages.map(message => `<li>${escapeHtml(message)}</li>`).join("")}</ul>`
+      ? `<strong>${escapeHtml(t("input.autoFillAttention"))}</strong><ul>${autoFillMessages.map(message => `<li>${errorHtml(message)}</li>`).join("")}</ul>`
       : "";
   }
 
@@ -639,7 +693,18 @@
         }
 
         if (group.longestPart > 12000) {
-          autoFillMessages.push(`${group.profile} · ${group.steelGrade}: the longest part is ${group.longestPart} mm. Provide a stock order longer than 12000 mm.`);
+          autoFillMessages.push(errorDescriptor(
+            "validation.longPart",
+            {
+              length: I18N.measurementText(group.longestPart, "mm", { maximumFractionDigits: 0 }),
+              limit: I18N.measurementText(12000, "mm", { maximumFractionDigits: 0 })
+            },
+            `${group.profile} · ${group.steelGrade}`,
+            {
+              length: I18N.measurementHtml(group.longestPart, "mm", { maximumFractionDigits: 0 }),
+              limit: I18N.measurementHtml(12000, "mm", { maximumFractionDigits: 0 })
+            }
+          ));
           return;
         }
 
@@ -689,77 +754,93 @@
       trimEnd: numberFromInput("trimEnd"),
       reusableMinimumLength: numberFromInput("reusableMinimum")
     };
+    const settingLabels = {
+      toolWidth: t("common.toolWidth"),
+      trimStart: t("common.startTrim"),
+      trimEnd: t("common.endTrim"),
+      reusableMinimumLength: t("common.reusableMinimum")
+    };
     Object.entries(settings).forEach(([key, value]) => {
-      if (!Number.isFinite(value) || value < 0) errors.push(`${key} must be a non-negative integer.`);
+      if (!Number.isFinite(value) || value < 0) errors.push(t("validation.nonNegativeInteger", { field: settingLabels[key] }));
     });
 
     const parts = active("parts");
     const stockOrders = active("stockOrders");
     const storage = active("storage");
-    if (!parts.length) errors.push("Add at least one part.");
+    if (!parts.length) errors.push(t("validation.addPart"));
 
     parts.forEach((row, index) => {
       row.source = String(row.source || "").trim() || "Manual";
-      if (!String(row.position || "").trim()) errors.push(`Part row ${index + 1}: position is required.`);
-      if (!String(row.steelGrade || "").trim()) errors.push(`Part row ${index + 1}: steel grade is required.`);
-      if (!String(row.profile || "").trim()) errors.push(`Part row ${index + 1}: profile is required.`);
-      if (!(rowNumber(row, "quantity") > 0)) errors.push(`Part row ${index + 1}: quantity must be greater than zero.`);
-      if (!(rowNumber(row, "length") > 0)) errors.push(`Part row ${index + 1}: length must be greater than zero.`);
+      const prefix = `${t("validation.partRow")} ${I18N.formatNumber(index + 1)}`;
+      if (!String(row.position || "").trim()) errors.push(`${prefix}: ${t("validation.positionRequired")}`);
+      if (!String(row.steelGrade || "").trim()) errors.push(`${prefix}: ${t("validation.steelGradeRequired")}`);
+      if (!String(row.profile || "").trim()) errors.push(`${prefix}: ${t("validation.profileRequired")}`);
+      if (!(rowNumber(row, "quantity") > 0)) errors.push(`${prefix}: ${t("validation.quantityPositive")}`);
+      if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
     });
 
     let groups = [];
     if (!errors.length) {
-      try { groups = collectGroups(parts); } catch (error) { errors.push(error.message); }
+      try { groups = collectGroups(parts); } catch (error) { errors.push(errorText(error)); }
     }
     const groupBadge = document.getElementById("groupBadge");
     if (groups.length) {
       groupBadge.className = "badge ok";
-      groupBadge.textContent = `${groups.length} nesting group${groups.length === 1 ? "" : "s"} detected`;
+      groupBadge.textContent = groups.length === 1
+        ? t("input.oneGroup")
+        : t("input.groupCount", { count: I18N.formatNumber(groups.length) });
     } else {
       groupBadge.className = "badge warn";
-      groupBadge.textContent = "No nesting groups detected";
+      groupBadge.textContent = t("input.noGroups");
     }
 
     const stockOrderIds = new Set();
     stockOrders.forEach((row, index) => {
-      const stockOrderId = finalId("stockOrders", row).toLowerCase();
-      if (stockOrderIds.has(stockOrderId)) errors.push(`Stock order ID '${finalId("stockOrders", row)}' appears more than once.`);
+      const id = finalId("stockOrders", row);
+      const stockOrderId = id.toLowerCase();
+      const prefix = `${t("validation.stockOrderRow")} ${I18N.formatNumber(index + 1)}`;
+      if (stockOrderIds.has(stockOrderId)) errors.push(t("validation.duplicateId", { id: isolate(id) }));
       stockOrderIds.add(stockOrderId);
-      if (!String(row.profile || "").trim()) errors.push(`Stock order row ${index + 1}: profile is required.`);
-      if (!(rowNumber(row, "length") > 0)) errors.push(`Stock order row ${index + 1}: length must be greater than zero.`);
-      if (!row.unlimited && positiveWholeNumber(row.quantity) === null) errors.push(`Stock order row ${index + 1}: enter a positive whole quantity or select Unlimited.`);
+      if (!String(row.profile || "").trim()) errors.push(`${prefix}: ${t("validation.profileRequired")}`);
+      if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
+      if (!row.unlimited && positiveWholeNumber(row.quantity) === null) errors.push(`${prefix}: ${t("validation.quantityOrUnlimited")}`);
       if (currencySelected()) {
         const parsedPrice = optionalPositiveWholeNumber(row.price);
-        if (!parsedPrice.blank && parsedPrice.value === null) errors.push(`Stock order row ${index + 1}: price must be blank or a positive whole number.`);
+        if (!parsedPrice.blank && parsedPrice.value === null) errors.push(`${prefix}: ${t("validation.pricePositive")}`);
       }
     });
 
     const storageIds = new Set();
     storage.forEach((row, index) => {
-      const storageId = finalId("storage", row).toLowerCase();
-      if (storageIds.has(storageId)) errors.push(`Storage ID '${finalId("storage", row)}' appears more than once.`);
+      const id = finalId("storage", row);
+      const storageId = id.toLowerCase();
+      const prefix = `${t("validation.storageRow")} ${I18N.formatNumber(index + 1)}`;
+      if (storageIds.has(storageId)) errors.push(t("validation.duplicateId", { id: isolate(id) }));
       storageIds.add(storageId);
-      if (!String(row.profile || "").trim()) errors.push(`Storage row ${index + 1}: profile is required.`);
-      if (!String(row.steelGrade || "").trim()) errors.push(`Storage row ${index + 1}: steel grade is required.`);
-      if (!(rowNumber(row, "length") > 0)) errors.push(`Storage row ${index + 1}: length must be greater than zero.`);
-      if (!(rowNumber(row, "quantity") > 0)) errors.push(`Storage row ${index + 1}: quantity must be greater than zero.`);
+      if (!String(row.profile || "").trim()) errors.push(`${prefix}: ${t("validation.profileRequired")}`);
+      if (!String(row.steelGrade || "").trim()) errors.push(`${prefix}: ${t("validation.steelGradeRequired")}`);
+      if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
+      if (!(rowNumber(row, "quantity") > 0)) errors.push(`${prefix}: ${t("validation.quantityPositive")}`);
     });
 
-    if (!stockOrders.length && !storage.length) errors.push("Add at least one stock order or storage stock row.");
+    if (!stockOrders.length && !storage.length) errors.push(t("validation.addStock"));
 
-    document.getElementById("partBadge").textContent = `${parts.length} part row${parts.length === 1 ? "" : "s"}`;
+    document.getElementById("partBadge").textContent = parts.length === 0
+      ? t("input.zeroPartRows")
+      : t("input.partRowCount", { count: I18N.formatNumber(parts.length) });
     const allErrors = [...errors, ...backendErrors];
     const validation = document.getElementById("validation");
     const solve = document.getElementById("solve");
     solve.disabled = isSolving || Boolean(errors.length);
-    solve.textContent = isSolving ? "Solving batch…" : "Solve";
+    solve.textContent = isSolving ? t("input.solving") : t("action.solve");
 
     if (allErrors.length) {
       validation.className = "validation bad";
-      validation.innerHTML = `<strong>${allErrors.length} issue${allErrors.length === 1 ? "" : "s"} must be corrected.</strong><ul>${allErrors.map(error => `<li>${escapeHtml(error)}</li>`).join("")}</ul>`;
+      const heading = allErrors.length === 1 ? t("input.oneIssue") : t("input.issueCount", { count: I18N.formatNumber(allErrors.length) });
+      validation.innerHTML = `<strong>${escapeHtml(heading)}</strong><ul>${allErrors.map(error => `<li>${errorHtml(error)}</li>`).join("")}</ul>`;
     } else {
       validation.className = "validation good";
-      validation.innerHTML = "<strong>Input is ready to solve.</strong><span>Select Solve to calculate the nesting batch.</span>";
+      validation.innerHTML = `<strong>${escapeHtml(t("input.ready"))}</strong><span>${escapeHtml(t("input.selectSolve"))}</span>`;
     }
 
     persistProject(groups.length ? groups : state.projectGroups);
@@ -818,7 +899,7 @@
 
       const selection = selector.select(group.profileName, group.steelGrade, group.partRequirements, input.settings, selectorRecords);
       if (!matchingStockOrders.length && !selection.groupedStorageStock.length) {
-        throw new Error(`${group.profileName} · ${group.steelGrade}: no matching stock order or usable storage stocks can fit the requested parts.`);
+        throw errorDescriptor("validation.noMaterial", {}, `${group.profileName} · ${group.steelGrade}`);
       }
 
       return {
@@ -875,7 +956,7 @@
         groups: solveGroups(state.projectGroups)
       };
     } catch (error) {
-      backendErrors = [error.message || "The job could not be prepared. Please review the input."];
+      backendErrors = [error?.key ? error : errorDescriptor("error.prepare")];
       validate(false);
       return null;
     }
@@ -921,6 +1002,7 @@
   function applyInput(input, resetProject = true) {
     isHydrating = true;
     backendErrors = [];
+    ncImportErrors = [];
     autoFillMessages = [];
     document.getElementById("ncErrors").textContent = "";
     if (resetProject) state = createProjectState();
@@ -980,6 +1062,7 @@
     isHydrating = true;
     state = createProjectState();
     backendErrors = [];
+    ncImportErrors = [];
     autoFillMessages = [];
     isSolving = false;
 
@@ -1011,21 +1094,16 @@
   }
 
   function solveFailureMessage(error) {
-    if (error?.code === "INVALID_RESULT") return "The returned result could not be processed.";
-    if (error?.code === "SERVICE_UNAVAILABLE" || error?.name === "AbortError") return "The calculation service is currently unavailable.";
-    return "The job could not be solved. Please try again.";
+    if (error?.code === "INVALID_RESULT") return errorDescriptor("error.invalidResult");
+    if (error?.code === "SERVICE_UNAVAILABLE" || error?.name === "AbortError") return errorDescriptor("error.serviceUnavailable");
+    return errorDescriptor("error.solve");
   }
 
   function visitorGroupError(error) {
     const profile = String(error?.profileName || "").trim();
     const grade = String(error?.steelGrade || "").trim();
-    const context = [profile, grade].filter(Boolean).join(" · ") || "Batch";
-    const rawMessage = String(error?.message || "").trim();
-    const technical = /(?:azure|function url|endpoint|cors|https?|status code|schema|json|exception|stack trace|configuration|internal server|api)/i.test(rawMessage);
-    const message = rawMessage && rawMessage.length <= 300 && !technical
-      ? rawMessage
-      : "The job could not be solved. Please review this nesting group.";
-    return `${context}: ${message}`;
+    const context = [profile, grade].filter(Boolean).join(" · ") || t("common.batch");
+    return errorDescriptor("error.solveGroup", {}, context);
   }
 
   async function executePreparedSolve(request, isDemoRequest) {
@@ -1047,7 +1125,7 @@
         const resultErrors = Array.isArray(result.errors) ? result.errors : [];
         backendErrors = resultErrors.length
           ? resultErrors.map(visitorGroupError)
-          : ["The job could not be solved. Please try again."];
+          : [errorDescriptor("error.solve")];
         return;
       }
       state.solveResponse = {
@@ -1085,10 +1163,29 @@
         releaseSolveLock
       );
     } catch (error) {
-      backendErrors = ["The Terms of Use agreement could not be opened."];
+      backendErrors = [errorDescriptor("error.termsOpen")];
       releaseSolveLock();
     }
   }
+
+  function retranslateInputPage() {
+    I18N.apply();
+    translateCurrencyOptions();
+    document.querySelectorAll(".read-only-value[data-source-value]").forEach(element => {
+      if (element.dataset.sourceValue) element.textContent = sourceLabel(element.dataset.sourceValue);
+    });
+    document.querySelectorAll(".unlimited-label").forEach(element => { element.textContent = t("common.unlimited"); });
+    document.querySelectorAll("button.remove").forEach(button => {
+      button.title = t("action.removeRow");
+      button.setAttribute("aria-label", t("action.removeRow"));
+    });
+    renderAutoFillState();
+    renderNcErrors();
+    validate(false);
+  }
+
+  I18N.listen(retranslateInputPage);
+  window.addEventListener("site-navbar:ready", retranslateInputPage, { once: true });
 
   document.querySelectorAll("[data-add]").forEach(button => button.onclick = () => add(button.dataset.add));
   document.querySelectorAll("[data-clear]").forEach(button => button.onclick = () => {
@@ -1159,11 +1256,19 @@
   document.getElementById("clearAll").onclick = clearAllInput;
   document.getElementById("demo").onclick = () => applyInput(NcNestingDemo.input);
   document.getElementById("solve").onclick = solveBatch;
-  document.getElementById("printPage").onclick = () => NcNestingPrint.printInput(projectSnapshot());
+  document.getElementById("printPage").onclick = async () => {
+    try {
+      await NcNestingPrint.printInput(projectSnapshot());
+    } catch {
+      window.alert(t("error.printSurface"));
+    }
+  };
 
   window.NcNestingInput = Object.freeze({ buildPayload: buildSolveRequest, buildSolveRequest, applyInput, projectSnapshot, clearAllInput });
 
   async function initialize() {
+    I18N.apply();
+    translateCurrencyOptions();
     ["parts", "stockOrders", "storage"].forEach(render);
     renderAutoFillState();
 
@@ -1172,7 +1277,7 @@
     if (batchId) {
       const solvedProject = await NcNesting.getProject(batchId);
       if (!solvedProject) {
-        backendErrors = ["The saved input for this solved batch is not available in this browser."];
+        backendErrors = [errorDescriptor("error.savedInputUnavailable")];
         validate(false);
         return;
       }
@@ -1188,7 +1293,7 @@
   }
 
   initialize().catch(error => {
-    backendErrors = ["The saved input could not be loaded. Please enter the job data again."];
+    backendErrors = [errorDescriptor("error.savedInputLoad")];
     validate(false);
   });
 })();

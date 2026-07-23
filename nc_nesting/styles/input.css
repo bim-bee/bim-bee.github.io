@@ -28,7 +28,7 @@
 
         main {
             width: min(1720px,calc(100% - 30px));
-            margin: clamp(88px, 7vw, 124px) auto 50px
+            margin: var(--nc-navbar-content-gap) auto 50px
         }
 
         h1, h2, p {
@@ -198,7 +198,7 @@
         th {
             background: #f7f8fa;
             color: #475467;
-            text-align: left;
+            text-align: start;
             padding: 9px 10px;
             font-size: 12px;
             white-space: nowrap;
@@ -417,7 +417,7 @@
         @media(max-width:700px) {
             main {
                 width: min(100% - 18px,1720px);
-                margin-top: 88px
+                margin-top: var(--nc-navbar-content-gap)
             }
 
             .head, .panel-head, .solve-head {
@@ -535,4 +535,32 @@ button:focus-visible, .file-button:focus-visible {
 
 @media print {
   site-navbar, #navbar { display: none !important; }
+}
+
+/* Presentation-only alignment and measurement ordering. */
+main table th,
+main table td,
+main table input,
+main table select,
+main table .read-only-value {
+  text-align: center !important;
+}
+
+main table select { text-align-last: center; }
+
+.measurement-input-shell {
+  direction: ltr;
+}
+
+.measurement-input-shell input {
+  text-align: center !important;
+}
+
+html[dir="rtl"] .measurement-input-shell {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .measurement-input-shell .unit {
+  border-left: 0;
+  border-right: 1px solid var(--border);
 }

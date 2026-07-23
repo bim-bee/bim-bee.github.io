@@ -25,30 +25,34 @@
     { key: 'blog', href: 'BIMBlog/blog.html' }
   ];
 
-  const TEXT = {
+  const FALLBACK_TEXT = {
     en: {
-      menu: 'Open navigation menu',
-      closeMenu: 'Close navigation menu',
-      navigation: 'Website navigation',
-      language: 'Language',
-      home: 'Home',
-      about: 'About Us',
-      services: 'Services',
-      contact: 'Contact',
-      blog: 'BIMblog'
+      menu: 'Open navigation menu', closeMenu: 'Close navigation menu', navigation: 'Website navigation',
+      language: 'Language', home: 'Home', about: 'About Us', services: 'Services', contact: 'Contact', blog: 'BIMblog', brandHome: 'BIMbee home'
     },
     he: {
-      menu: 'פתיחת תפריט ניווט',
-      closeMenu: 'סגירת תפריט ניווט',
-      navigation: 'ניווט באתר',
-      language: 'שפה',
-      home: 'דף הבית',
-      about: 'אודותינו',
-      services: 'פתרונות ל-BIM',
-      contact: 'צור קשר',
-      blog: 'בימ-בלוג'
+      menu: 'פתיחת תפריט ניווט', closeMenu: 'סגירת תפריט ניווט', navigation: 'ניווט באתר',
+      language: 'שפה', home: 'דף הבית', about: 'אודותינו', services: 'פתרונות ל-BIM', contact: 'צור קשר', blog: 'בימ-בלוג', brandHome: 'דף הבית של BIMbee'
     }
   };
+
+  function navbarText(language) {
+    const fallback = FALLBACK_TEXT[language] || FALLBACK_TEXT.en;
+    const t = window.NCNestingI18n?.t;
+    if (typeof t !== 'function') return fallback;
+    return {
+      menu: t('nav.menu.open', {}, language),
+      closeMenu: t('nav.menu.close', {}, language),
+      navigation: t('nav.navigation', {}, language),
+      language: t('nav.language', {}, language),
+      home: t('nav.home', {}, language),
+      about: t('nav.about', {}, language),
+      services: t('nav.services', {}, language),
+      contact: t('nav.contact', {}, language),
+      blog: t('nav.blog', {}, language),
+      brandHome: t('brand.home', {}, language)
+    };
+  }
 
   function normalizeRoot(value) {
     const root = String(value || './').trim() || './';
@@ -115,6 +119,7 @@
       this.render();
       this.cacheElements();
       this.bindEvents();
+      this.initializePageActions();
       this.applyLanguage(this.language, { persist: false, announce: false });
 
       try {
@@ -128,6 +133,9 @@
       document.removeEventListener('keydown', this.handleDocumentKeydown);
       window.removeEventListener('resize', this.handleWindowResize);
       window.removeEventListener('storage', this.handleStorageChange);
+      this.pageActionsMedia?.removeEventListener?.('change', this.handlePageActionsMediaChange);
+      document.removeEventListener('DOMContentLoaded', this.handlePageActionsDomReady);
+      this.pageActionsResizeObserver?.disconnect();
     }
 
     render() {
@@ -138,9 +146,11 @@
 
       this.innerHTML = `
         <header class="nc-navbar" data-menu-open="false">
-          <a class="nc-navbar__brand" href="${this.rootPath}index.html" aria-label="BIMbee home">
+          <a class="nc-navbar__brand" href="${this.rootPath}index.html" aria-label="BIMbee home" data-brand-home>
             <img class="nc-navbar__logo" src="${this.rootPath}images/bimbee-logo.png" alt="BIMbee">
           </a>
+
+          <div class="nc-navbar__page-actions" hidden></div>
 
           <div class="nc-navbar__controls">
             <div class="nc-navbar__language" role="group" aria-label="Language">
@@ -185,9 +195,65 @@
       this.backdrop = this.querySelector('.nc-navbar__backdrop');
       this.drawer = this.querySelector('.nc-navbar__drawer');
       this.drawerTitle = this.querySelector('.nc-navbar__drawer-title');
+      this.pageActionsHost = this.querySelector('.nc-navbar__page-actions');
+      this.brand = this.querySelector('.nc-navbar__brand');
+      this.controls = this.querySelector('.nc-navbar__controls');
       this.languageGroup = this.querySelector('.nc-navbar__language');
       this.languageButtons = [...this.querySelectorAll('[data-language]')];
       this.navLinks = [...this.querySelectorAll('[data-nav-key]')];
+    }
+
+    initializePageActions() {
+      if (this.pageActionGroup) return;
+      const actionGroup = document.querySelector('[data-navbar-actions]');
+
+      if (!actionGroup) {
+        if (document.readyState === 'loading' && !this.handlePageActionsDomReady) {
+          this.handlePageActionsDomReady = () => this.initializePageActions();
+          document.addEventListener('DOMContentLoaded', this.handlePageActionsDomReady, { once: true });
+        }
+        return;
+      }
+
+      document.removeEventListener('DOMContentLoaded', this.handlePageActionsDomReady);
+      this.pageActionGroup = actionGroup;
+      this.pageActionsAnchor = document.createComment('nc-navbar-page-actions');
+      actionGroup.parentNode.insertBefore(this.pageActionsAnchor, actionGroup);
+      this.pageActionsMedia = window.matchMedia('(min-width: 1024px)');
+      this.handlePageActionsMediaChange = () => this.syncPageActions();
+      this.pageActionsMedia.addEventListener?.('change', this.handlePageActionsMediaChange);
+
+      if (window.ResizeObserver) {
+        this.pageActionsResizeObserver = new ResizeObserver(() => this.updatePageActionClearance());
+        this.pageActionsResizeObserver.observe(this.brand);
+        this.pageActionsResizeObserver.observe(this.controls);
+      }
+
+      this.syncPageActions();
+    }
+
+    syncPageActions() {
+      if (!this.pageActionGroup || !this.pageActionsAnchor) return;
+      if (this.pageActionsMedia.matches) {
+        if (this.pageActionGroup.parentNode !== this.pageActionsHost) this.pageActionsHost.appendChild(this.pageActionGroup);
+        this.pageActionsHost.hidden = false;
+        this.updatePageActionClearance();
+      } else {
+        if (this.pageActionGroup.parentNode !== this.pageActionsAnchor.parentNode) {
+          this.pageActionsAnchor.parentNode.insertBefore(this.pageActionGroup, this.pageActionsAnchor.nextSibling);
+        }
+        this.pageActionsHost.hidden = true;
+        this.navbar.style.removeProperty('--nc-navbar-actions-side-clearance');
+      }
+    }
+
+    updatePageActionClearance() {
+      if (!this.pageActionGroup || this.pageActionsHost.hidden) return;
+      const brandWidth = this.brand.getBoundingClientRect().width;
+      const controlsWidth = this.controls.getBoundingClientRect().width;
+      const inlinePadding = parseFloat(getComputedStyle(this.navbar).paddingInlineStart) || 0;
+      const clearance = Math.ceil(Math.max(brandWidth, controlsWidth) + inlinePadding + 18);
+      this.navbar.style.setProperty('--nc-navbar-actions-side-clearance', `${clearance}px`);
     }
 
     bindEvents() {
@@ -222,6 +288,8 @@
       this.handleWindowResize = () => {
         // Closing on resize prevents a stale scroll lock after device rotation.
         if (this.menuOpen) this.setMenuOpen(false, { restoreFocus: false });
+        this.syncPageActions();
+        this.updatePageActionClearance();
       };
 
       this.handleStorageChange = (event) => {
@@ -241,7 +309,7 @@
       const language = normalizeLanguage(requestedLanguage) || 'en';
       const persist = options.persist !== false;
       const announce = options.announce !== false;
-      const copy = TEXT[language];
+      const copy = navbarText(language);
 
       this.language = language;
       document.documentElement.lang = language;
@@ -249,6 +317,7 @@
       this.setAttribute('data-language', language);
 
       this.languageGroup.setAttribute('aria-label', copy.language);
+      this.querySelector('[data-brand-home]')?.setAttribute('aria-label', copy.brandHome);
       this.menuLabel.textContent = copy.menu;
       this.closeLabel.textContent = copy.closeMenu;
       this.drawerTitle.textContent = copy.navigation;
@@ -268,6 +337,7 @@
       updateLegacyLanguageElements(language);
       if (persist) writeLanguage(this.storageKey, language);
       if (announce) announceLanguage(language);
+      window.requestAnimationFrame(() => this.updatePageActionClearance());
     }
 
     setMenuOpen(open, options = {}) {
@@ -280,7 +350,8 @@
       this.menuButton.setAttribute('aria-expanded', String(shouldOpen));
       this.drawer.setAttribute('aria-hidden', String(!shouldOpen));
       this.backdrop.setAttribute('aria-hidden', String(!shouldOpen));
-      this.menuLabel.textContent = shouldOpen ? TEXT[this.language].closeMenu : TEXT[this.language].menu;
+      const copy = navbarText(this.language);
+      this.menuLabel.textContent = shouldOpen ? copy.closeMenu : copy.menu;
 
       document.documentElement.classList.toggle('nc-navbar-menu-open', shouldOpen);
       document.body.classList.toggle('nc-navbar-menu-open', shouldOpen);

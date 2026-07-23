@@ -8,11 +8,6 @@
 @page {
   size: A4 portrait;
   margin: 30mm 7.5mm 15mm;
-  @bottom-center {
-    content: "Page " counter(page);
-    font: 9pt/1 Arial, Helvetica, sans-serif;
-    color: #505866;
-  }
 }
 
 * { box-sizing: border-box; }
@@ -96,14 +91,15 @@ tr {
 th, td {
   border: .28mm solid var(--border);
   padding: 1.65mm 1.7mm;
-  vertical-align: top;
+  text-align: center;
+  vertical-align: middle;
   overflow-wrap: break-word;
   word-break: normal;
   hyphens: auto;
 }
 th {
   background: #e6e9ed;
-  text-align: left;
+  text-align: center;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -116,7 +112,7 @@ tfoot td {
   font-weight: 700;
   border-top-width: .5mm;
 }
-.total-label { text-align: left; }
+.total-label { text-align: center; }
 .batch-table { font-size: 9.3pt; }
 .batch-table th, .batch-table td { padding-left: 1.2mm; padding-right: 1.2mm; }
 .batch-table.has-cost { font-size: 8.9pt; }
@@ -131,28 +127,29 @@ tfoot td {
 }
 .print-metric {
   border: .28mm solid var(--border);
+  text-align: center;
   padding: 3.1mm;
   min-height: 21mm;
   break-inside: avoid;
   page-break-inside: avoid;
 }
-.print-metric small,
-.print-metric strong,
-.print-metric span {
+.print-metric > small,
+.print-metric > strong,
+.print-metric > .metric-support {
   display: block;
   overflow-wrap: anywhere;
 }
-.print-metric small {
+.print-metric > small {
   color: var(--muted);
   font-size: 10.3pt;
   font-weight: 700;
 }
-.print-metric strong {
+.print-metric > strong {
   font-size: 18pt;
   line-height: 1.08;
   margin: 1.3mm 0;
 }
-.print-metric span {
+.print-metric > .metric-support {
   color: var(--muted);
   font-size: 10.3pt;
 }
@@ -292,4 +289,76 @@ tfoot td {
 
 @media print {
   html, body { width: 100%; }
+}
+
+/* Report tables are deliberately direction-neutral: all headers and values are centered. */
+.print-document th,
+.print-document td,
+.print-document tfoot td,
+.print-document .num,
+.print-document .right,
+.print-document .center,
+.print-document .total-label,
+.print-document td.empty {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.print-document bdi,
+.print-document [dir="ltr"] {
+  unicode-bidi: isolate;
+}
+
+.print-stock-bar {
+  direction: ltr;
+}
+
+html[dir="rtl"] .print-piece-heading span {
+  text-align: start;
+}
+
+/* Shared value-unit rendering for generated reports. */
+.measurement {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .25em;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+.measurement-value { direction: ltr; unicode-bidi: isolate; }
+.measurement-unit { unicode-bidi: isolate; }
+html[dir="ltr"] .measurement { flex-direction: row; }
+html[dir="rtl"] .measurement { flex-direction: row-reverse; }
+
+.supporting-text {
+  display: inline;
+  unicode-bidi: isolate;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.inline-number {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+.price-value {
+  display: inline-flex;
+  align-items: baseline;
+  flex-direction: row;
+  gap: 0;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+.price-symbol,
+.price-number {
+  display: inline;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.group-cell {
+  text-align: center;
+  vertical-align: middle;
 }

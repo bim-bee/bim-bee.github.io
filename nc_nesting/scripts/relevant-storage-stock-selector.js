@@ -1,48 +1,55 @@
 (function () {
   "use strict";
 
-  function requiredText(value, name) {
+  function localizedError(key, params = {}) {
+    const error = new Error(key);
+    error.key = key;
+    error.params = params;
+    return error;
+  }
+
+  function requiredText(value, key, params = {}) {
     const text = String(value ?? "").trim();
-    if (!text) throw new Error(`${name} is required.`);
+    if (!text) throw localizedError(key, params);
     return text;
   }
 
-  function validatePositiveInteger(value, name) {
+  function validatePositiveInteger(value, key) {
     const number = Number(value);
-    if (!Number.isInteger(number) || number <= 0) throw new Error(`${name} must be a positive integer.`);
+    if (!Number.isInteger(number) || number <= 0) throw localizedError(key);
     return number;
   }
 
-  function validateNonNegativeInteger(value, name) {
+  function validateNonNegativeInteger(value, fieldKey) {
     const number = Number(value);
-    if (!Number.isInteger(number) || number < 0) throw new Error(`${name} must be a non-negative integer.`);
+    if (!Number.isInteger(number) || number < 0) throw localizedError("validation.nonNegativeInteger", { fieldKey });
     return number;
   }
 
   class RelevantStorageStockSelector {
     select(profileName, steelGrade, partRequirements, cuttingSettings, storageStockRecords) {
-      profileName = requiredText(profileName, "A profile name");
-      steelGrade = requiredText(steelGrade, "A steel grade");
+      profileName = requiredText(profileName, "validation.profileRequired");
+      steelGrade = requiredText(steelGrade, "validation.steelGradeRequired");
       if (!Array.isArray(partRequirements) || partRequirements.length === 0) {
-        throw new Error("At least one part requirement is required.");
+        throw localizedError("validation.partRequirement");
       }
-      if (!cuttingSettings) throw new Error("Cutting settings are required.");
-      if (!Array.isArray(storageStockRecords)) throw new Error("Storage records are required.");
+      if (!cuttingSettings) throw localizedError("validation.cuttingSettings");
+      if (!Array.isArray(storageStockRecords)) throw localizedError("validation.storageRecords");
 
-      const trimStart = validateNonNegativeInteger(cuttingSettings.trimStart, "Start trim");
-      const trimEnd = validateNonNegativeInteger(cuttingSettings.trimEnd, "End trim");
-      validateNonNegativeInteger(cuttingSettings.toolWidth, "Tool width");
-      validateNonNegativeInteger(cuttingSettings.reusableMinimumLength, "Reusable minimum length");
+      const trimStart = validateNonNegativeInteger(cuttingSettings.trimStart, "common.startTrim");
+      const trimEnd = validateNonNegativeInteger(cuttingSettings.trimEnd, "common.endTrim");
+      validateNonNegativeInteger(cuttingSettings.toolWidth, "common.toolWidth");
+      validateNonNegativeInteger(cuttingSettings.reusableMinimumLength, "common.reusableMinimum");
 
       const partIds = new Set();
-      const normalizedParts = partRequirements.map((part, index) => {
-        const partId = requiredText(part?.partId, `Part ${index + 1} ID`);
-        if (partIds.has(partId)) throw new Error(`Part ID '${partId}' appears more than once in a nesting group.`);
+      const normalizedParts = partRequirements.map(part => {
+        const partId = requiredText(part?.partId, "validation.positionRequired");
+        if (partIds.has(partId)) throw localizedError("validation.duplicateId", { id: partId });
         partIds.add(partId);
         return {
           partId,
-          length: validatePositiveInteger(part.length, `Part '${partId}' length`),
-          quantity: validatePositiveInteger(part.quantity, `Part '${partId}' quantity`)
+          length: validatePositiveInteger(part.length, "validation.lengthPositive"),
+          quantity: validatePositiveInteger(part.quantity, "validation.quantityPositive")
         };
       });
 
@@ -51,18 +58,18 @@
       const profileOrGradeRejected = [];
       const tooShortRejected = [];
 
-      storageStockRecords.forEach((record, index) => {
-        const storageStockId = requiredText(record?.storageStockId, `Storage record ${index + 1} ID`);
-        if (storageIds.has(storageStockId)) throw new Error(`Storage ID '${storageStockId}' appears more than once.`);
+      storageStockRecords.forEach(record => {
+        const storageStockId = requiredText(record?.storageStockId, "validation.required", { fieldKey: "common.storageStockId" });
+        if (storageIds.has(storageStockId)) throw localizedError("validation.duplicateId", { id: storageStockId });
         storageIds.add(storageStockId);
 
         const normalized = {
           ...record,
           storageStockId,
-          profileName: requiredText(record.profileName, `Storage '${storageStockId}' profile`),
-          steelGrade: requiredText(record.steelGrade, `Storage '${storageStockId}' steel grade`),
-          length: validatePositiveInteger(record.length, `Storage '${storageStockId}' length`),
-          quantity: validatePositiveInteger(record.quantity, `Storage '${storageStockId}' quantity`)
+          profileName: requiredText(record.profileName, "validation.profileRequired"),
+          steelGrade: requiredText(record.steelGrade, "validation.steelGradeRequired"),
+          length: validatePositiveInteger(record.length, "validation.lengthPositive"),
+          quantity: validatePositiveInteger(record.quantity, "validation.quantityPositive")
         };
 
         if (normalized.profileName !== profileName || normalized.steelGrade !== steelGrade) {

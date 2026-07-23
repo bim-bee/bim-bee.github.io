@@ -28,7 +28,7 @@
 
     main {
       width: min(1500px, calc(100% - 32px));
-      margin: clamp(88px, 7vw, 124px) auto 48px;
+      margin: var(--nc-navbar-content-gap) auto 48px;
     }
 
     h1, h2, h3, p { margin-top: 0; }
@@ -162,7 +162,7 @@
     .source-chip.stock-order { background: var(--stock-order); color: #244a9b; }
 
     .utilization {
-      text-align: right;
+      text-align: end;
     }
 
     .utilization strong {
@@ -214,8 +214,8 @@
       text-overflow: ellipsis;
     }
 
-    .segment-label strong,
-    .segment-label span {
+    .segment-label > strong,
+    .segment-label > span {
       display: block;
     }
 
@@ -303,14 +303,14 @@
 
     .source-summary-heading strong { font-size: 15px; }
 
-    .source-summary-heading span,
+    .source-summary-heading > .source-summary-support,
     .summary-secondary,
     .empty-summary {
       color: var(--muted);
       font-size: 12px;
     }
 
-    .source-summary-heading span { text-align: right; }
+    .source-summary-heading > .source-summary-support { text-align: end; }
     .empty-summary { margin-bottom: 0; }
     .source-table-wrap { overflow-x: auto; }
 
@@ -323,7 +323,7 @@
     .source-summary-table th,
     .source-summary-table td {
       width: 33.333%;
-      text-align: right;
+      text-align: end;
       padding: 9px 8px;
     }
 
@@ -331,13 +331,14 @@
       font-size: 16px;
     }
 
-    .summary-percentage,
-    .summary-secondary {
-      display: block;
+    .summary-percentage {
+      font-size: 20px !important;
     }
 
-    .summary-percentage { font-size: 20px !important; }
-    .summary-secondary { margin-top: 2px; }
+    .summary-percentage-line .supporting-text {
+      color: var(--muted);
+      font-size: 12px;
+    }
 
     .list-row {
       display: grid;
@@ -373,7 +374,7 @@
     }
 
     th, td {
-      text-align: left;
+      text-align: start;
       padding: 10px 8px;
       border: 1px solid var(--border);
       vertical-align: middle;
@@ -387,7 +388,7 @@
     }
 
     .center { text-align: center; }
-    .right { text-align: right; }
+    .right { text-align: end; }
 
     .matrix-part-header {
       min-width: 90px;
@@ -433,11 +434,11 @@
       .status { display: inline-block; margin-top: 12px; }
       .list-row { grid-template-columns: 1fr 1fr; }
       .source-summary-heading { display: block; }
-      .source-summary-heading span { display: block; text-align: left; margin-top: 3px; }
+      .source-summary-heading > .source-summary-support { display: block; text-align: start; margin-top: 3px; }
     }
 
     @media (max-width: 560px) {
-      main { width: min(100% - 18px, 1500px); margin-top: 88px; }
+      main { width: min(100% - 18px, 1500px); margin-top: var(--nc-navbar-content-gap); }
       .panel { padding: 14px; border-radius: 10px; }
       .summary-grid { grid-template-columns: 1fr; }
       .piece-heading { align-items: flex-start; }
@@ -480,4 +481,25 @@
 .job-names:empty { display: none; }
 @media print {
   site-navbar, #navbar { display: none !important; }
+}
+
+/* The material diagram is physical, not linguistic, and must never mirror. */
+.bar,
+.bar-wrap,
+.stock-bar,
+.segment-container,
+.print-stock-bar {
+  direction: ltr;
+}
+
+/* Direction-neutral result presentation. */
+.metric { text-align: center; }
+
+main table th,
+main table td,
+main table .right,
+main table .center,
+main table input {
+  text-align: center !important;
+  vertical-align: middle;
 }

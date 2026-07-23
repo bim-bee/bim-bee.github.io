@@ -1,7 +1,10 @@
 (function renderTermsPage() {
   "use strict";
 
+  const I18N = window.NCNestingI18n;
+  const t = (key, params = {}, language) => I18N.t(key, params, language);
   const content = document.getElementById("termsContent");
+  let loadSequence = 0;
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -13,12 +16,13 @@
   }
 
   function inlineMarkdown(value) {
-    let output = escapeHtml(value);
+    let output = escapeHtml(value).replace(/\bBIMbee\b/g, '<bdi dir="ltr">BIMbee</bdi>');
     output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, target) => {
       const decodedTarget = target.replaceAll("&amp;", "&");
       const safe = /^(https?:|mailto:)/i.test(decodedTarget) ? decodedTarget : "#";
       const external = /^https?:/i.test(safe) ? ' target="_blank" rel="noopener noreferrer"' : "";
-      return `<a href="${escapeHtml(safe)}"${external}>${label}</a>`;
+      const direction = /@|^https?:|^www\./i.test(label) ? ' dir="ltr"' : ' dir="auto"';
+      return `<a href="${escapeHtml(safe)}"${external}${direction}>${label}</a>`;
     });
     output = output.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     return output;
@@ -66,52 +70,61 @@
     return blocks.join("\n");
   }
 
-  function formattedVersion() {
+  function formattedVersion(language) {
     const raw = String(window.NcNestingConfig?.termsVersion || "").trim();
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-    if (!match) throw new Error("The Terms of Use version is not configured correctly.");
+    if (!match) throw new Error("terms.versionInvalid");
     const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-    return new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric", timeZone: "UTC" }).format(date);
+    return I18N.formatDate(date, { month: "long", year: "numeric", timeZone: "UTC" }, language);
   }
 
-  async function readMarkdown() {
-    const bundled = String(window.NcNestingTermsDocument?.markdown || "");
+  async function readMarkdown(language) {
+    const bundled = String(window.NcNestingTermsDocuments?.[language] || window.NcNestingTermsDocument?.markdown || "");
 
-    // file:// pages cannot fetch neighboring files in normal browser security mode.
-    // The generated local bundle keeps the page usable there, while hosted pages
-    // still read the Markdown source directly so deployment mistakes are visible.
     if (window.location.protocol === "file:") {
       if (bundled) return bundled;
-      throw new Error("The bundled Terms of Use document is unavailable.");
+      throw new Error("terms.bundleUnavailable");
     }
 
     try {
-      const sourceUrl = new URL("./TERMS%20OF%20USE.md", document.baseURI);
+      const fileName = language === "he" ? "TERMS%20OF%20USE.he.md" : "TERMS%20OF%20USE.md";
+      const sourceUrl = new URL(`./${fileName}`, document.baseURI);
       const response = await fetch(sourceUrl, { cache: "no-store" });
-      if (!response.ok) throw new Error("The document is unavailable.");
+      if (!response.ok) throw new Error("terms.documentUnavailable");
       const markdown = await response.text();
-      if (!markdown.trim()) throw new Error("The document is empty.");
+      if (!markdown.trim()) throw new Error("terms.documentEmpty");
       return markdown;
     } catch (error) {
       if (bundled) return bundled;
-      throw new Error("The Terms of Use document could not be loaded.");
+      throw error;
     }
   }
 
-  async function loadTerms() {
-    const markdown = await readMarkdown();
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = markdownToHtml(markdown);
-    const heading = wrapper.querySelector("h1");
-    const updated = document.createElement("p");
-    updated.className = "terms-updated";
-    updated.textContent = `Last updated: ${formattedVersion()}`;
-    if (heading) heading.insertAdjacentElement("afterend", updated);
-    else wrapper.prepend(updated);
-    content.replaceChildren(...wrapper.childNodes);
+  async function loadTerms(language = I18N.getLanguage()) {
+    const sequence = ++loadSequence;
+    I18N.apply(document, language);
+    document.title = t("page.terms.title", {}, language);
+    content.innerHTML = `<p class="terms-loading">${escapeHtml(t("terms.loading", {}, language))}</p>`;
+    try {
+      const markdown = await readMarkdown(language);
+      if (sequence !== loadSequence) return;
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = markdownToHtml(markdown);
+      const heading = wrapper.querySelector("h1");
+      const updated = document.createElement("p");
+      updated.className = "terms-updated";
+      updated.textContent = t("terms.lastUpdated", { date: formattedVersion(language) }, language);
+      if (heading) heading.insertAdjacentElement("afterend", updated);
+      else wrapper.prepend(updated);
+      content.replaceChildren(...wrapper.childNodes);
+      content.setAttribute("dir", I18N.direction(language));
+    } catch {
+      if (sequence !== loadSequence) return;
+      content.innerHTML = `<h1>${escapeHtml(t("action.terms", {}, language))}</h1><div class="terms-error" role="alert"><strong>${escapeHtml(t("terms.loadFailed", {}, language))}</strong><p>${escapeHtml(t("terms.documentUnavailable", {}, language))}</p></div>`;
+    }
   }
 
-  loadTerms().catch(error => {
-    content.innerHTML = `<h1>Terms of Use</h1><div class="terms-error" role="alert"><strong>Unable to load the Terms of Use.</strong><p>The document is unavailable.</p></div>`;
-  });
+  I18N.listen(language => loadTerms(language));
+  window.addEventListener("site-navbar:ready", () => loadTerms(), { once: true });
+  loadTerms();
 })();

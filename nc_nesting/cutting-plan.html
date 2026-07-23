@@ -1,12 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr" data-i18n-document-title="page.plan.title">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>NC Nesting — Cutting Plan</title>
+  <script src="scripts/i18n.js"></script>
   <link rel="stylesheet" href="styles/navbar.css">
-  <site-navbar data-root="../"></site-navbar>
-  <script src="scripts/navbar.js"></script>
   <link rel="stylesheet" href="styles/cutting-plan.css">
 </head>
 <body>
@@ -15,23 +14,23 @@
     <section class="panel load-error" id="loadError" role="alert" hidden></section>
     <header class="job-header">
       <div class="job-header-main">
-        <div class="page-actions no-print"><a id="backLink" class="action-button" href="batch-result.html">← Back to batch result</a></div>
-        <h1 id="pageHeading">Cut Plan</h1>
+        <div class="page-actions no-print"><a id="backLink" class="action-button" href="batch-result.html"><span class="back-arrow" aria-hidden="true">←</span> <span data-i18n="action.backBatch">Back to batch result</span></a></div>
+        <h1 id="pageHeading" data-i18n="common.cutPlan">Cut Plan</h1>
         <div id="jobNames" class="job-meta job-names"></div>
         <div class="job-meta"><div id="jobSettings"></div></div>
       </div>
-      <div class="actions no-print"><button type="button" data-terms-button>Terms of Use</button><button id="printPage">Print Page</button><button id="printFullSet">Print Full Set</button></div>
+      <div class="actions no-print" data-navbar-actions><button type="button" data-terms-button data-i18n="action.terms">Terms of Use</button><button id="printPage" disabled data-i18n="action.printPage">Print Page</button><button id="printFullSet" disabled data-i18n="action.printFullSet">Print Full Set</button></div>
     </header>
-    <section class="panel"><h2>Plan summary</h2><div class="summary-grid" id="summary"></div></section>
-    <section class="panel"><h2>Stocks matrix — parts per layout</h2><div class="table-wrap"><table id="layoutMatrix"></table></div></section>
-    <section class="panel"><h2>Individual stock pieces</h2><div id="pieces"></div><div class="legend" id="legend"></div></section>
+    <section class="panel"><h2 data-i18n="common.planSummary">Plan summary</h2><div class="summary-grid" id="summary"></div></section>
+    <section class="panel"><h2 data-i18n="page.stocksMatrix">Stocks matrix — parts per layout</h2><div class="table-wrap"><table id="layoutMatrix"></table></div></section>
+    <section class="panel"><h2 data-i18n="common.individualStockPieces">Individual stock pieces</h2><div id="pieces"></div><div class="legend" id="legend" data-i18n-aria-label="common.cuttingPlanLegend" aria-label="Cutting-plan legend"></div></section>
     <div class="source-summary-grid">
-      <section class="panel source-summary-card stock-orders-card"><h2>Stock orders</h2><div id="stockOrders"></div></section>
-      <section class="panel source-summary-card storage-retrievals-card"><h2>Storage retrievals</h2><div id="storageRetrieval"></div></section>
+      <section class="panel source-summary-card stock-orders-card"><h2 data-i18n="common.stockOrders">Stock orders</h2><div id="stockOrders"></div></section>
+      <section class="panel source-summary-card storage-retrievals-card"><h2 data-i18n="common.storageRetrievals">Storage retrievals</h2><div id="storageRetrieval"></div></section>
     </div>
-    <section class="panel"><h2>Waste list</h2><div class="table-wrap"><table id="wasteList"></table></div></section>
+    <section class="panel"><h2 data-i18n="common.wasteList">Waste list</h2><div class="table-wrap"><table id="wasteList"></table></div></section>
   </main>
-  <script src="../scripts/navbar.js"></script>
+  <script src="scripts/navbar.js"></script>
   <script src="scripts/config.js"></script>
   <script src="scripts/app-storage.js"></script>
   <script src="scripts/terms.js"></script>

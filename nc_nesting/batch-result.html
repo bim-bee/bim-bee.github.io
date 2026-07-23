@@ -1,30 +1,29 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr" data-i18n-document-title="page.batch.title">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>NC Nesting Batch Result</title>
+  <script src="scripts/i18n.js"></script>
   <link rel="stylesheet" href="styles/navbar.css">
-  <site-navbar data-root="../"></site-navbar>
-  <script src="scripts/navbar.js"></script>
   <link rel="stylesheet" href="styles/batch-result.css">
 </head>
 <body>
   <site-navbar data-root="../"></site-navbar>
   <main>
     <header class="head">
-      <div><nav class="site-nav no-print"><a id="backInput" class="action-button" href="index.html">← Back to input</a></nav><h1>NC Nesting Batch Result</h1><p>Global result across all nesting groups.</p><div id="meta" class="meta"></div></div>
-      <div class="actions no-print"><button type="button" data-terms-button>Terms of Use</button><button id="csv">Download CSV</button><button id="printPage">Print Page</button><button id="printFullSet">Print Full Set</button></div>
+      <div><nav class="site-nav no-print"><a id="backInput" class="action-button" href="index.html"><span class="back-arrow" aria-hidden="true">←</span> <span data-i18n="action.backInput">Back to input</span></a></nav><h1 data-i18n="page.batch.title">NC Nesting Batch Result</h1><p data-i18n="batch.description">Global result across all nesting groups.</p><div id="meta" class="meta"></div></div>
+      <div class="actions no-print" data-navbar-actions><button type="button" data-terms-button data-i18n="action.terms">Terms of Use</button><button id="csv" disabled data-i18n="action.downloadCsv">Download CSV</button><button id="printPage" disabled data-i18n="action.printPage">Print Page</button><button id="printFullSet" disabled data-i18n="action.printFullSet">Print Full Set</button></div>
     </header>
     <section class="panel"><div id="batchMetadata" class="batch-metadata"></div><div id="summary" class="summary"></div></section>
     <section class="panel">
-      <div class="table-head"><div><h2>Batch nesting groups</h2><p>ORDER changes stock-order quantity only. LEFTOVER = ORDER − ORDER QTY.</p></div></div>
-      <div id="state">Load a solved batch from the NC Nesting Input Page.</div>
-      <div id="tableWrap" class="wrap" hidden><table><thead><tr><th>Nesting group</th><th class="num">Length</th><th class="num">Utilization</th><th class="num">Waste</th><th id="weightHeader" class="num">Weight</th><th id="costHeader" class="num" hidden>Cost</th><th class="num">Storage QTY</th><th class="num">Order QTY</th><th class="center">ORDER</th><th class="center">LEFTOVER</th><th class="detail">Cut plan</th></tr></thead><tbody id="body"></tbody><tfoot id="foot"></tfoot></table></div>
-      <div class="note">Storage QTY shows selected storage pieces and their combined length. ORDER QTY is the stock-order quantity required for each stock length.</div>
+      <div class="table-head"><div><h2 data-i18n="page.batchGroups">Batch nesting groups</h2><p data-i18n="batch.orderExplanation">ORDER changes stock-order quantity only. LEFTOVER = ORDER − ORDER QTY.</p></div></div>
+      <div id="state" data-i18n="batch.loadSolved" aria-live="polite">Load a solved batch from the NC Nesting Input Page.</div>
+      <div id="tableWrap" class="wrap" hidden><table><thead><tr><th data-i18n="common.nestingGroup">Nesting group</th><th class="num" data-i18n="common.length">Length</th><th class="num" data-i18n="common.utilization">Utilization</th><th class="num" data-i18n="common.waste">Waste</th><th id="weightHeader" class="num" data-i18n="common.weight">Weight</th><th id="costHeader" class="num" hidden data-i18n="common.cost">Cost</th><th class="num" data-i18n="common.storageQty">Storage QTY</th><th class="num" data-i18n="common.orderQty">Order QTY</th><th class="center" data-i18n="common.orderUpper">ORDER</th><th class="center" data-i18n="common.leftoverUpper">LEFTOVER</th><th class="detail" data-i18n="common.cutPlan">Cut plan</th></tr></thead><tbody id="body"></tbody><tfoot id="foot"></tfoot></table></div>
+      <div class="note" data-i18n="batch.storageExplanation">Storage QTY shows selected storage pieces and their combined length. ORDER QTY is the stock-order quantity required for each stock length.</div>
     </section>
   </main>
-  <script src="../scripts/navbar.js"></script>
+  <script src="scripts/navbar.js"></script>
   <script src="scripts/config.js"></script><script src="scripts/app-storage.js"></script><script src="scripts/terms.js"></script><script src="scripts/print-renderer.js"></script><script src="scripts/batch-result.js"></script>
 </body>
 </html>

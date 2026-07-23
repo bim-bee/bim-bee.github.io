@@ -23,7 +23,7 @@
 
         main {
             width: min(1680px,calc(100% - 28px));
-            margin: clamp(88px, 7vw, 124px) auto 48px
+            margin: var(--nc-navbar-content-gap) auto 48px
         }
 
         .head, .table-head {
@@ -93,19 +93,19 @@
             min-height: 100px
         }
 
-            .metric small {
+            .metric > small {
                 display: block;
                 color: var(--muted);
                 margin-bottom: 7px
             }
 
-            .metric b {
+            .metric > b {
                 font-size: 26px;
                 display: block;
                 line-height: 1
             }
 
-            .metric span {
+            .metric > .metric-support {
                 color: var(--muted);
                 font-size: 12px;
                 display: block;
@@ -201,7 +201,7 @@
         }
 
         .num {
-            text-align: right
+            text-align: end
         }
 
         .center {
@@ -224,19 +224,19 @@
             margin-top: 4px
         }
 
-        .percent b {
-            display: block;
-            font-size: 15px
+        .percent-value {
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 750
         }
 
-        .percent span {
-            display: block;
+        .percent-details .measurement {
             color: var(--muted);
             font-size: 11px
         }
 
         .storage-summary {
-            white-space: nowrap
+            white-space: normal
         }
 
         .storage-main {
@@ -248,7 +248,7 @@
         .storage-secondary {
             font-size: 11px;
             color: var(--muted);
-            margin-left: 3px
+            margin-inline-start: 3px
         }
 
         .order {
@@ -448,9 +448,22 @@
 .metadata-field strong { font-size: 16px; }
 .batch-metadata[hidden], .batch-metadata:empty { display: none; }
 @media (max-width: 720px) {
-  main { margin-top: 88px; }
+  main { margin-top: var(--nc-navbar-content-gap); }
   .metadata-field { min-width: 100%; width: 100%; }
 }
 @media print {
   site-navbar, #navbar { display: none !important; }
+}
+
+/* Direction-neutral result presentation. */
+.metric { text-align: center; }
+
+main table th,
+main table td,
+main table .num,
+main table .center,
+main table .detail,
+main table input {
+  text-align: center !important;
+  vertical-align: middle;
 }

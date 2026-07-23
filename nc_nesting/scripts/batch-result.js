@@ -1,79 +1,39 @@
 (function () {
   "use strict";
 
+  const I18N = window.NCNestingI18n;
+  const t = (key, params = {}, language) => I18N.t(key, params, language);
   let data;
   let hasCost = false;
   let hasCompleteWeight = false;
+  let stateMessageKey = "batch.loadSolved";
 
-  const nf = new Intl.NumberFormat();
-  const df = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const n = value => nf.format(Number(value) || 0);
-  const d = value => df.format(Number(value) || 0);
+  const n = value => I18N.formatNumber(Number(value) || 0, { maximumFractionDigits: 0 });
+  const d = value => I18N.formatNumber(Number(value) || 0, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const pct = (a, b) => b > 0 ? a / b * 100 : 0;
-  const metres = mm => `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format((Number(mm) || 0) / 1000)} m`;
-  const len = mm => mm == null ? "—" : Number(mm) >= 1000 ? metres(mm) : `${n(mm)} mm`;
+  const metres = mm => I18N.measurementHtml((Number(mm) || 0) / 1000, "m", { maximumFractionDigits: 2 });
+  const len = mm => mm == null ? "—" : Number(mm) >= 1000 ? metres(mm) : I18N.measurementHtml(Number(mm), "mm", { maximumFractionDigits: 0 });
+  const ton = value => I18N.measurementHtml(Number(value) || 0, "ton", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const esc = value => String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+  const bdi = value => `<bdi dir="ltr">${esc(value)}</bdi>`;
   const balanceClass = value => value > 0 ? "positive" : value < 0 ? "negative" : "zero";
   const signed = value => value > 0 ? `+${n(value)}` : n(value);
-  const currencyAliases = {
-    "us dollar": "USD",
-    "united states dollar": "USD",
-    "euro": "EUR",
-    "israeli new shekel": "ILS",
-    "new israeli shekel": "ILS",
-    "chinese yuan": "CNY",
-    "chinese yuan (cny)": "CNY",
-    "renminbi": "CNY"
-  };
 
-  function normalizeCurrencyName(value) {
-    return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  function localizedError(key) {
+    const error = new Error(key);
+    error.i18nKey = key;
+    return error;
   }
 
-  function resolveCurrencyCode(currencyName) {
-    const normalized = normalizeCurrencyName(currencyName);
-    if (!normalized) return null;
-    if (/^[a-z]{3}$/.test(normalized)) return normalized.toUpperCase();
-    return currencyAliases[normalized] || null;
-  }
-
-  function currencySymbol(currencyName) {
-    const code = resolveCurrencyCode(currencyName);
-    if (!code) return "";
-    try {
-      return new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: code,
-        currencyDisplay: "narrowSymbol",
-        maximumFractionDigits: 0
-      }).formatToParts(0).find(item => item.type === "currency")?.value || code;
-    } catch {
-      return code;
-    }
-  }
 
   function formatCost(value) {
     if (value == null) return "—";
     const amount = Math.round(Number(value) || 0);
-    const code = resolveCurrencyCode(data?.currency);
-    if (code) {
-      try {
-        return new Intl.NumberFormat(undefined, {
-          style: "currency",
-          currency: code,
-          currencyDisplay: "narrowSymbol",
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        }).format(amount);
-      } catch {
-        // Use the currency name below when browser formatting is unavailable.
-      }
-    }
-    return `${n(amount)}${data?.currency ? ` ${data.currency}` : ""}`;
+    return I18N.priceHtml(amount, data?.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
 
   function metrics(group) {
@@ -135,10 +95,10 @@
   async function load() {
     const params = new URLSearchParams(location.search);
     const batchId = params.get("batchId");
-    if (!batchId) throw new Error("Open a solved batch from the NC Nesting Input Page.");
+    if (!batchId) throw localizedError("error.openSolvedBatch");
     document.getElementById("backInput").href = `index.html?batchId=${encodeURIComponent(batchId)}`;
     const stored = await NcNesting.getBatchResult(batchId);
-    if (!stored) throw new Error("This solved batch is not available in this browser. Solve the job again from the input page.");
+    if (!stored) throw localizedError("error.batchUnavailable");
     const normalized = normalize(stored);
     normalized.groups.forEach(group => {
       group.detailedPlanUrl = `cutting-plan.html?batchId=${encodeURIComponent(batchId)}&groupId=${encodeURIComponent(group.groupId)}`;
@@ -196,20 +156,20 @@
 
   function renderMeta() {
     document.getElementById("meta").innerHTML = `
-      ${data.generatedAt ? `<span><strong>Generated:</strong> ${esc(new Date(data.generatedAt).toLocaleString())}</span>` : ""}
-      <span><strong>Groups:</strong> ${n(data.groups.length)}</span>
-      ${data.currency ? `<span><strong>Currency:</strong> ${esc(data.currency)}</span>` : ""}
+      ${data.generatedAt ? `<span><strong>${esc(t("common.generated"))}:</strong> <bdi dir="ltr">${esc(I18N.formatDateTime(data.generatedAt))}</bdi></span>` : ""}
+      <span><strong>${esc(t("common.groups"))}:</strong> <bdi dir="ltr">${n(data.groups.length)}</bdi></span>
+      ${data.currency ? `<span><strong>${esc(t("common.currency"))}:</strong> ${esc(I18N.currencyLabel(data.currency))}</span>` : ""}
     `;
   }
 
   function renderBatchMetadata() {
     const container = document.getElementById("batchMetadata");
     const items = [
-      ["Project", data.projectName],
-      ["Batch name", data.batchName]
+      [t("common.project"), data.projectName],
+      [t("common.batchName"), data.batchName]
     ].filter(([, value]) => String(value || "").trim());
     container.innerHTML = items.map(([label, value]) => `
-      <div class="metadata-field"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>
+      <div class="metadata-field"><span>${esc(label)}</span><strong dir="auto">${esc(value)}</strong></div>
     `).join("");
     container.hidden = items.length === 0;
   }
@@ -217,32 +177,42 @@
   function renderSummary() {
     const total = totals();
     const cards = [
-      ["Stock order quantity", n(total.order), `${n(total.quantity)} required`],
-      ["Utilization", `${d(pct(total.used, total.stock))}%`, `${len(total.used)} consumed`],
-      ["Waste", `${d(pct(total.waste, total.stock))}%`, `${len(total.waste)} offcut`]
+      [t("common.stockOrderQuantity"), I18N.inlineNumberHtml(total.order, { maximumFractionDigits: 0 }), I18N.supportingTextHtml("batch.required", { quantity: I18N.inlineNumberHtml(total.quantity, { maximumFractionDigits: 0 }) })],
+      [t("common.utilization"), `<bdi dir="ltr">${esc(d(pct(total.used, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.consumedLength", { length: len(total.used) })],
+      [t("common.waste"), `<bdi dir="ltr">${esc(d(pct(total.waste, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.offcutLength", { length: len(total.waste) })]
     ];
-    if (hasCompleteWeight) cards.push(["Batch weight", `${d(total.weight)} t`, `${n(data.groups.length)} nesting groups`]);
+    if (hasCompleteWeight) cards.push([t("common.batchWeight"), ton(total.weight), I18N.supportingTextHtml("batch.groupCount", { count: I18N.inlineNumberHtml(data.groups.length, { maximumFractionDigits: 0 }) })]);
     cards.push(
-      ["Storage stock share", `${d(pct(total.storageLength, total.stock))}%`, `${len(total.storageLength)} from storage`],
-      ["Reusable returned", `${d(pct(total.reusable, total.stock))}%`, `${len(total.reusable)} reusable`]
+      [t("common.storageStockShare"), `<bdi dir="ltr">${esc(d(pct(total.storageLength, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.storageLength", { length: len(total.storageLength) })],
+      [t("common.reusableReturned"), `<bdi dir="ltr">${esc(d(pct(total.reusable, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.reusableLength", { length: len(total.reusable) })]
     );
     document.getElementById("summary").innerHTML = cards.map(card => `
-      <div class="metric"><small>${esc(card[0])}</small><b>${esc(card[1])}</b><span>${esc(card[2])}</span></div>
+      <div class="metric"><small>${esc(card[0])}</small><b>${card[1]}</b><span class="metric-support">${card[2]}</span></div>
     `).join("");
   }
 
   function storageCell(group) {
-    const weight = group.storageStockWeightTon == null ? "" : ` · ${d(group.storageStockWeightTon)} t`;
-    return `<div class="storage-summary"><span class="storage-main">${n(group.storageStockQuantity)} pcs</span><span class="storage-secondary">· ${metres(group.totalStorageStockLengthConsumed)}${weight}</span></div>`;
+    const values = [
+      I18N.quantityHtml(group.storageStockQuantity, { maximumFractionDigits: 0 }),
+      metres(group.totalStorageStockLengthConsumed)
+    ];
+    if (group.storageStockWeightTon != null) values.push(ton(group.storageStockWeightTon));
+    return I18N.inlineValuesHtml(values, { className: "storage-summary" });
+  }
+
+  function percentLengthCell(percentValue, lengthValue) {
+    return I18N.inlineValuesHtml([
+      `<span class="percent-value" dir="ltr">${esc(d(percentValue))}%</span>`,
+      len(lengthValue)
+    ], { className: "percent-details" });
   }
 
   function renderTable() {
     hasCost = Boolean(data.currency) && data.groups.some(group => group.stockOrders.some(order => order.unitPrice != null));
     hasCompleteWeight = data.groups.length > 0 && data.groups.every(group => group.weightTon != null);
     const costHeader = document.getElementById("costHeader");
-    const symbol = currencySymbol(data.currency);
     costHeader.hidden = !hasCost;
-    costHeader.textContent = symbol ? `Cost (${symbol})` : "Cost";
+    costHeader.textContent = t("common.cost");
 
     let output = "";
     data.groups.forEach((group, groupIndex) => {
@@ -258,19 +228,19 @@
         const rowClass = isFirst && isLast ? "group-first group-last" : isFirst ? "group-first" : isLast ? "group-last" : "group-middle";
         output += `
           <tr class="${rowClass}" data-group-index="${groupIndex}" data-url="${esc(group.detailedPlanUrl || "#")}">
-            ${isFirst ? `<td class="profile" rowspan="${span}"><b>${esc(group.profileName)}</b><span>${esc(group.steelGrade)}</span></td>` : ""}
+            ${isFirst ? `<td class="profile" rowspan="${span}"><b>${bdi(group.profileName)}</b><span>${bdi(group.steelGrade)}</span></td>` : ""}
             <td class="num">${order.stockLength == null ? "—" : len(order.stockLength)}</td>
             ${isFirst ? `
-              <td class="num percent" rowspan="${span}"><b>${d(groupMetrics.utilization)}%</b><span>${len(groupMetrics.used)}</span></td>
-              <td class="num percent" rowspan="${span}"><b>${d(groupMetrics.wastePercent)}%</b><span>${len(groupMetrics.waste)}</span></td>
-              <td class="num" rowspan="${span}">${group.weightTon == null ? "—" : `${d(Number(group.weightTon))} t`}</td>
+              <td class="num percent" rowspan="${span}">${percentLengthCell(groupMetrics.utilization, groupMetrics.used)}</td>
+              <td class="num percent" rowspan="${span}">${percentLengthCell(groupMetrics.wastePercent, groupMetrics.waste)}</td>
+              <td class="num" rowspan="${span}">${group.weightTon == null ? "—" : ton(group.weightTon)}</td>
               ${hasCost ? `<td class="num" rowspan="${span}">${formatCost(calculatedCost)}</td>` : ""}
               <td class="num" rowspan="${span}">${storageCell(group)}</td>
             ` : ""}
-            <td class="num">${n(quantity)}</td>
-            <td class="center"><div class="order" data-group="${groupIndex}" data-order="${orderIndex}"><button type="button" data-change="-1" aria-label="Decrease order quantity">−</button><input type="number" min="0" step="1" value="${ordered}" aria-label="Order quantity"><button type="button" data-change="1" aria-label="Increase order quantity">+</button></div></td>
-            <td class="center"><span class="balance ${balanceClass(leftover)}">${signed(leftover)}</span></td>
-            ${isFirst ? `<td class="detail" rowspan="${span}"><a href="${esc(group.detailedPlanUrl || "#")}">View cut plan →</a></td>` : ""}
+            <td class="num" dir="ltr">${n(quantity)}</td>
+            <td class="center"><div class="order" data-group="${groupIndex}" data-order="${orderIndex}" dir="ltr"><button type="button" data-change="-1" aria-label="${esc(t("action.decreaseOrder"))}">−</button><input type="number" min="0" step="1" value="${ordered}" aria-label="${esc(t("action.orderQuantity"))}"><button type="button" data-change="1" aria-label="${esc(t("action.increaseOrder"))}">+</button></div></td>
+            <td class="center" dir="ltr"><span class="balance ${balanceClass(leftover)}">${signed(leftover)}</span></td>
+            ${isFirst ? `<td class="detail" rowspan="${span}"><a href="${esc(group.detailedPlanUrl || "#")}">${esc(t("action.viewCutPlan"))} <span aria-hidden="true">${I18N.direction() === "rtl" ? "←" : "→"}</span></a></td>` : ""}
           </tr>`;
       });
     });
@@ -284,15 +254,15 @@
     const leftover = total.order - total.quantity;
     document.getElementById("foot").innerHTML = `
       <tr>
-        <td colspan="2">Batch total / weighted result</td>
-        <td class="num">${d(pct(total.used, total.stock))}%</td>
-        <td class="num">${d(pct(total.waste, total.stock))}%</td>
-        <td class="num">${hasCompleteWeight ? `${d(total.weight)} t` : "—"}</td>
+        <td colspan="2">${esc(t("common.batchTotalWeighted"))}</td>
+        <td class="num" dir="ltr">${d(pct(total.used, total.stock))}%</td>
+        <td class="num" dir="ltr">${d(pct(total.waste, total.stock))}%</td>
+        <td class="num">${hasCompleteWeight ? ton(total.weight) : "—"}</td>
         ${hasCost ? `<td class="num">${total.costKnown ? formatCost(total.cost) : "—"}</td>` : ""}
-        <td class="num"><div class="storage-summary"><span class="storage-main">${n(total.storageQuantity)} pcs</span><span class="storage-secondary">· ${metres(total.storageLength)}${hasCompleteWeight ? ` · ${d(total.storageWeight)} t` : ""}</span></div></td>
-        <td class="num">${n(total.quantity)}</td>
-        <td class="center">${n(total.order)}</td>
-        <td class="center">${leftover < 0 ? `<span class="footer-negative">${signed(leftover)}</span>` : signed(leftover)}</td>
+        <td class="num">${I18N.inlineValuesHtml([I18N.quantityHtml(total.storageQuantity, { maximumFractionDigits: 0 }), metres(total.storageLength), ...(hasCompleteWeight ? [ton(total.storageWeight)] : [])], { className: "storage-summary" })}</td>
+        <td class="num" dir="ltr">${n(total.quantity)}</td>
+        <td class="center" dir="ltr">${n(total.order)}</td>
+        <td class="center" dir="ltr">${leftover < 0 ? `<span class="footer-negative">${signed(leftover)}</span>` : signed(leftover)}</td>
         <td class="detail"></td>
       </tr>`;
   }
@@ -340,9 +310,16 @@
     });
   }
 
+  function updateBackArrow() {
+    const arrow = document.querySelector("#backInput .back-arrow");
+    if (arrow) arrow.textContent = I18N.direction() === "rtl" ? "→" : "←";
+  }
+
   function render() {
     hasCost = Boolean(data.currency) && data.groups.some(group => group.stockOrders.some(order => order.unitPrice != null));
     hasCompleteWeight = data.groups.length > 0 && data.groups.every(group => group.weightTon != null);
+    I18N.apply();
+    updateBackArrow();
     renderMeta();
     renderBatchMetadata();
     renderSummary();
@@ -357,15 +334,17 @@
   function safeFilePart(value) {
     return String(value || "")
       .trim()
-      .replace(/[\/:*?"<>|]+/g, "-")
+      .replace(/[\\/:*?"<>|]+/g, "-")
       .replace(/\s+/g, " ")
       .slice(0, 80);
   }
 
   function downloadCsv() {
-    const headers = ["Nesting Group", "Profile", "Steel Grade", "Length", "Utilization %", "Waste %", "Weight (ton)"];
-    if (hasCost) headers.push("Cost", "Currency");
-    headers.push("Storage QTY", "Storage Length (mm)", "Order QTY", "ORDER", "LEFTOVER", "Cut Plan URL");
+    const language = I18N.getLanguage();
+    const tr = (key, params = {}) => t(key, params, language);
+    const headers = [tr("csv.nestingGroup"), tr("csv.profile"), tr("csv.steelGrade"), tr("csv.length"), tr("csv.utilizationPercent"), tr("csv.wastePercent"), tr("csv.weightTon")];
+    if (hasCost) headers.push(tr("csv.currency"), tr("csv.cost"));
+    headers.push(tr("csv.storageQty"), tr("csv.storageLength"), tr("csv.orderQty"), tr("csv.order"), tr("csv.leftover"), tr("csv.cutPlanUrl"));
     const rows = [headers];
     data.groups.forEach(group => {
       const groupMetrics = metrics(group);
@@ -382,14 +361,14 @@
           d(groupMetrics.wastePercent),
           group.weightTon ?? ""
         ];
-        if (hasCost) row.push(calculatedCost == null ? "" : Math.round(Number(calculatedCost) || 0), data.currency || "");
+        if (hasCost) row.push(data.currency || "", calculatedCost == null ? "" : Math.round(Number(calculatedCost) || 0));
         row.push(group.storageStockQuantity, group.totalStorageStockLengthConsumed ?? 0, quantity, ordered, ordered - quantity, group.detailedPlanUrl || "");
         rows.push(row);
       });
     });
     const total = totals();
-    const totalRow = ["BATCH TOTAL", "", "", "", d(pct(total.used, total.stock)), d(pct(total.waste, total.stock)), hasCompleteWeight ? d(total.weight) : ""];
-    if (hasCost) totalRow.push(total.costKnown ? Math.round(total.cost) : "", data.currency || "");
+    const totalRow = [tr("csv.batchTotal"), "", "", "", d(pct(total.used, total.stock)), d(pct(total.waste, total.stock)), hasCompleteWeight ? d(total.weight) : ""];
+    if (hasCost) totalRow.push(data.currency || "", total.costKnown ? Math.round(total.cost) : "");
     totalRow.push(total.storageQuantity, total.storageLength, total.quantity, total.order, total.order - total.quantity, "");
     rows.push(totalRow);
 
@@ -407,9 +386,20 @@
 
   async function display(source) {
     data = normalize(source);
+    stateMessageKey = "batch.loadSolved";
     document.getElementById("state").hidden = true;
     document.getElementById("tableWrap").hidden = false;
+    ["csv", "printPage", "printFullSet"].forEach(id => { document.getElementById(id).disabled = false; });
     render();
+  }
+
+
+  async function printCurrentPage() {
+    try {
+      await NcNestingPrint.printBatchPage(data);
+    } catch {
+      window.alert(t("error.printSurface"));
+    }
   }
 
   async function printFullSet() {
@@ -420,20 +410,32 @@
       if (calculation.project) calculation.project.batchName = data.batchName;
       await NcNestingPrint.printFullSet(calculation);
     } catch {
-      window.alert("The full print set could not be created.");
+      window.alert(t("error.fullPrint"));
     }
   }
 
+  function retranslateBatchPage() {
+    I18N.apply();
+    updateBackArrow();
+    if (data) render();
+    else document.getElementById("state").textContent = t(stateMessageKey);
+  }
+
+  I18N.apply();
+  updateBackArrow();
+  I18N.listen(retranslateBatchPage);
+  window.addEventListener("site-navbar:ready", retranslateBatchPage, { once: true });
   document.getElementById("csv").addEventListener("click", downloadCsv);
-  document.getElementById("printPage").addEventListener("click", () => NcNestingPrint.printBatchPage(data));
+  document.getElementById("printPage").addEventListener("click", printCurrentPage);
   document.getElementById("printFullSet").addEventListener("click", printFullSet);
 
   (async () => {
     try {
       await display(await load());
     } catch (error) {
+      stateMessageKey = error.i18nKey || "error.batchLoad";
       document.getElementById("state").className = "error";
-      document.getElementById("state").textContent = error.message || "The batch result could not be loaded.";
+      document.getElementById("state").textContent = t(stateMessageKey);
     }
   })();
 })();

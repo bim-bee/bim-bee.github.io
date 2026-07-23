@@ -1,12 +1,20 @@
 (function initNcNestingTerms() {
   "use strict";
 
+  const I18N = window.NCNestingI18n;
+  const t = (key, params = {}) => I18N.t(key, params);
   const ACCEPTED_VERSION_KEY = "nc-nesting:terms:accepted-version";
   const ACCEPTED_AT_KEY = "nc-nesting:terms:accepted-at";
   const ACCEPTANCE_VALID_MS = 7 * 24 * 60 * 60 * 1000;
   const TERMS_PAGE = "terms.html";
   let pendingAcceptance = null;
   let modalInitialized = false;
+
+  function localizedError(key) {
+    const error = new Error(key);
+    error.i18nKey = key;
+    return error;
+  }
 
   function currentVersion() {
     return String(window.NcNestingConfig?.termsVersion || "").trim();
@@ -50,17 +58,21 @@
 
   function updateButtons() {
     document.querySelectorAll("[data-terms-button]").forEach(button => {
-      button.textContent = "Terms of Use";
-      button.setAttribute("aria-label", "Open Terms of Use");
+      button.textContent = t("action.terms");
+      button.setAttribute("aria-label", t("action.openTerms"));
     });
   }
 
   function saveAcceptance() {
     const version = currentVersion();
-    if (!version) throw new Error("The Terms of Use are currently unavailable.");
+    if (!version) throw localizedError("error.termsUnavailable");
     const timestamp = Date.now();
-    localStorage.setItem(ACCEPTED_VERSION_KEY, version);
-    localStorage.setItem(ACCEPTED_AT_KEY, String(timestamp));
+    try {
+      localStorage.setItem(ACCEPTED_VERSION_KEY, version);
+      localStorage.setItem(ACCEPTED_AT_KEY, String(timestamp));
+    } catch {
+      throw localizedError("error.termsSave");
+    }
     updateButtons();
     window.dispatchEvent(new CustomEvent("nc-nesting:terms-acceptance-changed", { detail: { version, timestamp } }));
   }
@@ -122,7 +134,7 @@
         pending.onAccept();
       } catch (error) {
         pendingAcceptance = pending;
-        window.alert(error.message || "Unable to save Terms of Use acceptance in this browser.");
+        window.alert(t(error?.i18nKey || "error.termsSave"));
       }
     });
   }
@@ -135,7 +147,7 @@
 
     initializeModal();
     const dialog = document.getElementById("termsDialog");
-    if (!dialog) throw new Error("The Terms of Use agreement is currently unavailable.");
+    if (!dialog) throw new Error(t("error.termsAcceptanceUnavailable"));
     if (pendingAcceptance || dialog.open) return false;
 
     pendingAcceptance = { onAccept, onCancel };
@@ -153,6 +165,11 @@
     initializeModal();
     updateButtons();
   }
+
+  I18N.listen(() => {
+    I18N.apply();
+    updateButtons();
+  });
 
   window.addEventListener("storage", event => {
     if (event.key === ACCEPTED_VERSION_KEY || event.key === ACCEPTED_AT_KEY) updateButtons();

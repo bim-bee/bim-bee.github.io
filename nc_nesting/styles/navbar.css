@@ -6,6 +6,7 @@
 
 :root {
   --nc-navbar-height: clamp(64px, 5.4vw, 78px);
+  --nc-navbar-content-gap: 20px;
   --nc-navbar-inline-padding: clamp(16px, 2.2vw, 34px);
   --nc-navbar-border: #e5e7eb;
   --nc-navbar-text: #333333;
@@ -41,6 +42,58 @@ site-navbar {
   background: var(--nc-navbar-background);
   box-shadow: var(--nc-navbar-shadow);
   direction: ltr;
+}
+
+
+.nc-navbar__page-actions {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - (2 * var(--nc-navbar-actions-side-clearance, 235px)));
+  transform: translate(-50%, -50%);
+}
+
+.nc-navbar__page-actions[hidden] {
+  display: none !important;
+}
+
+.nc-navbar__page-actions > .actions {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(5px, .65vw, 9px);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.nc-navbar__page-actions button {
+  min-height: 34px;
+  padding: 7px clamp(7px, .8vw, 11px);
+  border: 1px solid #aeb8c7;
+  border-radius: 8px;
+  background: #fff;
+  color: #17202a;
+  font: inherit;
+  font-size: clamp(11.5px, 1vw, 13px);
+  font-weight: 650;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.nc-navbar__page-actions button:hover:not(:disabled) {
+  background: #f7f8fa;
+}
+
+.nc-navbar__page-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.nc-navbar__page-actions button.danger {
+  color: #a22020;
 }
 
 .nc-navbar__brand {
@@ -360,4 +413,114 @@ body.nc-navbar-menu-open {
   .nc-navbar {
     display: none !important;
   }
+}
+
+/* Shared localization behavior for all NC Nesting pages. */
+html.nc-i18n-pending body {
+  visibility: hidden;
+}
+
+html[dir="rtl"] body {
+  text-align: start;
+}
+
+input[type="number"],
+input[inputmode="numeric"],
+input[inputmode="decimal"],
+.data-ltr,
+bdi,
+[dir="ltr"] {
+  unicode-bidi: isolate;
+}
+
+input[type="number"],
+input[inputmode="numeric"],
+input[inputmode="decimal"] {
+  direction: ltr;
+  text-align: start;
+}
+
+input[type="text"],
+textarea {
+  direction: auto;
+}
+
+site-navbar[data-language="he"] .nc-navbar__drawer-header {
+  padding-inline: 24px 16px;
+}
+
+/* Shared value-unit rendering for screen output. DOM order remains value, then unit. */
+.measurement {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .25em;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+.measurement-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.measurement-unit {
+  unicode-bidi: isolate;
+}
+
+html[dir="ltr"] .measurement { flex-direction: row; }
+html[dir="rtl"] .measurement { flex-direction: row-reverse; }
+
+@media (max-width: 1023px) {
+  .nc-navbar__page-actions { display: none !important; }
+}
+
+/* Shared inline formatting for measurements, quantities, prices, and support text. */
+.supporting-text {
+  display: inline;
+  unicode-bidi: isolate;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.inline-number,
+.price-value,
+.inline-value-list {
+  unicode-bidi: isolate;
+}
+
+.inline-number {
+  display: inline-block;
+  direction: ltr;
+  white-space: nowrap;
+}
+
+.price-value {
+  display: inline-flex;
+  align-items: baseline;
+  flex-direction: row;
+  gap: 0;
+  direction: ltr;
+  white-space: nowrap;
+}
+
+.price-symbol,
+.price-number {
+  display: inline;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.inline-value-list {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .25em;
+  direction: inherit;
+}
+
+.inline-value-list > .inline-separator {
+  display: inline;
+  flex: 0 0 auto;
 }

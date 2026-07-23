@@ -1,10 +1,12 @@
 (function () {
   "use strict";
 
+  const I18N = window.NCNestingI18n;
+  const t = (key, params = {}, language) => I18N.t(key, params, language);
+  const rich = (key, params = {}, language) => I18N.richText(key, params, language);
   const pageParams = new URLSearchParams(location.search);
   const batchId = pageParams.get("batchId");
   const groupId = pageParams.get("groupId");
-  const fmt = value => new Intl.NumberFormat().format(value);
   const SEGMENT = Object.freeze({
     START_TRIM: "StartTrim",
     TOOL_CUT: "ToolCut",
@@ -16,6 +18,7 @@
 
   let data;
   let pieces = [];
+  let loadErrorDescriptor = null;
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -24,6 +27,15 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  const bdi = value => `<bdi dir="ltr">${escapeHtml(value)}</bdi>`;
+
+  function localizedError(key, params = {}) {
+    const error = new Error(key);
+    error.i18nKey = key;
+    error.i18nParams = params;
+    return error;
   }
 
   function realNumber(value) {
@@ -88,40 +100,42 @@
   }
 
   async function loadPlan() {
-    if (!batchId || !groupId) throw new Error("Return to the Batch Result page and open a cutting plan.");
+    if (!batchId || !groupId) throw localizedError("error.returnBatch");
     const stored = await NcNesting.getPlan(batchId, groupId);
-    if (!stored) throw new Error("This cutting plan is not available in this browser. Solve the job again.");
+    if (!stored) throw localizedError("error.planUnavailable");
     return normalizePlan(stored);
   }
 
-  const mm = value => realNumber(value) == null ? "—" : `${fmt(Number(value))} ${data.settings.unit}`;
-  const pct = value => Number.isFinite(value) ? `${value.toFixed(1)}%` : "—";
+  const mm = value => realNumber(value) == null ? "—" : I18N.measurementHtml(Number(value), "mm", { maximumFractionDigits: 2 });
+  const mmText = value => realNumber(value) == null ? "—" : I18N.measurementText(Number(value), "mm", { maximumFractionDigits: 2 });
+  const pct = value => Number.isFinite(value) ? `${I18N.formatNumber(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : "—";
   const percentage = (value, total) => Number.isFinite(value) && Number.isFinite(total) && total > 0 ? value / total * 100 : Number.NaN;
   const isOffcut = type => type === SEGMENT.REUSABLE_OFFCUT || type === SEGMENT.NON_REUSABLE_OFFCUT;
 
   function retrievalText(storage) {
-    return String(storage.storageArea || "").trim() || "Unspecified storage area";
+    const area = String(storage.storageArea || "").trim();
+    return area ? t("plan.retrieveArea", { area: I18N.isolate(area) }) : t("plan.unspecifiedArea");
   }
 
   function validateExplicitSequence(piece) {
     const segments = piece.segments;
-    const label = `Piece ${piece.pieceNumber ?? "?"}`;
-    if (segments.length < 7 || segments.length % 2 === 0) throw new Error(`${label} has an invalid segment sequence.`);
-    if (segments[0].type !== SEGMENT.START_TRIM || segments.at(-1).type !== SEGMENT.END_TRIM) throw new Error(`${label} has invalid trim segments.`);
+    const number = I18N.isolate(piece.pieceNumber ?? "?");
+    if (segments.length < 7 || segments.length % 2 === 0) throw localizedError("planError.sequence", { number });
+    if (segments[0].type !== SEGMENT.START_TRIM || segments.at(-1).type !== SEGMENT.END_TRIM) throw localizedError("planError.trim", { number });
     for (let index = 1; index < segments.length; index += 2) {
-      if (segments[index].type !== SEGMENT.TOOL_CUT) throw new Error(`${label} has a missing cut segment.`);
+      if (segments[index].type !== SEGMENT.TOOL_CUT) throw localizedError("planError.cut", { number });
     }
     const offcutIndex = segments.length - 3;
-    if (!isOffcut(segments[offcutIndex].type)) throw new Error(`${label} has an invalid offcut segment.`);
+    if (!isOffcut(segments[offcutIndex].type)) throw localizedError("planError.offcut", { number });
     for (let index = 2; index < offcutIndex; index += 2) {
-      if (segments[index].type !== SEGMENT.PART) throw new Error(`${label} has an invalid part segment.`);
+      if (segments[index].type !== SEGMENT.PART) throw localizedError("planError.part", { number });
     }
     segments.forEach(segment => {
-      if (!Number.isFinite(segment.length) || segment.length < 0) throw new Error(`${label} has an invalid segment length.`);
-      if (segment.type === SEGMENT.PART && !segment.partId) throw new Error(`${label} has an unnamed part segment.`);
+      if (!Number.isFinite(segment.length) || segment.length < 0) throw localizedError("planError.length", { number });
+      if (segment.type === SEGMENT.PART && !segment.partId) throw localizedError("planError.unnamed", { number });
     });
     const segmentTotal = segments.reduce((sum, segment) => sum + segment.length, 0);
-    if (Math.abs(segmentTotal - piece.stockLength) > 0.001) throw new Error(`${label} lengths do not match the selected stock.`);
+    if (Math.abs(segmentTotal - piece.stockLength) > 0.001) throw localizedError("planError.total", { number });
   }
 
   function calculatePiece(piece) {
@@ -148,22 +162,30 @@
     };
   }
 
-  async function loadAndRender(source) {
-    data = source ? normalizePlan(source) : await loadPlan();
-    pieces = data.stockPieces.map(calculatePiece);
-    document.getElementById("loadError").hidden = true;
-    document.getElementById("pageHeading").textContent = `${data.profileName} · ${data.steelGrade} · Cut Plan`;
-    document.title = `${data.profileName} · ${data.steelGrade} · Cut Plan — NC Nesting`;
+  function updateBackArrow() {
+    const arrow = document.querySelector("#backLink .back-arrow");
+    if (arrow) arrow.textContent = I18N.direction() === "rtl" ? "→" : "←";
+  }
+
+  function renderIdentity() {
+    document.getElementById("pageHeading").innerHTML = `${bdi(data.profileName)} · ${bdi(data.steelGrade)} · ${escapeHtml(t("common.cutPlan"))}`;
+    document.title = `${data.profileName} · ${data.steelGrade} · ${t("page.plan.main")} — ${t("common.ncNesting")}`;
     document.getElementById("jobNames").innerHTML = [
-      data.projectName ? `<span>Project: <strong>${escapeHtml(data.projectName)}</strong></span>` : "",
-      data.batchName ? `<span>Batch name: <strong>${escapeHtml(data.batchName)}</strong></span>` : ""
+      data.projectName ? `<span>${escapeHtml(t("common.project"))}: <strong dir="auto">${escapeHtml(data.projectName)}</strong></span>` : "",
+      data.batchName ? `<span>${escapeHtml(t("common.batchName"))}: <strong dir="auto">${escapeHtml(data.batchName)}</strong></span>` : ""
     ].filter(Boolean).join('<span class="job-name-separator"> · </span>');
     document.getElementById("jobSettings").innerHTML = `
-      Tool width: <strong>${mm(data.settings.toolWidth)}</strong> ·
-      Start trim: <strong>${mm(data.settings.trimStart)}</strong> ·
-      End trim: <strong>${mm(data.settings.trimEnd)}</strong> ·
-      Reusable minimum: <strong>${mm(data.settings.reusableMinimumLength)}</strong>
+      ${escapeHtml(t("common.toolWidth"))}: <strong>${mm(data.settings.toolWidth)}</strong> ·
+      ${escapeHtml(t("common.startTrim"))}: <strong>${mm(data.settings.trimStart)}</strong> ·
+      ${escapeHtml(t("common.endTrim"))}: <strong>${mm(data.settings.trimEnd)}</strong> ·
+      ${escapeHtml(t("common.reusableMinimum"))}: <strong>${mm(data.settings.reusableMinimumLength)}</strong>
     `;
+  }
+
+  function renderAll() {
+    I18N.apply();
+    updateBackArrow();
+    renderIdentity();
     renderSummary();
     renderPieces();
     renderStockOrders();
@@ -172,10 +194,28 @@
     renderWasteList();
   }
 
-  function showLoadError() {
+  async function loadAndRender(source) {
+    data = source ? normalizePlan(source) : await loadPlan();
+    loadErrorDescriptor = null;
+    pieces = data.stockPieces.map(calculatePiece);
+    document.getElementById("loadError").hidden = true;
+    ["printPage", "printFullSet"].forEach(id => { document.getElementById(id).disabled = false; });
+    renderAll();
+  }
+
+  function renderLoadError() {
+    if (!loadErrorDescriptor) return;
     const errorPanel = document.getElementById("loadError");
-    errorPanel.textContent = "The cutting plan could not be processed. Return to the Batch Result page and try again.";
+    errorPanel.textContent = t(loadErrorDescriptor.key, loadErrorDescriptor.params);
     errorPanel.hidden = false;
+  }
+
+  function showLoadError(error) {
+    loadErrorDescriptor = {
+      key: error?.i18nKey || "error.planProcess",
+      params: error?.i18nParams || {}
+    };
+    renderLoadError();
   }
 
   function renderSummary() {
@@ -185,32 +225,32 @@
     const storageLength = finiteNumber(data.totals.totalStorageStockLengthConsumed);
     const reusableReturned = finiteNumber(data.totals.totalReusableOffcutLength);
     const metrics = [
-      ["Utilization", pct(percentage(totalConsumed, totalStock)), `${mm(totalConsumed)} including parts, trims and tool cuts`],
-      ["Waste", pct(percentage(totalOffcut, totalStock)), `${mm(totalOffcut)} total offcut`],
-      ["Storage stock share", pct(percentage(storageLength, totalStock)), `${mm(storageLength)} consumed from storage`],
-      ["Reusable returned to storage", pct(percentage(reusableReturned, totalStock)), `${mm(reusableReturned)} reusable offcut`]
+      [t("common.utilization"), pct(percentage(totalConsumed, totalStock)), I18N.supportingTextHtml("plan.includesParts", { length: mm(totalConsumed) })],
+      [t("common.totalOffcut"), pct(percentage(totalOffcut, totalStock)), I18N.supportingTextHtml("plan.totalOffcutNote", { length: mm(totalOffcut) })],
+      [t("common.storageStockShare"), pct(percentage(storageLength, totalStock)), I18N.supportingTextHtml("plan.consumedStorageNote", { length: mm(storageLength) })],
+      [t("common.reusableReturnedToStorage"), pct(percentage(reusableReturned, totalStock)), I18N.supportingTextHtml("plan.reusableNote", { length: mm(reusableReturned) })]
     ];
     document.getElementById("summary").innerHTML = metrics.map(([label, percentValue, note]) => `
-      <div class="metric"><div class="metric-label">${escapeHtml(label)}</div><div class="metric-percent">${escapeHtml(percentValue)}</div><div class="metric-length">${escapeHtml(note)}</div></div>
+      <div class="metric"><div class="metric-label">${escapeHtml(label)}</div><div class="metric-percent" dir="ltr">${escapeHtml(percentValue)}</div><div class="metric-length">${note}</div></div>
     `).join("");
   }
 
   function segmentPresentation(segment) {
     switch (segment.type) {
-      case SEGMENT.START_TRIM: return { className: "trim start-trim", title: "Start trim", label: "Start trim" };
-      case SEGMENT.END_TRIM: return { className: "trim end-trim", title: "End trim", label: "End trim" };
-      case SEGMENT.TOOL_CUT: return { className: "tool-cut", title: "Tool-width cut", label: "Cut" };
-      case SEGMENT.PART: return { className: "nested-part", title: `Nested part ${segment.partId}`, label: segment.partId };
-      case SEGMENT.REUSABLE_OFFCUT: return { className: "offcut reusable", title: "Reusable offcut", label: "Reusable offcut" };
-      case SEGMENT.NON_REUSABLE_OFFCUT: return { className: "offcut non-reusable", title: "Non-reusable offcut", label: "Non-reusable offcut" };
-      default: throw new Error("The cutting plan contains an unsupported segment.");
+      case SEGMENT.START_TRIM: return { className: "trim start-trim", title: t("common.startTrim"), label: t("common.startTrim") };
+      case SEGMENT.END_TRIM: return { className: "trim end-trim", title: t("common.endTrim"), label: t("common.endTrim") };
+      case SEGMENT.TOOL_CUT: return { className: "tool-cut", title: t("common.toolWidthCut"), label: t("plan.cutLabel") };
+      case SEGMENT.PART: return { className: "nested-part", title: `${t("common.nestedPart")} ${I18N.isolate(segment.partId)}`, label: segment.partId };
+      case SEGMENT.REUSABLE_OFFCUT: return { className: "offcut reusable", title: t("common.reusableOffcut"), label: t("common.reusableOffcut") };
+      case SEGMENT.NON_REUSABLE_OFFCUT: return { className: "offcut non-reusable", title: t("common.nonReusableOffcut"), label: t("common.nonReusableOffcut") };
+      default: throw localizedError("error.unsupportedSegment");
     }
   }
 
   function segmentMarkup(segment) {
     const presentation = segmentPresentation(segment);
-    const title = `${presentation.title}: ${mm(segment.length)}`;
-    const content = segment.type === SEGMENT.TOOL_CUT ? "" : `<div class="segment-label"><strong>${escapeHtml(presentation.label)}</strong><span>${escapeHtml(mm(segment.length))}</span></div>`;
+    const title = `${presentation.title}: ${mmText(segment.length)}`;
+    const content = segment.type === SEGMENT.TOOL_CUT ? "" : `<div class="segment-label"><strong>${segment.type === SEGMENT.PART ? bdi(presentation.label) : escapeHtml(presentation.label)}</strong><span>${mm(segment.length)}</span></div>`;
     return `<div class="segment ${presentation.className}" style="--segment-length:${segment.length}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${content}</div>`;
   }
 
@@ -220,27 +260,36 @@
       const rightSourceOrder = right.stockSource === "StorageStock" ? 0 : 1;
       return leftSourceOrder - rightSourceOrder || finiteNumber(left.stockLength) - finiteNumber(right.stockLength) || finiteNumber(left.pieceNumber) - finiteNumber(right.pieceNumber);
     });
-    document.getElementById("pieces").innerHTML = displayPieces.map(piece => {
+    document.getElementById("pieces").innerHTML = displayPieces.length ? displayPieces.map(piece => {
       const sourceClass = piece.stockSource === "StorageStock" ? "storage" : "stock-order";
-      const sourceLabel = piece.stockSource === "StorageStock" ? "Storage stock" : "Stock order";
+      const sourceLabel = piece.stockSource === "StorageStock" ? t("common.storageStock") : t("common.stockOrder");
       const retrieval = piece.stockSource === "StorageStock"
-        ? `<span>Retrieve ${escapeHtml(piece.storageStockId)}: ${escapeHtml(retrievalText(piece))}</span>`
-        : "<span>New stock order</span>";
+        ? `<span>${escapeHtml(t("plan.retrieve", { id: I18N.isolate(piece.storageStockId || piece.stockTypeId) }))}: ${escapeHtml(retrievalText(piece))}</span>`
+        : `<span>${escapeHtml(t("plan.newStockOrder"))}</span>`;
+      const description = I18N.supportingTextHtml("plan.pieceDescription", {
+        partLength: mm(piece.partLength),
+        cutLength: mm(piece.cutLength),
+        consumed: mm(piece.consumed),
+        offcut: mm(piece.offcut),
+        status: escapeHtml(piece.reusable ? t("common.reusableLower") : t("common.nonReusableLower"))
+      });
       return `
         <article class="piece">
-          <div class="piece-heading"><div class="piece-title"><strong>Piece ${escapeHtml(piece.pieceNumber)}</strong><span class="source-chip ${sourceClass}">${sourceLabel}</span><span>${escapeHtml(piece.stockTypeId)} · ${escapeHtml(mm(piece.stockLength))}</span></div><div class="utilization"><strong>${pct(piece.partUtilization)}</strong><span>part yield · ${escapeHtml(mm(piece.partLength))}</span></div></div>
-          <div class="bar-wrap"><div class="bar">${piece.segments.map(segmentMarkup).join("")}</div></div>
-          <div class="piece-details">${retrieval}<span>Tool cuts ${escapeHtml(mm(piece.cutLength))}</span><span>Consumed ${escapeHtml(mm(piece.consumed))} (${pct(piece.processUtilization)})</span><span>Offcut ${escapeHtml(mm(piece.offcut))} ${piece.reusable ? "(reusable)" : "(non-reusable)"}</span></div>
+          <div class="piece-heading"><div class="piece-title"><strong>${escapeHtml(t("plan.piece", { number: I18N.isolate(piece.pieceNumber) }))}</strong><span class="source-chip ${sourceClass}">${escapeHtml(sourceLabel)}</span><span>${bdi(piece.stockTypeId)} · ${mm(piece.stockLength)}</span></div><div class="utilization"><strong dir="ltr">${pct(piece.partUtilization)}</strong><span>${escapeHtml(t("common.partYield"))} · ${mm(piece.partLength)}</span></div></div>
+          <div class="bar-wrap" dir="ltr"><div class="bar" dir="ltr">${piece.segments.map(segmentMarkup).join("")}</div></div>
+          <div class="piece-details">${retrieval}<span>${description}</span></div>
         </article>`;
-    }).join("");
+    }).join("") : `<p>${escapeHtml(t("plan.noPieces"))}</p>`;
     const legend = [
-      ["Nested parts", "var(--nested-part)"],
-      ["Start/end trim", "var(--trim)"],
-      ["Tool-width cut", "var(--tool-cut)"],
-      ["Reusable offcut", "var(--reusable)"],
-      ["Non-reusable offcut", "var(--non-reusable)"]
+      [t("plan.nestedParts"), "var(--nested-part)"],
+      [t("common.startEndTrim"), "var(--trim)"],
+      [t("common.toolWidthCut"), "var(--tool-cut)"],
+      [t("common.reusableOffcut"), "var(--reusable)"],
+      [t("common.nonReusableOffcut"), "var(--non-reusable)"]
     ];
-    document.getElementById("legend").innerHTML = legend.map(([label, background]) => `<span class="legend-item"><span class="swatch" style="background:${background}"></span>${escapeHtml(label)}</span>`).join("");
+    const legendElement = document.getElementById("legend");
+    legendElement.setAttribute("aria-label", t("common.cuttingPlanLegend"));
+    legendElement.innerHTML = legend.map(([label, background]) => `<span class="legend-item"><span class="swatch" style="background:${background}"></span>${escapeHtml(label)}</span>`).join("");
   }
 
   function sourceIds(piece) {
@@ -285,32 +334,33 @@
   function formatMoney(value) {
     const amount = realNumber(value);
     if (amount == null || !data.currency) return "";
-    const aliases = { "Israeli New Shekel": "ILS", "US Dollar": "USD", "Euro": "EUR", "Chinese Yuan (CNY)": "CNY" };
-    try {
-      return new Intl.NumberFormat(undefined, { style: "currency", currency: aliases[data.currency] || data.currency, maximumFractionDigits: 2 }).format(amount);
-    } catch {
-      return `${amount.toFixed(2)} ${data.currency}`;
-    }
+    return I18N.priceHtml(amount, data.currency, { maximumFractionDigits: 2 });
   }
 
-  function summaryRecord(title, subtitle, quantity, length, utilization, wasteLength) {
+  function summaryRecord(title, subtitleHtml, quantity, length, utilization, wasteLength) {
     const percentageValue = Number.isFinite(utilization) ? pct(utilization) : "—";
-    const wasteText = Number.isFinite(wasteLength) ? `${mm(wasteLength)} waste` : "Waste not supplied";
+    const wasteText = Number.isFinite(wasteLength)
+      ? I18N.supportingTextHtml("plan.wasteLength", { length: mm(wasteLength) })
+      : `<span class="supporting-text" dir="auto">${escapeHtml(t("plan.wasteNotSupplied"))}</span>`;
+    const percentageDetails = I18N.inlineValuesHtml([
+      `<strong class="summary-percentage" dir="ltr">${escapeHtml(percentageValue)}</strong>`,
+      wasteText
+    ], { className: "summary-percentage-line" });
     return `
       <article class="source-summary-record">
-        <div class="source-summary-heading"><strong>${escapeHtml(title || "—")}</strong><span>${escapeHtml(subtitle)}</span></div>
-        <div class="source-table-wrap"><table class="source-summary-table"><thead><tr><th>Quantity</th><th>Length</th><th>Percentage</th></tr></thead><tbody><tr><td><strong>${quantity == null ? "—" : escapeHtml(quantity)}</strong></td><td><strong>${escapeHtml(mm(length))}</strong></td><td><strong class="summary-percentage">${escapeHtml(percentageValue)}</strong><span class="summary-secondary">${escapeHtml(wasteText)}</span></td></tr></tbody></table></div>
+        <div class="source-summary-heading"><strong>${bdi(title || "—")}</strong><span class="source-summary-support">${subtitleHtml}</span></div>
+        <div class="source-table-wrap"><table class="source-summary-table"><thead><tr><th>${escapeHtml(t("common.quantity"))}</th><th>${escapeHtml(t("common.length"))}</th><th>${escapeHtml(t("common.percentage"))}</th></tr></thead><tbody><tr><td><strong dir="ltr">${quantity == null ? "—" : escapeHtml(I18N.formatNumber(quantity))}</strong></td><td><strong>${mm(length)}</strong></td><td>${percentageDetails}</td></tr></tbody></table></div>
       </article>`;
   }
 
   function renderStorageRetrieval() {
     if (data.storageRetrievals.length === 0) {
-      document.getElementById("storageRetrieval").innerHTML = '<p class="empty-summary">No storage stock is selected for this plan.</p>';
+      document.getElementById("storageRetrieval").innerHTML = `<p class="empty-summary">${escapeHtml(t("plan.noStorage"))}</p>`;
       return;
     }
     document.getElementById("storageRetrieval").innerHTML = data.storageRetrievals.map(record => {
       const values = derivedSourceValues(record, "StorageStock");
-      return summaryRecord(values.id, retrievalText(record), values.quantity, values.length, values.utilization, values.wasteLength);
+      return summaryRecord(values.id, `<span class="supporting-text" dir="auto">${escapeHtml(retrievalText(record))}</span>`, values.quantity, values.length, values.utilization, values.wasteLength);
     }).join("");
   }
 
@@ -320,14 +370,14 @@
       return count != null ? count > 0 : matchingPieces(stock.stockOrderId || stock.stockTypeId, "StockOrder", stock.length ?? stock.stockLength).length > 0;
     });
     if (selected.length === 0) {
-      document.getElementById("stockOrders").innerHTML = '<p class="empty-summary">No stock orders are selected for this plan.</p>';
+      document.getElementById("stockOrders").innerHTML = `<p class="empty-summary">${escapeHtml(t("plan.noOrders"))}</p>`;
       return;
     }
     document.getElementById("stockOrders").innerHTML = selected.map(stock => {
       const values = derivedSourceValues(stock, "StockOrder");
-      const availability = stock.isUnlimited ? "Unlimited" : `Limited to ${stock.availableQuantity}`;
+      const availability = stock.isUnlimited ? t("common.unlimited") : t("common.limitedTo", { quantity: I18N.isolate(I18N.formatNumber(stock.availableQuantity)) });
       const cost = data.currency ? formatMoney(stock.cost) : "";
-      const subtitle = `${availability}${cost ? ` · ${cost}` : ""}`;
+      const subtitle = `<span class="supporting-text" dir="auto">${escapeHtml(availability)}${cost ? ` <span class="inline-separator" aria-hidden="true">·</span> ${cost}` : ""}</span>`;
       return summaryRecord(values.id, subtitle, values.quantity, values.length, values.utilization, values.wasteLength);
     }).join("");
   }
@@ -348,17 +398,17 @@
     const parts = data.requestedParts;
     const layouts = groupedLayouts();
     const header = `
-      <tr><th rowspan="2">Source</th><th rowspan="2" class="right">Stock length</th><th rowspan="2" class="right">Stock qty.</th><th rowspan="2" class="right">Offcut length</th><th rowspan="2" class="right">Utilization</th><th colspan="${parts.length}" class="center">Parts per layout</th></tr>
-      <tr>${parts.map((part, index) => `<th class="matrix-part-header"><strong>${index + 1}: ${escapeHtml(part.partId)}</strong><span>${escapeHtml(mm(part.length))}</span></th>`).join("")}</tr>`;
+      <tr><th rowspan="2">${escapeHtml(t("common.source"))}</th><th rowspan="2" class="right">${escapeHtml(t("common.stockLength"))}</th><th rowspan="2" class="right">${escapeHtml(t("common.stockQtyShort"))}</th><th rowspan="2" class="right">${escapeHtml(t("common.offcutLength"))}</th><th rowspan="2" class="right">${escapeHtml(t("common.utilization"))}</th><th colspan="${parts.length}" class="center">${escapeHtml(t("common.partsPerLayout"))}</th></tr>
+      <tr>${parts.map((part, index) => `<th class="matrix-part-header"><strong><bdi dir="ltr">${index + 1}: ${escapeHtml(part.partId)}</bdi></strong><span>${mm(part.length)}</span></th>`).join("")}</tr>`;
     const rows = layouts.map(layout => `
-      <tr><td>${layout.stockSource === "StorageStock" ? "Storage" : "Stock order"}</td><td class="right">${escapeHtml(mm(layout.stockLength))}</td><td class="right">${layout.quantity}</td><td class="right">${escapeHtml(mm(layout.offcut))}</td><td class="right">${pct(layout.partUtilization)}</td>${parts.map(part => `<td class="center">${layout.counts[part.partId] || ""}</td>`).join("")}</tr>`).join("");
+      <tr><td>${escapeHtml(layout.stockSource === "StorageStock" ? t("common.storage") : t("common.stockOrder"))}</td><td class="right">${mm(layout.stockLength)}</td><td class="right" dir="ltr">${I18N.formatNumber(layout.quantity)}</td><td class="right">${mm(layout.offcut)}</td><td class="right" dir="ltr">${pct(layout.partUtilization)}</td>${parts.map(part => `<td class="center" dir="ltr">${layout.counts[part.partId] || ""}</td>`).join("")}</tr>`).join("");
     document.getElementById("layoutMatrix").innerHTML = `<thead>${header}</thead><tbody>${rows}</tbody>`;
   }
 
   function groupedWasteRows() {
     const groups = new Map();
     pieces.forEach(piece => {
-      const source = piece.stockSource === "StorageStock" ? "Storage" : "Stock order";
+      const source = piece.stockSource === "StorageStock" ? "Storage" : "StockOrder";
       const stockId = piece.stockSource === "StorageStock" ? (piece.storageStockId || piece.stockTypeId) : (piece.stockOrderId || piece.stockTypeId);
       const key = `${source}\u0000${stockId}\u0000${piece.offcut}\u0000${piece.reusable}`;
       if (!groups.has(key)) groups.set(key, { pieceNumbers: [], source, stockId, offcut: piece.offcut, reusable: piece.reusable });
@@ -374,8 +424,21 @@
   function renderWasteList() {
     const rows = groupedWasteRows();
     document.getElementById("wasteList").innerHTML = `
-      <thead><tr><th>Piece</th><th>Source</th><th>Stock ID</th><th class="right">Offcut length</th><th>Status</th></tr></thead>
-      <tbody>${rows.map(row => `<tr><td>${escapeHtml(row.pieceNumbers.join(", "))}</td><td>${escapeHtml(row.source)}</td><td>${escapeHtml(row.quantity >= 2 ? `${row.quantity} x ${row.stockId}` : row.stockId)}</td><td class="right">${escapeHtml(mm(row.offcut))}</td><td>${row.reusable ? "Reusable" : "Non-reusable"}</td></tr>`).join("")}</tbody>`;
+      <thead><tr><th>${escapeHtml(t("common.piece"))}</th><th>${escapeHtml(t("common.source"))}</th><th>${escapeHtml(t("common.stockId"))}</th><th class="right">${escapeHtml(t("common.offcutLength"))}</th><th>${escapeHtml(t("common.status"))}</th></tr></thead>
+      <tbody>${rows.map(row => {
+        const source = row.source === "Storage" ? t("common.storage") : t("common.stockOrder");
+        const stockDisplay = row.quantity >= 2 ? `${row.quantity} x ${row.stockId}` : row.stockId;
+        return `<tr><td dir="ltr">${escapeHtml(row.pieceNumbers.join(", "))}</td><td>${escapeHtml(source)}</td><td dir="ltr">${escapeHtml(stockDisplay)}</td><td class="right">${mm(row.offcut)}</td><td>${escapeHtml(row.reusable ? t("common.reusable") : t("common.nonReusable"))}</td></tr>`;
+      }).join("")}</tbody>`;
+  }
+
+
+  async function printCurrentPage() {
+    try {
+      await NcNestingPrint.printPlanPage(data);
+    } catch {
+      window.alert(t("error.printSurface"));
+    }
   }
 
   async function printFullSet() {
@@ -384,12 +447,23 @@
       if (!calculation) throw new Error();
       await NcNestingPrint.printFullSet(calculation);
     } catch {
-      window.alert("The full print set could not be created.");
+      window.alert(t("error.fullPrint"));
     }
   }
 
+  function retranslatePlanPage() {
+    I18N.apply();
+    updateBackArrow();
+    if (data) renderAll();
+    else renderLoadError();
+  }
+
+  I18N.apply();
+  updateBackArrow();
+  I18N.listen(retranslatePlanPage);
+  window.addEventListener("site-navbar:ready", retranslatePlanPage, { once: true });
   if (batchId) document.getElementById("backLink").href = `batch-result.html?batchId=${encodeURIComponent(batchId)}`;
-  document.getElementById("printPage").addEventListener("click", () => NcNestingPrint.printPlanPage(data));
+  document.getElementById("printPage").addEventListener("click", printCurrentPage);
   document.getElementById("printFullSet").addEventListener("click", printFullSet);
   loadAndRender().catch(showLoadError);
 })();
