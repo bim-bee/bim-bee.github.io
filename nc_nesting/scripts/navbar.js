@@ -120,6 +120,7 @@
       this.cacheElements();
       this.bindEvents();
       this.initializePageActions();
+      this.initializePageBack();
       this.applyLanguage(this.language, { persist: false, announce: false });
 
       try {
@@ -135,6 +136,7 @@
       window.removeEventListener('storage', this.handleStorageChange);
       this.pageActionsMedia?.removeEventListener?.('change', this.handlePageActionsMediaChange);
       document.removeEventListener('DOMContentLoaded', this.handlePageActionsDomReady);
+      document.removeEventListener('DOMContentLoaded', this.handlePageBackDomReady);
       this.pageActionsResizeObserver?.disconnect();
     }
 
@@ -150,9 +152,12 @@
             <img class="nc-navbar__logo" src="${this.rootPath}images/bimbee-logo.png" alt="BIMbee">
           </a>
 
+          <div class="nc-navbar__back-slot nc-navbar__back-slot--ltr" hidden></div>
           <div class="nc-navbar__page-actions" hidden></div>
 
           <div class="nc-navbar__controls">
+            <div class="nc-navbar__back-slot nc-navbar__back-slot--rtl" hidden></div>
+
             <div class="nc-navbar__language" role="group" aria-label="Language">
               <button class="nc-navbar__language-button" type="button" data-language="en" lang="en">English</button>
               <span class="nc-navbar__language-separator" aria-hidden="true">|</span>
@@ -196,11 +201,44 @@
       this.drawer = this.querySelector('.nc-navbar__drawer');
       this.drawerTitle = this.querySelector('.nc-navbar__drawer-title');
       this.pageActionsHost = this.querySelector('.nc-navbar__page-actions');
+      this.backSlotLtr = this.querySelector('.nc-navbar__back-slot--ltr');
+      this.backSlotRtl = this.querySelector('.nc-navbar__back-slot--rtl');
       this.brand = this.querySelector('.nc-navbar__brand');
       this.controls = this.querySelector('.nc-navbar__controls');
       this.languageGroup = this.querySelector('.nc-navbar__language');
       this.languageButtons = [...this.querySelectorAll('[data-language]')];
       this.navLinks = [...this.querySelectorAll('[data-nav-key]')];
+    }
+
+
+    initializePageBack() {
+      if (this.pageBackLink) return;
+      const backLink = document.querySelector('[data-navbar-back]');
+      if (!backLink) {
+        if (document.readyState === 'loading' && !this.handlePageBackDomReady) {
+          this.handlePageBackDomReady = () => this.initializePageBack();
+          document.addEventListener('DOMContentLoaded', this.handlePageBackDomReady, { once: true });
+        }
+        return;
+      }
+
+      document.removeEventListener('DOMContentLoaded', this.handlePageBackDomReady);
+      this.pageBackLink = backLink;
+      this.pageBackAnchor = document.createComment('nc-navbar-page-back');
+      backLink.parentNode.insertBefore(this.pageBackAnchor, backLink);
+      backLink.classList.add('nc-navbar__back-link');
+      this.syncPageBack();
+      requestAnimationFrame(() => this.updatePageActionClearance());
+    }
+
+    syncPageBack() {
+      if (!this.pageBackLink) return;
+      const target = this.language === 'he' ? this.backSlotRtl : this.backSlotLtr;
+      const inactive = this.language === 'he' ? this.backSlotLtr : this.backSlotRtl;
+      if (this.pageBackLink.parentNode !== target) target.appendChild(this.pageBackLink);
+      target.hidden = false;
+      inactive.hidden = true;
+      this.pageBackLink.querySelector('.back-arrow')?.replaceChildren(document.createTextNode(this.language === 'he' ? '→' : '←'));
     }
 
     initializePageActions() {
@@ -249,7 +287,7 @@
 
     updatePageActionClearance() {
       if (!this.pageActionGroup || this.pageActionsHost.hidden) return;
-      const brandWidth = this.brand.getBoundingClientRect().width;
+      const brandWidth = this.brand.getBoundingClientRect().width + (this.backSlotLtr.hidden ? 0 : this.backSlotLtr.getBoundingClientRect().width + 12);
       const controlsWidth = this.controls.getBoundingClientRect().width;
       const inlinePadding = parseFloat(getComputedStyle(this.navbar).paddingInlineStart) || 0;
       const clearance = Math.ceil(Math.max(brandWidth, controlsWidth) + inlinePadding + 18);
@@ -337,6 +375,7 @@
       updateLegacyLanguageElements(language);
       if (persist) writeLanguage(this.storageKey, language);
       if (announce) announceLanguage(language);
+      this.syncPageBack();
       window.requestAnimationFrame(() => this.updatePageActionClearance());
     }
 

@@ -2,8 +2,11 @@
   "use strict";
 
   const DB_NAME = "nc-nesting";
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   const STORE_NAME = "solved-batches";
+  const GROUP_CACHE_STORE_NAME = "group-solve-cache";
+  const GROUP_CACHE_PROJECT_INDEX = "projectId";
+  const SOLVE_CACHE_VERSION = "1";
   const ACTIVE_PROJECT_KEY = `${DB_NAME}:active-project`;
   const ORDER_QUANTITIES_KEY = batchId => `${DB_NAME}:order-quantities:${batchId}`;
 
@@ -72,6 +75,7 @@
       profileKeilogramPerMeter,
       totalStockLengthConsumed,
       totalConsumedLength: pickFirstNumber(group.totalConsumedLength, group.actualConsumedLength) || 0,
+      totalPartLength: pickFirstNumber(group.totalPartLength, group.finishedPartLength, group.selectedPartLength),
       totalOffcutLength: pickFirstNumber(group.totalOffcutLength) || 0,
       totalStorageStockLengthConsumed,
       totalReusableOffcutLength: pickFirstNumber(group.totalReusableOffcutLength, group.reusableOffcutLength) || 0,
@@ -174,6 +178,132 @@
     );
   }
 
+  function planFromNormalizedCollection(plans, groupId) {
+    if (Array.isArray(plans)) {
+      return plans.find(plan => plan?.groupId === groupId || plan?.id === groupId) || null;
+    }
+    return plans?.[groupId] || null;
+  }
+
+  function attachPlanPartLengths(batchResult, plans) {
+    const result = clone(batchResult);
+    const normalizedPlans = normalizePlansShape(plans || {});
+    result.groups = asArray(result?.groups).map(group => {
+      const explicit = pickFirstNumber(group.totalPartLength);
+      if (explicit != null && explicit >= 0) return group;
+      const plan = planFromNormalizedCollection(normalizedPlans, group.groupId);
+      const totalPartLength = globalThis.NcNestingUtilization?.totalPartLengthFromPlan?.(plan);
+      return Number.isFinite(totalPartLength) && totalPartLength >= 0
+        ? { ...group, totalPartLength }
+        : group;
+    });
+    return result;
+  }
+
+  function fingerprintField(object, key, type) {
+    if (!hasOwn(object, key)) return ["omitted"];
+    const value = object[key];
+    if (value === null) return ["null"];
+    if (type === "number") {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return ["invalid-number", String(value)];
+      return ["number", Object.is(number, -0) ? 0 : number];
+    }
+    return ["string", String(value)];
+  }
+
+  function canonicalString(value) {
+    if (value === undefined) return '["undefined"]';
+    if (value === null || typeof value !== "object") return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(canonicalString).join(",")}]`;
+    const keys = Object.keys(value).sort();
+    return `{${keys.map(key => `${JSON.stringify(key)}:${canonicalString(value[key])}`).join(",")}}`;
+  }
+
+  function stableFingerprintEntities(items, idKey, mapper) {
+    return asArray(items)
+      .map(item => mapper(item || {}))
+      .sort((left, right) => {
+        const idComparison = canonicalString(left[idKey]).localeCompare(canonicalString(right[idKey]));
+        return idComparison || canonicalString(left).localeCompare(canonicalString(right));
+      });
+  }
+
+  function solveGroupFingerprintPayload(group, cuttingSettings) {
+    return {
+      cacheVersion: SOLVE_CACHE_VERSION,
+      profileName: fingerprintField(group, "profileName", "string"),
+      steelGrade: fingerprintField(group, "steelGrade", "string"),
+      partRequirements: stableFingerprintEntities(group?.partRequirements, "partId", part => ({
+        partId: fingerprintField(part, "partId", "string"),
+        length: fingerprintField(part, "length", "number"),
+        quantity: fingerprintField(part, "quantity", "number")
+      })),
+      stockOrders: stableFingerprintEntities(group?.stockOrders, "stockOrderId", order => ({
+        stockOrderId: fingerprintField(order, "stockOrderId", "string"),
+        length: fingerprintField(order, "length", "number"),
+        availableQuantity: fingerprintField(order, "availableQuantity", "number"),
+        price: fingerprintField(order, "price", "number")
+      })),
+      storageStock: stableFingerprintEntities(group?.storageStock, "groupedStorageStockId", stock => ({
+        groupedStorageStockId: fingerprintField(stock, "groupedStorageStockId", "string"),
+        length: fingerprintField(stock, "length", "number"),
+        quantity: fingerprintField(stock, "quantity", "number")
+      })),
+      cuttingSettings: {
+        toolWidth: fingerprintField(cuttingSettings, "toolWidth", "number"),
+        trimStart: fingerprintField(cuttingSettings, "trimStart", "number"),
+        trimEnd: fingerprintField(cuttingSettings, "trimEnd", "number"),
+        reusableMinimumLength: fingerprintField(cuttingSettings, "reusableMinimumLength", "number")
+      }
+    };
+  }
+
+  function fallbackHash(value) {
+    let first = 0x811c9dc5;
+    let second = 0x9e3779b9;
+    for (let index = 0; index < value.length; index++) {
+      const code = value.charCodeAt(index);
+      first = Math.imul(first ^ code, 0x01000193) >>> 0;
+      second = Math.imul(second ^ code, 0x85ebca6b) >>> 0;
+      second = ((second << 13) | (second >>> 19)) >>> 0;
+    }
+    return `${first.toString(16).padStart(8, "0")}${second.toString(16).padStart(8, "0")}`;
+  }
+
+  async function createGroupFingerprint(group, cuttingSettings) {
+    const canonical = canonicalString(solveGroupFingerprintPayload(group, cuttingSettings || {}));
+    try {
+      if (globalThis.crypto?.subtle && globalThis.TextEncoder) {
+        const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+        const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+        return `${SOLVE_CACHE_VERSION}:sha256:${hash}`;
+      }
+    } catch {
+      // Use the deterministic fallback below.
+    }
+    return `${SOLVE_CACHE_VERSION}:fallback:${fallbackHash(canonical)}`;
+  }
+
+  function planFromCollection(plans, groupId) {
+    if (Array.isArray(plans)) {
+      return plans.find(plan => plan?.groupId === groupId || plan?.id === groupId) || null;
+    }
+    return plans?.[groupId] || null;
+  }
+
+  function validCachedGroupEntry(entry, projectId, groupId, fingerprint) {
+    return Boolean(
+      entry
+      && (!projectId || entry.projectId === projectId)
+      && entry.groupId === groupId
+      && entry.cacheVersion === SOLVE_CACHE_VERSION
+      && entry.fingerprint === fingerprint
+      && entry.batchResultGroup?.groupId === groupId
+      && entry.cuttingPlan?.groupId === groupId
+    );
+  }
+
   function openDatabase() {
     return new Promise((resolve, reject) => {
       if (!globalThis.indexedDB) {
@@ -187,9 +317,16 @@
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: "batchId" });
         }
+        const cacheStore = db.objectStoreNames.contains(GROUP_CACHE_STORE_NAME)
+          ? request.transaction.objectStore(GROUP_CACHE_STORE_NAME)
+          : db.createObjectStore(GROUP_CACHE_STORE_NAME, { keyPath: ["projectId", "groupId"] });
+        if (!cacheStore.indexNames.contains(GROUP_CACHE_PROJECT_INDEX)) {
+          cacheStore.createIndex(GROUP_CACHE_PROJECT_INDEX, "projectId", { unique: false });
+        }
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error || new Error("Unable to open IndexedDB."));
+      request.onblocked = () => reject(new Error("IndexedDB upgrade is blocked."));
     });
   }
 
@@ -227,6 +364,188 @@
 
     const raw = localStorage.getItem(`${DB_NAME}:${batchId}`);
     return raw ? JSON.parse(raw) : null;
+  }
+
+  function transactionComplete(transaction, errorMessage) {
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error(errorMessage));
+      transaction.onabort = () => reject(transaction.error || new Error(errorMessage));
+    });
+  }
+
+  function requestResult(request, errorMessage) {
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result ?? null);
+      request.onerror = () => reject(request.error || new Error(errorMessage));
+    });
+  }
+
+  async function readGroupCacheEntries(projectId, groupIds) {
+    const db = await openDatabase();
+    try {
+      const tx = db.transaction(GROUP_CACHE_STORE_NAME, "readonly");
+      const completed = transactionComplete(tx, "Unable to read cached group results.");
+      const store = tx.objectStore(GROUP_CACHE_STORE_NAME);
+      const records = await Promise.all(groupIds.map(groupId => requestResult(
+        store.get([projectId, groupId]),
+        "Unable to read cached group result."
+      )));
+      await completed;
+      return new Map(groupIds.map((groupId, index) => [groupId, records[index]]));
+    } finally {
+      db.close();
+    }
+  }
+
+  async function cleanupProjectGroupCache(projectId, currentGroupIds) {
+    if (!projectId) return;
+    const current = new Set(currentGroupIds || []);
+    const db = await openDatabase();
+    try {
+      const tx = db.transaction(GROUP_CACHE_STORE_NAME, "readwrite");
+      const completed = transactionComplete(tx, "Unable to clean cached group results.");
+      const index = tx.objectStore(GROUP_CACHE_STORE_NAME).index(GROUP_CACHE_PROJECT_INDEX);
+      await new Promise((resolve, reject) => {
+        const request = index.openCursor(projectId);
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) {
+            resolve();
+            return;
+          }
+          if (!current.has(cursor.value.groupId)) cursor.delete();
+          cursor.continue();
+        };
+        request.onerror = () => reject(request.error || new Error("Unable to clean cached group results."));
+      });
+      await completed;
+    } finally {
+      db.close();
+    }
+  }
+
+  async function prepareIncrementalSolve(request, projectId) {
+    const groups = asArray(request?.groups);
+    const fingerprints = new Map();
+    try {
+      await Promise.all(groups.map(async group => {
+        fingerprints.set(group.groupId, await createGroupFingerprint(group, request?.cuttingSettings || {}));
+      }));
+    } catch {
+      return {
+        cacheAvailable: false,
+        fingerprints,
+        cachedEntries: new Map(),
+        changedGroups: clone(groups),
+        unchangedGroupIds: []
+      };
+    }
+
+    if (!projectId || groups.some(group => !cleanName(group?.groupId))) {
+      return {
+        cacheAvailable: false,
+        fingerprints,
+        cachedEntries: new Map(),
+        changedGroups: clone(groups),
+        unchangedGroupIds: []
+      };
+    }
+
+    try {
+      const groupIds = groups.map(group => group.groupId);
+      const records = await readGroupCacheEntries(projectId, groupIds);
+      const cachedEntries = new Map();
+      const changedGroups = [];
+      const unchangedGroupIds = [];
+
+      groups.forEach(group => {
+        const fingerprint = fingerprints.get(group.groupId);
+        const entry = records.get(group.groupId);
+        if (validCachedGroupEntry(entry, projectId, group.groupId, fingerprint)) {
+          cachedEntries.set(group.groupId, entry);
+          unchangedGroupIds.push(group.groupId);
+        } else {
+          changedGroups.push(clone(group));
+        }
+      });
+
+      try {
+        await cleanupProjectGroupCache(projectId, groupIds);
+      } catch {
+        // Cache cleanup must not block solving.
+      }
+      return { cacheAvailable: true, fingerprints, cachedEntries, changedGroups, unchangedGroupIds };
+    } catch {
+      return {
+        cacheAvailable: false,
+        fingerprints,
+        cachedEntries: new Map(),
+        changedGroups: clone(groups),
+        unchangedGroupIds: []
+      };
+    }
+  }
+
+  async function writeGroupSolveCache(projectId, groupIds, fingerprints, normalized) {
+    if (!projectId || !groupIds?.length) return;
+    const groupsById = new Map(asArray(normalized?.batchResult?.groups).map(group => [group.groupId, group]));
+    const timestamp = new Date().toISOString();
+    const entries = groupIds.map(groupId => ({
+      projectId,
+      groupId,
+      fingerprint: fingerprints.get(groupId),
+      batchResultGroup: clone(groupsById.get(groupId)),
+      cuttingPlan: clone(planFromCollection(normalized?.plans, groupId)),
+      cacheVersion: SOLVE_CACHE_VERSION,
+      successfulSolveTimestamp: timestamp,
+      orderQuantityAdjustments: {}
+    }));
+
+    if (entries.some(entry => !entry.fingerprint || entry.batchResultGroup?.groupId !== entry.groupId || entry.cuttingPlan?.groupId !== entry.groupId)) {
+      throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
+    }
+
+    const db = await openDatabase();
+    try {
+      const tx = db.transaction(GROUP_CACHE_STORE_NAME, "readwrite");
+      const completed = transactionComplete(tx, "Unable to store cached group results.");
+      const store = tx.objectStore(GROUP_CACHE_STORE_NAME);
+      entries.forEach(entry => store.put(entry));
+      await completed;
+    } finally {
+      db.close();
+    }
+  }
+
+  function groupOrderQuantityAdjustments(group) {
+    const adjustments = {};
+    asArray(group?.stockOrders).forEach((order, orderIndex) => {
+      adjustments[orderQuantityKey(group, order, orderIndex)] = Math.max(0, Math.trunc(Number(order?.orderQuantity) || 0));
+    });
+    return adjustments;
+  }
+
+  async function updateCachedOrderQuantityAdjustments(projectId, groups, fingerprints) {
+    if (!projectId || !asArray(groups).length || !fingerprints) return;
+    const db = await openDatabase();
+    try {
+      const tx = db.transaction(GROUP_CACHE_STORE_NAME, "readwrite");
+      const completed = transactionComplete(tx, "Unable to update cached order quantities.");
+      const store = tx.objectStore(GROUP_CACHE_STORE_NAME);
+      asArray(groups).forEach(group => {
+        const request = store.get([projectId, group.groupId]);
+        request.onsuccess = () => {
+          const entry = request.result;
+          if (!entry || entry.fingerprint !== fingerprints[group.groupId]) return;
+          entry.orderQuantityAdjustments = groupOrderQuantityAdjustments(group);
+          store.put(entry);
+        };
+      });
+      await completed;
+    } finally {
+      db.close();
+    }
   }
 
   function saveActiveProject(project) {
@@ -313,12 +632,15 @@
       saveActiveProject(activeProject);
     }
 
-    getRecord(batchId).then(record => {
-      if (!record) return;
-      record.orderQuantities = clone(quantities);
-      if (record.project) record.project.orderQuantities = clone(quantities);
-      return putRecord(record);
-    }).catch(() => { /* The localStorage copy is already current. */ });
+    getRecord(batchId).then(async record => {
+      const projectId = record?.project?.projectId || activeProject?.projectId;
+      if (record) {
+        record.orderQuantities = clone(quantities);
+        if (record.project) record.project.orderQuantities = clone(quantities);
+        await putRecord(record);
+      }
+      if (projectId) await updateCachedOrderQuantityAdjustments(projectId, groups, record?.groupFingerprints);
+    }).catch(() => { /* The solved-batch copy is already current. */ });
 
     return quantities;
   }
@@ -351,6 +673,133 @@
 
     batchResult.batchId = batchId;
     return { succeeded: true, batchId, batchResult, plans };
+  }
+
+  function validateChangedGroupResults(normalized, changedGroupIds) {
+    const expectedIds = new Set(changedGroupIds || []);
+    const resultGroups = asArray(normalized?.batchResult?.groups);
+    const resultIds = resultGroups.map(group => group?.groupId);
+    const uniqueResultIds = new Set(resultIds);
+
+    if (
+      resultGroups.length !== expectedIds.size
+      || uniqueResultIds.size !== expectedIds.size
+      || resultIds.some(groupId => !expectedIds.has(groupId))
+    ) {
+      throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
+    }
+
+    const planIds = Array.isArray(normalized?.plans)
+      ? normalized.plans.map(plan => plan?.groupId || plan?.id)
+      : Object.keys(normalized?.plans || {});
+    const uniquePlanIds = new Set(planIds);
+    if (
+      planIds.length !== expectedIds.size
+      || uniquePlanIds.size !== expectedIds.size
+      || planIds.some(groupId => !expectedIds.has(groupId))
+    ) {
+      throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
+    }
+
+    expectedIds.forEach(groupId => {
+      const group = resultGroups.find(candidate => candidate?.groupId === groupId);
+      const plan = planFromCollection(normalized.plans, groupId);
+      if (!group || !plan || plan.groupId !== groupId) {
+        throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
+      }
+    });
+  }
+
+  function applyCachedOrderQuantityAdjustments(group, adjustments) {
+    const adjusted = clone(group);
+    asArray(adjusted?.stockOrders).forEach((order, orderIndex) => {
+      const key = orderQuantityKey(adjusted, order, orderIndex);
+      if (hasOwn(adjustments, key)) {
+        order.orderQuantity = Math.max(0, Math.trunc(Number(adjustments[key]) || 0));
+      }
+    });
+    return adjusted;
+  }
+
+  function sumGroupValue(groups, ...keys) {
+    return groups.reduce((total, group) => total + (pickFirstNumber(...keys.map(key => group?.[key])) || 0), 0);
+  }
+
+  function rebuildBatchTotals(batchResult, groups) {
+    const rebuilt = clone(batchResult || {});
+    const totals = {
+      totalStockLengthConsumed: sumGroupValue(groups, "totalStockLengthConsumed", "totalStockLength"),
+      totalConsumedLength: sumGroupValue(groups, "totalConsumedLength", "actualConsumedLength"),
+      totalPartLength: sumGroupValue(groups, "totalPartLength", "finishedPartLength", "selectedPartLength"),
+      totalOffcutLength: sumGroupValue(groups, "totalOffcutLength"),
+      totalStorageStockLengthConsumed: sumGroupValue(groups, "totalStorageStockLengthConsumed", "storageStockLengthConsumed"),
+      totalReusableOffcutLength: sumGroupValue(groups, "totalReusableOffcutLength", "reusableOffcutLength"),
+      storageStockQuantity: sumGroupValue(groups, "storageStockQuantity", "storageStockQuantityUsed"),
+      stockOrderQuantity: sumGroupValue(groups, "stockOrderQuantity"),
+      stockOrderCost: sumGroupValue(groups, "stockOrderCost")
+    };
+
+    Object.assign(rebuilt, totals);
+    if (hasOwn(rebuilt, "totalStockLength")) rebuilt.totalStockLength = totals.totalStockLengthConsumed;
+    if (hasOwn(rebuilt, "actualConsumedLength")) rebuilt.actualConsumedLength = totals.totalConsumedLength;
+    if (hasOwn(rebuilt, "finishedPartLength")) rebuilt.finishedPartLength = totals.totalPartLength;
+    if (hasOwn(rebuilt, "selectedPartLength")) rebuilt.selectedPartLength = totals.totalPartLength;
+    if (hasOwn(rebuilt, "storageStockLengthConsumed")) rebuilt.storageStockLengthConsumed = totals.totalStorageStockLengthConsumed;
+    if (hasOwn(rebuilt, "reusableOffcutLength")) rebuilt.reusableOffcutLength = totals.totalReusableOffcutLength;
+    if (hasOwn(rebuilt, "storageStockQuantityUsed")) rebuilt.storageStockQuantityUsed = totals.storageStockQuantity;
+    if (rebuilt.totals && typeof rebuilt.totals === "object" && !Array.isArray(rebuilt.totals)) {
+      rebuilt.totals = { ...rebuilt.totals, ...totals };
+    }
+    return rebuilt;
+  }
+
+  function mergeIncrementalSolveResult(request, incremental, backendResult) {
+    const changedGroupIds = incremental.changedGroups.map(group => group.groupId);
+    if (backendResult) validateChangedGroupResults(backendResult, changedGroupIds);
+    if (!backendResult && changedGroupIds.length) {
+      throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
+    }
+
+    const changedGroupsById = new Map(asArray(backendResult?.batchResult?.groups).map(group => [group.groupId, group]));
+    const groups = [];
+    const plans = {};
+    const orderQuantities = {};
+
+    asArray(request?.groups).forEach(requestGroup => {
+      const groupId = requestGroup.groupId;
+      if (changedGroupsById.has(groupId)) {
+        groups.push(clone(changedGroupsById.get(groupId)));
+        plans[groupId] = clone(planFromCollection(backendResult.plans, groupId));
+        return;
+      }
+
+      const entry = incremental.cachedEntries.get(groupId);
+      if (!validCachedGroupEntry(entry, null, groupId, incremental.fingerprints.get(groupId))) {
+        throw serviceError("The cached result could not be processed.", "INVALID_RESULT");
+      }
+      groups.push(applyCachedOrderQuantityAdjustments(entry.batchResultGroup, entry.orderQuantityAdjustments || {}));
+      Object.assign(orderQuantities, entry.orderQuantityAdjustments || {});
+      plans[groupId] = clone(entry.cuttingPlan);
+    });
+
+    const batchId = backendResult?.batchId || request?.requestId || createRequestId();
+    const generatedAt = backendResult?.batchResult?.generatedAt || new Date().toISOString();
+    const template = backendResult?.batchResult || {};
+    const batchResult = rebuildBatchTotals(template, groups);
+    batchResult.status = batchResult.status || "Completed";
+    batchResult.batchId = batchId;
+    batchResult.generatedAt = generatedAt;
+    batchResult.currency = cleanName(request?.currency) || null;
+    batchResult.groups = groups;
+
+    return {
+      succeeded: true,
+      batchId,
+      batchResult,
+      plans,
+      orderQuantities,
+      groupFingerprints: Object.fromEntries(incremental.fingerprints || [])
+    };
   }
 
   function serviceError(message, code) {
@@ -585,6 +1034,12 @@
         batchResult: clone(normalized.batchResult),
         plans: clone(normalized.plans || {})
       };
+      if (hasOwn(normalized, "orderQuantities")) {
+        projectSnapshot.orderQuantities = clone(normalized.orderQuantities || {});
+      }
+      if (hasOwn(normalized, "groupFingerprints")) {
+        projectSnapshot.groupFingerprints = clone(normalized.groupFingerprints || {});
+      }
       saveActiveProject(projectSnapshot);
     }
 
@@ -595,6 +1050,8 @@
       batchResult: { ...normalized.batchResult, batchName },
       plans: normalized.plans || {},
       project: projectSnapshot ? { ...projectSnapshot, batchName } : projectSnapshot,
+      ...(hasOwn(normalized, "orderQuantities") ? { orderQuantities: clone(normalized.orderQuantities || {}) } : {}),
+      ...(hasOwn(normalized, "groupFingerprints") ? { groupFingerprints: clone(normalized.groupFingerprints || {}) } : {}),
       storedAtUtc: new Date().toISOString()
     };
     await putRecord(record);
@@ -604,15 +1061,13 @@
   async function getBatchResult(batchId) {
     const record = await getRecord(batchId);
     if (!record?.batchResult) return null;
-    const enriched = applyRecordMetadataToBatch(enrichBatchResult(
-      normalizeBatchResultShape(record.batchResult, {
-        batchId: record.batchId,
-        currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
-        generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
-        status: record.batchResult?.status || "Completed"
-      }),
-      record.project
-    ), record);
+    const normalizedBatch = attachPlanPartLengths(normalizeBatchResultShape(record.batchResult, {
+      batchId: record.batchId,
+      currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
+      generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
+      status: record.batchResult?.status || "Completed"
+    }), record.plans || {});
+    const enriched = applyRecordMetadataToBatch(enrichBatchResult(normalizedBatch, record.project), record);
     return applyOrderQuantities(enriched, batchId, record);
   }
 
@@ -634,15 +1089,17 @@
     const record = await getRecord(batchId);
     if (!record?.batchResult) return null;
 
-    const batchResult = applyOrderQuantities(applyRecordMetadataToBatch(enrichBatchResult(
-      normalizeBatchResultShape(record.batchResult, {
-        batchId: record.batchId,
-        currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
-        generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
-        status: record.batchResult?.status || "Completed"
-      }),
-      record.project
-    ), record), batchId, record);
+    const normalizedBatch = attachPlanPartLengths(normalizeBatchResultShape(record.batchResult, {
+      batchId: record.batchId,
+      currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
+      generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
+      status: record.batchResult?.status || "Completed"
+    }), record.plans || {});
+    const batchResult = applyOrderQuantities(
+      applyRecordMetadataToBatch(enrichBatchResult(normalizedBatch, record.project), record),
+      batchId,
+      record
+    );
 
     const normalizedPlans = normalizePlansShape(record.plans || {});
     const plans = {};
@@ -659,6 +1116,64 @@
       batchResult,
       plans
     };
+  }
+
+  function removePlanFromCollection(plans, groupId) {
+    if (Array.isArray(plans)) {
+      return plans.filter(plan => (plan?.groupId || plan?.id) !== groupId);
+    }
+    const next = { ...(plans || {}) };
+    delete next[groupId];
+    return next;
+  }
+
+  function removeGroupOrderQuantities(quantities, groupId) {
+    return Object.fromEntries(Object.entries(quantities || {}).filter(([key]) => !key.startsWith(`${groupId}\u0000`)));
+  }
+
+  async function removeSolvedGroup(batchId, groupId) {
+    if (!batchId || !groupId) return false;
+    const record = await getRecord(batchId);
+    if (!record?.batchResult) return false;
+
+    const normalized = normalizeBatchResultShape(record.batchResult, {
+      batchId: record.batchId,
+      currency: record.batchResult?.currency || null,
+      generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
+      status: record.batchResult?.status || "Completed"
+    });
+    const groups = asArray(normalized.groups).filter(group => group.groupId !== groupId);
+    if (groups.length === normalized.groups.length) return false;
+
+    const rebuilt = rebuildBatchTotals({ ...normalized, groups }, groups);
+    rebuilt.groups = groups;
+    record.batchResult = rebuilt;
+    record.plans = removePlanFromCollection(record.plans, groupId);
+    record.orderQuantities = removeGroupOrderQuantities(record.orderQuantities, groupId);
+    if (record.project) {
+      record.project.orderQuantities = removeGroupOrderQuantities(record.project.orderQuantities, groupId);
+      if (record.project.solveResponse) {
+        record.project.solveResponse.batchResult = clone(rebuilt);
+        record.project.solveResponse.plans = clone(record.plans);
+      }
+    }
+    await putRecord(record);
+
+    try {
+      localStorage.setItem(ORDER_QUANTITIES_KEY(batchId), JSON.stringify(record.orderQuantities || {}));
+      const activeProject = getActiveProject();
+      if (activeProject?.batchId === batchId) {
+        activeProject.orderQuantities = clone(record.orderQuantities || {});
+        if (activeProject.solveResponse) {
+          activeProject.solveResponse.batchResult = clone(rebuilt);
+          activeProject.solveResponse.plans = clone(record.plans);
+        }
+        saveActiveProject(activeProject);
+      }
+    } catch {
+      // The IndexedDB result remains authoritative when local storage is unavailable.
+    }
+    return true;
   }
 
   async function saveBatchName(batchId, batchName) {
@@ -712,6 +1227,9 @@
     createProjectId,
     postSolve,
     normalizeSolveResponse,
+    prepareIncrementalSolve,
+    mergeIncrementalSolveResult,
+    writeGroupSolveCache,
     saveActiveProject,
     getActiveProject,
     clearActiveProject,
@@ -719,6 +1237,7 @@
     saveBatchName,
     calculateBatchOrderTotals,
     saveOrderQuantities,
+    removeSolvedGroup,
     applyStoredOrderQuantities,
     getBatchResult,
     getPlan,

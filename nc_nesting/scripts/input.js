@@ -52,7 +52,42 @@
   }
   let backendErrors = [];
   let ncImportErrors = [];
+  let ncImportNotices = [];
+  let preflightErrors = [];
+  let preflightWarnings = [];
+  let groupVisualStatuses = new Map();
+  let groupComplexityResults = new Map();
+  let groupStatusTimer = null;
+  let groupStatusRevision = 0;
+  let groupAssessmentSignature = "";
+  let groupAssessmentState = emptyGroupAssessmentState();
   let isSolving = false;
+  let solvePhase = "idle";
+
+
+  function emptyGroupAssessmentState() {
+    return {
+      status: "idle",
+      blockedGroups: [],
+      warningGroups: [],
+      batchComplexity: {
+        totalCost: 0,
+        budget: Number(NcNestingConfig?.solvePreflightLimits?.complexityScoring?.batchBudget) || 0,
+        blocked: false,
+        scoredGroupCount: 0,
+        reasonCodes: []
+      }
+    };
+  }
+
+  function resetGroupComplexityAssessment() {
+    clearTimeout(groupStatusTimer);
+    groupStatusRevision++;
+    groupAssessmentSignature = "";
+    groupAssessmentState = emptyGroupAssessmentState();
+    groupVisualStatuses = new Map();
+    groupComplexityResults = new Map();
+  }
 
   const body = {
     parts: document.getElementById("partsBody"),
@@ -62,14 +97,20 @@
 
   const visual = {
     parts: [["position", "text"], ["steelGrade", "text"], ["quantity", "number"], ["profile", "text"], ["length", "number"], ["source", "text", true]],
-    stockOrders: [["stockId", "text"], ["profile", "text"], ["steelGrade", "text"], ["length", "number"], ["availability", "availability"], ["price", "price"]],
-    storage: [["storageId", "text"], ["profile", "text"], ["steelGrade", "text"], ["length", "number"], ["quantity", "number"], ["storageArea", "text"]]
+    stockOrders: [["profile", "text"], ["steelGrade", "steelGradeChoice"], ["length", "number"], ["availability", "availability"], ["price", "price"]],
+    storage: [["profile", "text"], ["steelGrade", "text"], ["length", "number"], ["quantity", "number"], ["storageArea", "text"]]
   };
 
   const csv = {
     parts: [["position", "csv.position", "text"], ["steelGrade", "csv.steelGrade", "text"], ["quantity", "csv.quantity", "number"], ["profile", "csv.profile", "text"], ["length", "csv.length", "number"], ["source", "csv.source", "text"]],
-    stockOrders: [["stockId", "csv.stockOrderId", "text"], ["profile", "csv.profile", "text"], ["steelGrade", "csv.steelGrade", "text"], ["length", "csv.length", "number"], ["quantity", "csv.quantity", "number"], ["unlimited", "csv.unlimited", "checkbox"], ["price", "csv.price", "price"]],
-    storage: [["storageId", "csv.storageStockId", "text"], ["profile", "csv.profile", "text"], ["steelGrade", "csv.steelGrade", "text"], ["length", "csv.length", "number"], ["quantity", "csv.quantity", "number"], ["storageArea", "csv.storageArea", "text"]]
+    stockOrders: [["profile", "csv.profile", "text"], ["steelGrade", "csv.steelGrade", "text"], ["length", "csv.length", "number"], ["quantity", "csv.quantity", "stockQuantity"], ["unlimited", "csv.unlimited", "checkbox"], ["price", "csv.price", "price"]],
+    storage: [["profile", "csv.profile", "text"], ["steelGrade", "csv.steelGrade", "text"], ["length", "csv.length", "number"], ["quantity", "csv.quantity", "number"], ["storageArea", "csv.storageArea", "text"]]
+  };
+
+  const csvImport = {
+    parts: csv.parts,
+    stockOrders: [["stockId", "csv.stockOrderId", "text"], ...csv.stockOrders],
+    storage: [["storageId", "csv.storageStockId", "text"], ...csv.storage]
   };
 
   const aliases = {
@@ -125,7 +166,7 @@
 
   function blank(type) {
     if (type === "parts") return { position: "", steelGrade: "", quantity: 1, profile: "", length: "", source: "Manual" };
-    if (type === "stockOrders") return { generatedId: allocateGeneratedId(type), stockId: "", profile: "", steelGrade: "", length: "", quantity: 1, lastFiniteQuantity: 1, unlimited: false, price: "" };
+    if (type === "stockOrders") return { generatedId: allocateGeneratedId(type), stockId: "", profile: "", steelGrade: "", lastSteelGrade: "", allSteelGrades: true, length: "", quantity: 1, lastFiniteQuantity: 1, unlimited: false, price: "" };
     return { generatedId: allocateGeneratedId(type), storageId: "", profile: "", steelGrade: "", length: "", quantity: 1, storageArea: "" };
   }
 
@@ -173,6 +214,8 @@
         if (type === "stockOrders" && field === "price") td.classList.add("price-column");
         if (inputType === "availability") {
           renderAvailability(td, row, rowIndex, columnIndex);
+        } else if (inputType === "steelGradeChoice") {
+          renderSteelGradeChoice(td, row, rowIndex, columnIndex);
         } else if (readOnly) {
           const value = type === "parts" && field === "source"
             ? (String(row[field] || "").trim() || "Manual")
@@ -193,23 +236,25 @@
           }
           input.value = row[field] ?? "";
           setMeta(input, type, rowIndex, columnIndex, field);
-          if ((type === "stockOrders" && field === "stockId") || (type === "storage" && field === "storageId")) {
-            input.placeholder = defaultId(type, row);
-          }
           input.oninput = event => {
             state[type][rowIndex][field] = event.target.value;
-            afterDataChange(type);
+            if (type === "parts") {
+              renderNestingGroupControls();
+              validate();
+            } else {
+              afterDataChange(type, { commit: false });
+            }
           };
           input.onpaste = pasteMatrix;
-          if (inputType === "number" && !decimal) {
-            input.onblur = () => {
-              if (input.value !== "") {
-                input.value = Math.ceil(Number(input.value));
-                row[field] = input.value;
-                afterDataChange(type);
-              }
-            };
-          }
+          input.onblur = () => {
+            if (inputType === "number" && !decimal && input.value !== "") {
+              input.value = Math.ceil(Number(input.value));
+            } else if (inputType === "text") {
+              input.value = String(input.value || "").trim();
+            }
+            row[field] = input.value;
+            afterDataChange(type, { commit: true, renderChangedType: type === "parts" });
+          };
           td.appendChild(input);
         }
         tr.appendChild(td);
@@ -247,13 +292,72 @@
     return Number.isSafeInteger(number) ? { blank: false, value: number } : { blank: false, value: null };
   }
 
+  function stockQuantity(value) {
+    const quantity = positiveWholeNumber(value);
+    return quantity !== null && quantity <= 999 ? quantity : null;
+  }
+
+  function setAllSteelGrades(row, checked) {
+    if (checked) {
+      const current = String(row.steelGrade || "").trim();
+      if (current) row.lastSteelGrade = current;
+      row.steelGrade = "";
+      row.allSteelGrades = true;
+    } else {
+      row.allSteelGrades = false;
+      if (!String(row.steelGrade || "").trim() && String(row.lastSteelGrade || "").trim()) {
+        row.steelGrade = String(row.lastSteelGrade).trim();
+      }
+    }
+  }
+
+  function renderSteelGradeChoice(td, row, rowIndex, columnIndex) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "steel-grade-control";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = row.allSteelGrades ? "" : (row.steelGrade ?? "");
+    input.disabled = Boolean(row.allSteelGrades);
+    input.classList.toggle("inactive", Boolean(row.allSteelGrades));
+    setMeta(input, "stockOrders", rowIndex, columnIndex, "steelGrade");
+    input.oninput = event => {
+      row.steelGrade = event.target.value;
+      if (String(event.target.value || "").trim()) row.lastSteelGrade = event.target.value;
+      row.allSteelGrades = false;
+      afterDataChange("stockOrders");
+    };
+    input.onblur = () => {
+      row.steelGrade = String(input.value || "").trim();
+      if (row.steelGrade) row.lastSteelGrade = row.steelGrade;
+      afterDataChange("stockOrders");
+    };
+    input.onpaste = pasteMatrix;
+
+    const label = document.createElement("label");
+    label.className = "all-steel-grades";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = Boolean(row.allSteelGrades);
+    checkbox.onchange = () => {
+      setAllSteelGrades(row, checkbox.checked);
+      render("stockOrders");
+      afterDataChange("stockOrders");
+    };
+    const labelText = document.createElement("span");
+    labelText.className = "all-steel-grades-label";
+    labelText.textContent = t("common.allSteelGrades");
+    label.append(checkbox, labelText);
+    wrapper.append(input, label);
+    td.appendChild(wrapper);
+  }
+
   function restoredQuantity(row) {
-    return positiveWholeNumber(row.quantity) ?? positiveWholeNumber(row.lastFiniteQuantity) ?? 1;
+    return stockQuantity(row.quantity) ?? stockQuantity(row.lastFiniteQuantity) ?? 1;
   }
 
   function rememberQuantity(row, value) {
     row.quantity = value;
-    const quantity = positiveWholeNumber(value);
+    const quantity = stockQuantity(value);
     if (quantity !== null) row.lastFiniteQuantity = quantity;
   }
 
@@ -281,14 +385,16 @@
     } else {
       quantity.type = "number";
       quantity.min = "1";
+      quantity.max = "999";
       quantity.step = "1";
+      quantity.inputMode = "numeric";
       quantity.value = row.quantity ?? restoredQuantity(row);
       quantity.oninput = event => {
         rememberQuantity(row, event.target.value);
         validate();
       };
       quantity.onblur = () => {
-        const normalized = positiveWholeNumber(quantity.value);
+        const normalized = stockQuantity(quantity.value);
         if (normalized !== null) {
           quantity.value = normalized;
           rememberQuantity(row, normalized);
@@ -320,6 +426,7 @@
     const text = String(value ?? "").trim();
     if (type === "checkbox") return ["true", "yes", "y", "1", "unlimited", "∞"].includes(text.toLowerCase());
     if (type === "price") return text;
+    if (type === "stockQuantity") return text.replace(",", ".");
     if (type === "number" || type === "decimal") {
       if (text === "") return "";
       const number = Number(text.replace(",", "."));
@@ -340,6 +447,13 @@
       }
       row.unlimited = false;
       rememberQuantity(row, text.replace(",", "."));
+      return;
+    }
+    if (inputType === "steelGradeChoice") {
+      const grade = String(raw ?? "").trim();
+      row.steelGrade = grade;
+      row.lastSteelGrade = grade || row.lastSteelGrade || "";
+      row.allSteelGrades = !grade;
       return;
     }
     row[field] = normalize(inputType, raw);
@@ -413,7 +527,7 @@
     first.forEach((cell, index) => {
       const key = canonical(cell);
       Object.entries(aliases[type]).forEach(([field, names]) => {
-        const column = csv[type].find(item => item[0] === field);
+        const column = csvImport[type].find(item => item[0] === field);
         const localizedHeaders = column ? [t(column[1], {}, "en"), t(column[1], {}, "he")].map(canonical) : [];
         if ([...names, ...localizedHeaders].includes(key)) map[index] = field;
       });
@@ -426,10 +540,16 @@
       cells.forEach((cell, index) => {
         const field = hasHeader ? map[index] : csv[type][index]?.[0];
         if (!field) return;
-        const valueType = csv[type].find(column => column[0] === field)?.[2] || "text";
+        const valueType = csvImport[type].find(column => column[0] === field)?.[2] || "text";
         row[field] = normalize(valueType, cell);
       });
-      if (type === "stockOrders") row.lastFiniteQuantity = restoredQuantity(row);
+      if (type === "stockOrders") {
+        row.lastFiniteQuantity = restoredQuantity(row);
+        const grade = String(row.steelGrade || "").trim();
+        row.steelGrade = grade;
+        row.lastSteelGrade = grade;
+        row.allSteelGrades = !grade;
+      }
       if (type === "parts") row.source = "CSV";
       state[type].push(row);
     });
@@ -446,8 +566,8 @@
 
   function active(type) {
     if (type === "parts") return state[type].filter(row => ["position", "steelGrade", "profile", "length"].some(key => String(row[key] || "").trim()));
-    if (type === "stockOrders") return state[type].filter(row => ["stockId", "profile", "steelGrade", "length", "price"].some(key => String(row[key] || "").trim()) || row.unlimited);
-    return state[type].filter(row => ["storageId", "profile", "steelGrade", "length", "storageArea"].some(key => String(row[key] || "").trim()));
+    if (type === "stockOrders") return state[type].filter(row => ["profile", "steelGrade", "length", "price"].some(key => String(row[key] || "").trim()) || row.unlimited);
+    return state[type].filter(row => ["profile", "steelGrade", "length", "storageArea"].some(key => String(row[key] || "").trim()));
   }
 
   function csvEscape(value) {
@@ -456,9 +576,9 @@
   }
 
   function download(type) {
-    const rows = active(type).map((row, index) => type === "stockOrders"
-      ? { ...row, stockId: finalId(type, row), unlimited: Boolean(row.unlimited) }
-      : type === "storage" ? { ...row, storageId: finalId(type, row) } : row);
+    const rows = active(type).map(row => type === "stockOrders"
+      ? { ...row, steelGrade: row.allSteelGrades ? "" : row.steelGrade, unlimited: Boolean(row.unlimited) }
+      : row);
     const language = I18N.getLanguage();
     const lines = [csv[type].map(column => csvEscape(t(column[1], {}, language))).join(",")];
     rows.forEach(row => lines.push(csv[type].map(([field, , valueType]) => csvEscape(valueType === "checkbox" ? (row[field] ? "true" : "false") : row[field])).join(",")));
@@ -474,10 +594,15 @@
   }
 
   function renderNcErrors() {
-    document.getElementById("ncErrors").textContent = ncImportErrors.map(error => {
+    const errors = ncImportErrors.map(error => {
       const fileName = isolate(error.fileName);
-      return `${fileName}: ${t(error.key, error.params || {})}`;
-    }).join("\n");
+      return `<div class="nc-import-error">${escapeHtml(`${fileName}: ${t(error.key, error.params || {})}`)}</div>`;
+    });
+    const notices = ncImportNotices.map(notice => {
+      const fileName = isolate(notice.fileName);
+      return `<div class="nc-import-notice">${escapeHtml(`${fileName}: ${t(notice.key, notice.params || {})}`)}</div>`;
+    });
+    document.getElementById("ncErrors").innerHTML = [...errors, ...notices].join("");
   }
 
   function parseNc(name, text) {
@@ -490,6 +615,8 @@
     const quantityText = get(7);
     const quantity = /^\d+$/.test(quantityText) ? Number(quantityText) : NaN;
     const profile = get(8);
+    const profileType = get(9).toLocaleUpperCase();
+    if (profileType === "B") return { ignored: true, reason: "plate" };
     const length = Number(get(10).replace(",", "."));
     if (!position || !steelGrade || !profile || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(length) || length <= 0) {
       throw errorDescriptor("nc.invalidFields", {}, name);
@@ -497,15 +624,91 @@
     return { position, steelGrade, quantity, profile, length: Math.ceil(length), source: "NC file" };
   }
 
+  function isNc1File(file) {
+    return Boolean(file && /\.nc1$/i.test(file.name));
+  }
+
+  async function filesFromHandle(handle) {
+    if (!handle) return [];
+    if (handle.kind === "file") return [await handle.getFile()];
+    if (handle.kind !== "directory") return [];
+
+    const files = [];
+    for await (const childHandle of handle.values()) {
+      files.push(...await filesFromHandle(childHandle));
+    }
+    return files;
+  }
+
+  function fileFromEntry(entry) {
+    return new Promise((resolve, reject) => entry.file(resolve, reject));
+  }
+
+  function entriesFromReader(reader) {
+    return new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+  }
+
+  async function filesFromEntry(entry) {
+    if (!entry) return [];
+    if (entry.isFile) return [await fileFromEntry(entry)];
+    if (!entry.isDirectory) return [];
+
+    const files = [];
+    const reader = entry.createReader();
+    while (true) {
+      const entries = await entriesFromReader(reader);
+      if (!entries.length) break;
+      for (const childEntry of entries) {
+        files.push(...await filesFromEntry(childEntry));
+      }
+    }
+    return files;
+  }
+
+  async function filesFromDroppedItem(item) {
+    if (typeof item.getAsFileSystemHandle === "function") {
+      try {
+        const handle = await item.getAsFileSystemHandle();
+        if (handle) return { files: await filesFromHandle(handle), isDirectory: handle.kind === "directory" };
+      } catch {}
+    }
+
+    if (typeof item.webkitGetAsEntry === "function") {
+      const entry = item.webkitGetAsEntry();
+      if (entry) return { files: await filesFromEntry(entry), isDirectory: entry.isDirectory };
+    }
+
+    const file = item.getAsFile();
+    return { files: file ? [file] : [], isDirectory: false };
+  }
+
+  async function filesFromDrop(dataTransfer) {
+    const items = [...(dataTransfer.items || [])].filter(item => item.kind === "file");
+    if (!items.length) return [...(dataTransfer.files || [])];
+
+    const files = [];
+    for (const item of items) {
+      const dropped = await filesFromDroppedItem(item);
+      files.push(...(dropped.isDirectory ? dropped.files.filter(isNc1File) : dropped.files));
+    }
+    return files;
+  }
+
   async function importNc(files) {
     ncImportErrors = [];
+    ncImportNotices = [];
     for (const file of files) {
-      if (!/\.nc1$/i.test(file.name)) {
+      if (!isNc1File(file)) {
         ncImportErrors.push({ fileName: file.name, key: "nc.unsupported" });
         continue;
       }
       try {
-        state.parts.push(parseNc(file.name, await file.text()));
+        const parsed = parseNc(file.name, await file.text());
+        if (parsed?.ignored && parsed.reason === "plate") {
+          ncImportNotices.push({ fileName: file.name, key: "nc.plateIgnored" });
+          continue;
+        }
+        state.parts.push(parsed);
       } catch (error) {
         ncImportErrors.push({ fileName: error.context || file.name, key: error.key || "nc.invalidFields", params: error.params || {} });
       }
@@ -525,8 +728,117 @@
     return Number.isFinite(number) ? number : NaN;
   }
 
+  function normalizedGroupValue(value) {
+    return String(value || "").normalize("NFKC").trim().toLocaleUpperCase();
+  }
+
   function groupKey(profileName, steelGrade) {
-    return `${profileName.trim().toUpperCase()}\u0000${steelGrade.trim().toUpperCase()}`;
+    return `${normalizedGroupValue(profileName)}\u0000${normalizedGroupValue(steelGrade)}`;
+  }
+
+  function compareGroupText(left, right) {
+    const leftText = String(left || "").trim();
+    const rightText = String(right || "").trim();
+    if (!leftText && rightText) return 1;
+    if (leftText && !rightText) return -1;
+    return leftText.localeCompare(rightText, undefined, { sensitivity: "base", numeric: true });
+  }
+
+  function compareGroups(left, right) {
+    return compareGroupText(left.profileName ?? left.profile, right.profileName ?? right.profile)
+      || compareGroupText(left.steelGrade, right.steelGrade);
+  }
+
+  function detectedPartGroups(parts = active("parts"), options = {}) {
+    const includeIncomplete = options.includeIncomplete === true;
+    const groups = new Map();
+    parts.forEach(row => {
+      const profileName = String(row.profile || "").trim();
+      const steelGrade = String(row.steelGrade || "").trim();
+      if ((!profileName || !steelGrade) && !includeIncomplete) return;
+      if (!profileName && !steelGrade) return;
+      const key = groupKey(profileName, steelGrade);
+      if (!groups.has(key)) groups.set(key, { key, profileName, steelGrade });
+    });
+    return [...groups.values()].sort(compareGroups);
+  }
+
+  function sortParts() {
+    const decorated = state.parts.map((row, index) => ({ row, index }));
+    decorated.sort((left, right) => {
+      const groupOrder = compareGroups(left.row, right.row);
+      if (groupOrder) return groupOrder;
+      const leftLength = Number(left.row.length);
+      const rightLength = Number(right.row.length);
+      const normalizedLeftLength = Number.isFinite(leftLength) ? leftLength : Number.POSITIVE_INFINITY;
+      const normalizedRightLength = Number.isFinite(rightLength) ? rightLength : Number.POSITIVE_INFINITY;
+      return normalizedLeftLength - normalizedRightLength || left.index - right.index;
+    });
+    const sorted = decorated.map(item => item.row);
+    const changed = sorted.some((row, index) => row !== state.parts[index]);
+    state.parts = sorted;
+    return changed;
+  }
+
+  function renderNestingGroupControls(groups = detectedPartGroups(active("parts"), { includeIncomplete: true })) {
+    const container = document.getElementById("nestingGroupControls");
+    if (!container) return;
+    container.innerHTML = "";
+    groups.forEach(group => {
+      const control = document.createElement("div");
+      const status = groupVisualStatuses.get(group.key) || ((!group.profileName || !group.steelGrade) ? "invalid" : "checking");
+      control.className = `nesting-group-control status-${status}`;
+      const statusText = t(`input.groupStatus.${status}`);
+      control.title = statusText;
+      const values = document.createElement("span");
+      values.className = "nesting-group-control-values";
+      const profile = document.createElement("bdi");
+      profile.dir = "ltr";
+      profile.textContent = group.profileName || t("validation.profileRequired");
+      const separator = document.createElement("span");
+      separator.textContent = "·";
+      separator.setAttribute("aria-hidden", "true");
+      const grade = document.createElement("bdi");
+      grade.dir = "ltr";
+      grade.textContent = group.steelGrade || t("validation.steelGradeRequired");
+      const statusLabel = document.createElement("span");
+      statusLabel.className = "nesting-group-status-text";
+      statusLabel.textContent = statusText;
+      values.append(profile, separator, grade, statusLabel);
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "nesting-group-remove";
+      remove.textContent = "×";
+      const accessibleText = t("action.removeNestingGroup", { profile: I18N.isolate(group.profileName), grade: I18N.isolate(group.steelGrade) });
+      remove.title = accessibleText;
+      remove.setAttribute("aria-label", accessibleText);
+      remove.onclick = () => removeNestingGroup(group.key);
+      control.append(values, remove);
+      container.appendChild(control);
+    });
+  }
+
+  function removeNestingGroup(key) {
+    state.parts = state.parts.filter(row => groupKey(row.profile, row.steelGrade) !== key);
+    state.stockOrders = state.stockOrders.filter(row => !(
+      row.autoFilled
+      && !row.allSteelGrades
+      && groupKey(row.profile, row.steelGrade) === key
+    ));
+    delete state.groupIds[key];
+    state.projectGroups = (state.projectGroups || []).filter(group => groupKey(group.profileName, group.steelGrade) !== key);
+    if (state.solveRequest?.groups) {
+      state.solveRequest.groups = state.solveRequest.groups.filter(group => groupKey(group.profileName, group.steelGrade) !== key);
+    }
+    sortParts();
+    render("parts");
+    render("stockOrders");
+    renderNestingGroupControls();
+    validate();
+  }
+
+  function evaluateSolveConstraints() {
+    return [];
   }
 
   function collectGroups(parts) {
@@ -563,7 +875,7 @@
     });
 
     return [...groups.values()]
-      .sort((left, right) => left.profileName.localeCompare(right.profileName, undefined, { sensitivity: "base" }) || left.steelGrade.localeCompare(right.steelGrade, undefined, { sensitivity: "base" }))
+      .sort(compareGroups)
       .map(group => {
         const key = groupKey(group.profileName, group.steelGrade);
         if (!state.groupIds[key]) state.groupIds[key] = `group-${state.nextIds.groups++}`;
@@ -573,7 +885,23 @@
 
 
   function sameNormalizedText(left, right) {
-    return String(left || "").trim().localeCompare(String(right || "").trim(), undefined, { sensitivity: "base" }) === 0;
+    return normalizedGroupValue(left) === normalizedGroupValue(right);
+  }
+
+  function stockOrderMatchesGroup(row, group) {
+    if (!sameNormalizedText(row.profile, group.profile)) return false;
+    return row.allSteelGrades || groupKey(row.profile, row.steelGrade) === groupKey(group.profile, group.steelGrade);
+  }
+
+  function normalizeRestoredAutoFilledOrders() {
+    let changed = false;
+    state.stockOrders.forEach(row => {
+      if (row.autoFilled && Number(row.length) === 6000) {
+        row.length = 12000;
+        changed = true;
+      }
+    });
+    return changed;
   }
 
   function renderAutoFillState() {
@@ -650,37 +978,44 @@
     let changed = false;
     try {
       const groups = autoFillPartGroups();
-      const sharedByProfile = new Map();
+      const groupKeys = new Set(groups.map(group => groupKey(group.profile, group.steelGrade)));
+      const retainedOrders = state.stockOrders.filter(row => !(
+        row.autoFilled
+        && !row.allSteelGrades
+        && !groupKeys.has(groupKey(row.profile, row.steelGrade))
+      ));
+      if (retainedOrders.length !== state.stockOrders.length) {
+        state.stockOrders = retainedOrders;
+        changed = true;
+      }
 
+      const sharedByProfile = new Map();
       active("stockOrders").forEach(row => {
         const profile = String(row.profile || "").trim();
         const steelGrade = String(row.steelGrade || "").trim();
         const length = Number(row.length);
-        const quantity = positiveWholeNumber(row.quantity);
-        if (!profile || steelGrade || row.unlimited || !Number.isFinite(length) || length <= 0 || quantity === null) return;
-        const key = profile.toLowerCase();
+        const quantity = stockQuantity(row.quantity);
+        if (!profile || !row.allSteelGrades || steelGrade || row.unlimited || !Number.isFinite(length) || length <= 0 || quantity === null) return;
+        const key = normalizedGroupValue(profile);
         if (!sharedByProfile.has(key)) sharedByProfile.set(key, []);
         sharedByProfile.get(key).push({ row, length: Math.ceil(length), remaining: quantity });
       });
 
       groups.forEach(group => {
-        const matching = active("stockOrders").filter(row => {
-          const rowProfile = String(row.profile || "").trim();
-          const rowGrade = String(row.steelGrade || "").trim();
-          return sameNormalizedText(rowProfile, group.profile)
-            && (!rowGrade || sameNormalizedText(rowGrade, group.steelGrade));
-        });
-
+        const matching = active("stockOrders").filter(row => stockOrderMatchesGroup(row, group));
         const unlimitedCover = matching.some(row => row.unlimited && Number(row.length) >= group.longestPart);
         if (unlimitedCover) return;
 
-        const exactFinite = matching.filter(row => {
-          const rowGrade = String(row.steelGrade || "").trim();
-          return rowGrade && sameNormalizedText(rowGrade, group.steelGrade) && !row.unlimited && positiveWholeNumber(row.quantity) !== null && Number(row.length) > 0;
-        });
-        const exactLength = exactFinite.reduce((total, row) => total + Math.ceil(Number(row.length)) * positiveWholeNumber(row.quantity), 0);
+        const exactFinite = matching.filter(row => (
+          !row.allSteelGrades
+          && groupKey(row.profile, row.steelGrade) === groupKey(group.profile, group.steelGrade)
+          && !row.unlimited
+          && stockQuantity(row.quantity) !== null
+          && Number(row.length) > 0
+        ));
+        const exactLength = exactFinite.reduce((total, row) => total + Math.ceil(Number(row.length)) * stockQuantity(row.quantity), 0);
         const exactFits = exactFinite.some(row => Number(row.length) >= group.longestPart);
-        const sharedRows = sharedByProfile.get(group.profile.toLowerCase()) || [];
+        const sharedRows = sharedByProfile.get(normalizedGroupValue(group.profile)) || [];
         const sharedLength = sharedRows.reduce((total, row) => total + row.length * row.remaining, 0);
         const sharedFits = sharedRows.some(row => row.remaining > 0 && row.length >= group.longestPart);
         const enoughLength = exactLength + sharedLength >= group.requiredLength;
@@ -693,18 +1028,31 @@
         }
 
         if (group.longestPart > 12000) {
-          autoFillMessages.push(errorDescriptor(
-            "validation.longPart",
-            {
-              length: I18N.measurementText(group.longestPart, "mm", { maximumFractionDigits: 0 }),
-              limit: I18N.measurementText(12000, "mm", { maximumFractionDigits: 0 })
-            },
-            `${group.profile} · ${group.steelGrade}`,
-            {
-              length: I18N.measurementHtml(group.longestPart, "mm", { maximumFractionDigits: 0 }),
-              limit: I18N.measurementHtml(12000, "mm", { maximumFractionDigits: 0 })
-            }
-          ));
+          const hasLongEnoughOption = matching.some(row => Number(row.length) >= group.longestPart && (row.unlimited || stockQuantity(row.quantity) !== null));
+          if (!hasLongEnoughOption) {
+            autoFillMessages.push(errorDescriptor(
+              "validation.longPart",
+              {
+                length: I18N.measurementText(group.longestPart, "mm", { maximumFractionDigits: 0 }),
+                limit: I18N.measurementText(12000, "mm", { maximumFractionDigits: 0 })
+              },
+              `${group.profile} · ${group.steelGrade}`,
+              {
+                length: I18N.measurementHtml(group.longestPart, "mm", { maximumFractionDigits: 0 }),
+                limit: I18N.measurementHtml(12000, "mm", { maximumFractionDigits: 0 })
+              }
+            ));
+          }
+          return;
+        }
+
+        const existingAutoFilled = matching.find(row => row.autoFilled && !row.allSteelGrades);
+        if (existingAutoFilled) {
+          if (Number(existingAutoFilled.length) !== 12000 || !existingAutoFilled.unlimited) {
+            existingAutoFilled.length = 12000;
+            existingAutoFilled.unlimited = true;
+            changed = true;
+          }
           return;
         }
 
@@ -713,7 +1061,9 @@
           stockId: "",
           profile: group.profile,
           steelGrade: group.steelGrade,
-          length: group.longestPart <= 6000 ? 6000 : 12000,
+          lastSteelGrade: group.steelGrade,
+          allSteelGrades: false,
+          length: 12000,
           quantity: 1,
           lastFiniteQuantity: 1,
           unlimited: true,
@@ -737,16 +1087,26 @@
     document.getElementById("stockOrdersTable")?.classList.toggle("prices-hidden", !currencySelected());
   }
 
-  function afterDataChange(type) {
-    if (type === "parts") {
+  function afterDataChange(type, options = {}) {
+    const commit = options.commit !== false;
+    if (type === "parts" && commit) {
+      const sorted = sortParts();
+      if (sorted || options.renderChangedType) render("parts");
+    }
+    renderNestingGroupControls();
+    if (type === "parts" || type === "stockOrders") {
       const stockChanged = runAutoFill();
       if (stockChanged) render("stockOrders");
     }
     validate();
   }
 
-  function validate(clearBackendErrors = true) {
-    if (clearBackendErrors) backendErrors = [];
+  function validate(clearBackendErrors = true, options = {}) {
+    if (clearBackendErrors) {
+      backendErrors = [];
+      preflightErrors = [];
+      preflightWarnings = [];
+    }
     const errors = [];
     const settings = {
       toolWidth: numberFromInput("toolWidth"),
@@ -779,16 +1139,29 @@
       if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
     });
 
+    const displayGroups = detectedPartGroups(parts, { includeIncomplete: true });
+    const detectedGroups = displayGroups.filter(group => group.profileName && group.steelGrade);
+    renderNestingGroupControls(displayGroups);
     let groups = [];
     if (!errors.length) {
       try { groups = collectGroups(parts); } catch (error) { errors.push(errorText(error)); }
     }
+    const solveConstraintIssues = evaluateSolveConstraints({ groups: detectedGroups });
+    errors.push(...solveConstraintIssues);
+    if (!isSolving && !options.skipGroupAssessment) {
+      scheduleGroupStatusAssessment(settings, displayGroups);
+    }
+
     const groupBadge = document.getElementById("groupBadge");
-    if (groups.length) {
-      groupBadge.className = "badge ok";
-      groupBadge.textContent = groups.length === 1
-        ? t("input.oneGroup")
-        : t("input.groupCount", { count: I18N.formatNumber(groups.length) });
+    const assessmentBlocked = groupAssessmentState.blockedGroups.length > 0 || groupAssessmentState.batchComplexity.blocked;
+    const assessmentHasCaution = [...groupVisualStatuses.values()].some(status => status === "warning" || status === "orange" || status === "checking");
+    if (detectedGroups.length) {
+      groupBadge.className = assessmentBlocked ? "badge bad" : assessmentHasCaution ? "badge warn" : "badge ok";
+      groupBadge.textContent = groupAssessmentState.batchComplexity.blocked
+        ? t("input.groupComplexityExceeded", { count: I18N.formatNumber(detectedGroups.length) })
+        : detectedGroups.length === 1
+          ? t("input.oneGroup")
+          : t("input.groupCount", { count: I18N.formatNumber(detectedGroups.length) });
     } else {
       groupBadge.className = "badge warn";
       groupBadge.textContent = t("input.noGroups");
@@ -802,8 +1175,9 @@
       if (stockOrderIds.has(stockOrderId)) errors.push(t("validation.duplicateId", { id: isolate(id) }));
       stockOrderIds.add(stockOrderId);
       if (!String(row.profile || "").trim()) errors.push(`${prefix}: ${t("validation.profileRequired")}`);
+      if (!row.allSteelGrades && !String(row.steelGrade || "").trim()) errors.push(`${prefix}: ${t("validation.steelGradeRequired")}`);
       if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
-      if (!row.unlimited && positiveWholeNumber(row.quantity) === null) errors.push(`${prefix}: ${t("validation.quantityOrUnlimited")}`);
+      if (!row.unlimited && stockQuantity(row.quantity) === null) errors.push(`${prefix}: ${t("validation.stockQuantityRange")}`);
       if (currencySelected()) {
         const parsedPrice = optionalPositiveWholeNumber(row.price);
         if (!parsedPrice.blank && parsedPrice.value === null) errors.push(`${prefix}: ${t("validation.pricePositive")}`);
@@ -828,23 +1202,74 @@
     document.getElementById("partBadge").textContent = parts.length === 0
       ? t("input.zeroPartRows")
       : t("input.partRowCount", { count: I18N.formatNumber(parts.length) });
-    const allErrors = [...errors, ...backendErrors];
+    const liveAssessmentBlockers = !isSolving
+      && groupAssessmentState.status === "complete"
+      && !preflightErrors.length
+      ? groupAssessmentState.blockedGroups.map(preflightBlockDescriptor)
+      : [];
+    const batchComplexityErrors = !isSolving
+      && groupAssessmentState.status === "complete"
+      && groupAssessmentState.batchComplexity.blocked
+      && !preflightErrors.some(error => error?.key === "preflight.batchTooComplex")
+      ? [errorDescriptor("preflight.batchTooComplex")]
+      : [];
+    const complexityChecking = !isSolving
+      && groupAssessmentState.status === "checking"
+      && detectedGroups.length > 0
+      && !errors.length;
+    const allErrors = [...errors, ...backendErrors, ...preflightErrors, ...liveAssessmentBlockers, ...batchComplexityErrors];
     const validation = document.getElementById("validation");
-    const solve = document.getElementById("solve");
-    solve.disabled = isSolving || Boolean(errors.length);
-    solve.textContent = isSolving ? t("input.solving") : t("action.solve");
+    const solveButtons = [document.getElementById("solve"), document.getElementById("navbarSolve")].filter(Boolean);
+    const solveDisabled = isSolving
+      || complexityChecking
+      || Boolean(errors.length)
+      || Boolean(preflightErrors.length)
+      || Boolean(liveAssessmentBlockers.length)
+      || Boolean(batchComplexityErrors.length);
+    const solveText = isSolving
+      ? t(solvePhase === "checking" ? "input.checkingCalculationSize" : "input.solving")
+      : t("action.solve");
+    solveButtons.forEach(button => {
+      button.disabled = solveDisabled;
+      button.textContent = solveText;
+    });
 
     if (allErrors.length) {
       validation.className = "validation bad";
-      const heading = allErrors.length === 1 ? t("input.oneIssue") : t("input.issueCount", { count: I18N.formatNumber(allErrors.length) });
+      const onlyPreflightBlockers = !errors.length && !backendErrors.length
+        && (preflightErrors.length || liveAssessmentBlockers.length || batchComplexityErrors.length);
+      const heading = onlyPreflightBlockers
+        ? t("input.preflightBlockedBatch")
+        : allErrors.length === 1
+          ? t("input.oneIssue")
+          : t("input.issueCount", { count: I18N.formatNumber(allErrors.length) });
       validation.innerHTML = `<strong>${escapeHtml(heading)}</strong><ul>${allErrors.map(error => `<li>${errorHtml(error)}</li>`).join("")}</ul>`;
+    } else if (complexityChecking) {
+      validation.className = "validation warning";
+      validation.innerHTML = `<strong>${escapeHtml(t("input.checkingCalculationSize"))}</strong><span>${escapeHtml(t("input.complexityCheckingDescription"))}</span>`;
+    } else if (preflightWarnings.length) {
+      validation.className = "validation warning";
+      validation.innerHTML = `<strong>${escapeHtml(t("input.preflightWarningBatch"))}</strong><ul>${preflightWarnings.map(warning => `<li>${errorHtml(warning)}</li>`).join("")}</ul>`;
     } else {
       validation.className = "validation good";
       validation.innerHTML = `<strong>${escapeHtml(t("input.ready"))}</strong><span>${escapeHtml(t("input.selectSolve"))}</span>`;
     }
 
-    persistProject(groups.length ? groups : state.projectGroups);
-    return { errors, settings, parts, stockOrders, storage, groups };
+    const groupsForPersistence = groups.length || detectedGroups.length === 0 ? groups : state.projectGroups;
+    persistProject(groupsForPersistence);
+    return {
+      errors,
+      settings,
+      parts,
+      stockOrders,
+      storage,
+      groups,
+      detectedGroups,
+      displayGroups,
+      solveConstraintIssues,
+      complexityAssessmentPending: complexityChecking,
+      solveAdmissionBlocked: Boolean(liveAssessmentBlockers.length || batchComplexityErrors.length)
+    };
   }
 
   function escapeHtml(value) {
@@ -855,7 +1280,7 @@
     return rows.map(row => ({
       stockOrderId: finalId("stockOrders", row),
       profileName: String(row.profile).trim(),
-      steelGrade: String(row.steelGrade || "").trim(),
+      steelGrade: row.allSteelGrades ? "" : String(row.steelGrade || "").trim(),
       length: Math.ceil(Number(row.length)),
       availableQuantity: row.unlimited ? null : Math.ceil(Number(row.quantity)),
       ...(includePrices ? { price: optionalPositiveWholeNumber(row.price).value } : {})
@@ -874,7 +1299,7 @@
   }
 
   function sameText(left, right) {
-    return String(left).localeCompare(String(right), undefined, { sensitivity: "base" }) === 0;
+    return normalizedGroupValue(left) === normalizedGroupValue(right);
   }
 
   function prepareProjectGroups(input) {
@@ -885,7 +1310,7 @@
 
     return input.groups.map(group => {
       const matchingStockOrders = stockOrders
-        .filter(stock => sameText(stock.profileName, group.profileName) && (!stock.steelGrade || sameText(stock.steelGrade, group.steelGrade)))
+        .filter(stock => sameText(stock.profileName, group.profileName) && (!stock.steelGrade || groupKey(stock.profileName, stock.steelGrade) === groupKey(group.profileName, group.steelGrade)))
         .map(stock => ({
           stockOrderId: stock.stockOrderId,
           length: stock.length,
@@ -941,9 +1366,212 @@
     }));
   }
 
+  function validVisualPartRow(row) {
+    return Boolean(String(row.position || "").trim())
+      && Boolean(String(row.profile || "").trim())
+      && Boolean(String(row.steelGrade || "").trim())
+      && rowNumber(row, "quantity") > 0
+      && rowNumber(row, "length") > 0;
+  }
+
+  function validVisualStockRow(row) {
+    if (!String(row.profile || "").trim()) return false;
+    if (!row.allSteelGrades && !String(row.steelGrade || "").trim()) return false;
+    if (!(rowNumber(row, "length") > 0)) return false;
+    if (!row.unlimited && stockQuantity(row.quantity) === null) return false;
+    if (currencySelected()) {
+      const price = optionalPositiveWholeNumber(row.price);
+      if (!price.blank && price.value === null) return false;
+    }
+    return true;
+  }
+
+  function validVisualStorageRow(row) {
+    return Boolean(String(row.profile || "").trim())
+      && Boolean(String(row.steelGrade || "").trim())
+      && rowNumber(row, "length") > 0
+      && rowNumber(row, "quantity") > 0;
+  }
+
+  function matchingVisualStockRows(group) {
+    return active("stockOrders").filter(row => (
+      sameText(row.profile, group.profileName)
+      && (row.allSteelGrades || sameText(row.steelGrade, group.steelGrade))
+    ));
+  }
+
+  function matchingVisualStorageRows(group) {
+    return active("storage").filter(row => (
+      sameText(row.profile, group.profileName)
+      && sameText(row.steelGrade, group.steelGrade)
+    ));
+  }
+
+  function conflictingPartGroupKeys() {
+    const seen = new Map();
+    const invalid = new Set();
+    active("parts").forEach(row => {
+      const id = String(row.position || "").trim().toLocaleLowerCase();
+      if (!id) return;
+      const key = groupKey(row.profile, row.steelGrade);
+      const length = Math.ceil(Number(row.length));
+      const previous = seen.get(id);
+      if (previous && (previous.key !== key || previous.length !== length)) {
+        invalid.add(previous.key);
+        invalid.add(key);
+      } else if (!previous) {
+        seen.set(id, { key, length });
+      }
+    });
+    return invalid;
+  }
+
+  function prepareVisualGroupCandidate(group, settings, conflictKeys) {
+    if (!group.profileName || !group.steelGrade || conflictKeys.has(group.key)) return null;
+    if (Object.values(settings).some(value => !Number.isFinite(value) || value < 0)) return null;
+
+    const partRows = active("parts").filter(row => groupKey(row.profile, row.steelGrade) === group.key);
+    const stockRows = matchingVisualStockRows(group);
+    const storageRows = matchingVisualStorageRows(group);
+    if (!partRows.length || partRows.some(row => !validVisualPartRow(row))) return null;
+    if (stockRows.some(row => !validVisualStockRow(row))) return null;
+    if (storageRows.some(row => !validVisualStorageRow(row))) return null;
+
+    try {
+      const collected = collectGroups(partRows);
+      if (collected.length !== 1) return null;
+      const projectGroups = prepareProjectGroups({
+        groups: collected,
+        stockOrders: stockRows,
+        storage: storageRows,
+        settings
+      });
+      return solveGroups(projectGroups)[0] || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function visualStatusForResult(result) {
+    if (result?.decision === NcNestingSolvePreflight.decisions.BLOCK) return "invalid";
+    const band = String(result?.complexity?.band || "").toLowerCase();
+    if (band === "green") return "ready";
+    if (band === "yellow") return "warning";
+    if (band === "orange") return "orange";
+    return result?.decision === NcNestingSolvePreflight.decisions.WARNING ? "warning" : "ready";
+  }
+
+  function scheduleGroupStatusAssessment(settings, displayGroups) {
+    const conflictKeys = conflictingPartGroupKeys();
+    const candidates = [];
+    const localBlockedGroups = [];
+    const initialStatuses = new Map();
+
+    displayGroups.forEach(group => {
+      const candidate = prepareVisualGroupCandidate(group, settings, conflictKeys);
+      if (!candidate) {
+        initialStatuses.set(group.key, "invalid");
+        if (group.profileName && group.steelGrade) {
+          localBlockedGroups.push({
+            groupId: "",
+            profileName: group.profileName,
+            steelGrade: group.steelGrade,
+            decision: NcNestingSolvePreflight.decisions.BLOCK,
+            reasonCodes: ["no_usable_stock"]
+          });
+        }
+      } else {
+        initialStatuses.set(group.key, "checking");
+        candidates.push({ key: group.key, candidate });
+      }
+    });
+
+    const signature = JSON.stringify({
+      settings,
+      groups: displayGroups.map(group => ({
+        key: group.key,
+        candidate: candidates.find(item => item.key === group.key)?.candidate || null
+      }))
+    });
+
+    if (signature === groupAssessmentSignature
+      && (groupAssessmentState.status === "checking" || groupAssessmentState.status === "complete")) {
+      renderNestingGroupControls(displayGroups);
+      return;
+    }
+
+    const revision = ++groupStatusRevision;
+    clearTimeout(groupStatusTimer);
+    groupAssessmentSignature = signature;
+    groupVisualStatuses = initialStatuses;
+    groupComplexityResults = new Map();
+
+    if (!candidates.length || isSolving) {
+      groupAssessmentState = {
+        ...emptyGroupAssessmentState(),
+        status: localBlockedGroups.length ? "complete" : "idle",
+        blockedGroups: localBlockedGroups
+      };
+      renderNestingGroupControls(displayGroups);
+      return;
+    }
+
+    groupAssessmentState = {
+      ...emptyGroupAssessmentState(),
+      status: "checking",
+      blockedGroups: localBlockedGroups
+    };
+    renderNestingGroupControls(displayGroups);
+
+    groupStatusTimer = setTimeout(async () => {
+      try {
+        const screening = await NcNestingSolvePreflight.screenBatch(
+          candidates.map(item => item.candidate),
+          settings,
+          { limits: NcNestingConfig.solvePreflightLimits }
+        );
+        if (revision !== groupStatusRevision || isSolving) return;
+        const resultById = new Map(screening.results.map(result => [result.groupId, result]));
+        const resultByKey = new Map();
+        candidates.forEach(item => {
+          const result = resultById.get(item.candidate.groupId);
+          if (result) {
+            initialStatuses.set(item.key, visualStatusForResult(result));
+            resultByKey.set(item.key, result);
+          } else {
+            initialStatuses.set(item.key, "orange");
+          }
+        });
+        groupComplexityResults = resultByKey;
+        groupAssessmentState = {
+          status: "complete",
+          blockedGroups: [...localBlockedGroups, ...(screening.blockedGroups || [])],
+          warningGroups: screening.warningGroups || [],
+          batchComplexity: screening.batchComplexity || emptyGroupAssessmentState().batchComplexity
+        };
+      } catch {
+        if (revision !== groupStatusRevision || isSolving) return;
+        candidates.forEach(item => initialStatuses.set(item.key, "orange"));
+        groupAssessmentState = {
+          ...emptyGroupAssessmentState(),
+          status: "uncertain",
+          blockedGroups: localBlockedGroups
+        };
+      }
+      if (revision !== groupStatusRevision || isSolving) return;
+      groupVisualStatuses = initialStatuses;
+      renderNestingGroupControls(detectedPartGroups(active("parts"), { includeIncomplete: true }));
+      validate(false, { skipGroupAssessment: true });
+    }, 220);
+  }
+
   function buildSolveRequest() {
-    const input = validate();
-    if (input.errors.length) return null;
+    const input = validate(true, { skipGroupAssessment: true });
+    const finalConstraintIssues = evaluateSolveConstraints({ groups: input.detectedGroups || [] });
+    if (input.errors.length
+      || finalConstraintIssues.length
+      || input.complexityAssessmentPending
+      || input.solveAdmissionBlocked) return null;
 
     try {
       state.projectGroups = prepareProjectGroups(input);
@@ -1003,7 +1631,12 @@
     isHydrating = true;
     backendErrors = [];
     ncImportErrors = [];
+    ncImportNotices = [];
+    preflightErrors = [];
+    preflightWarnings = [];
+    resetGroupComplexityAssessment();
     autoFillMessages = [];
+    solvePhase = "idle";
     document.getElementById("ncErrors").textContent = "";
     if (resetProject) state = createProjectState();
     const settings = input.cuttingSettings || {};
@@ -1022,8 +1655,14 @@
     updatePriceVisibility();
     state.autoFillOrders = input.autoFillOrders !== false;
     state.parts = (input.parts || []).map(row => ({ position: row.positionId || row.position || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", quantity: row.quantity ?? 1, length: row.length ?? "", source: String(row.source || "").trim() || "Manual" }));
-    state.stockOrders = (input.stockOrders || []).map(row => ({ generatedId: migrateGeneratedOrderId(row.generatedId) || allocateGeneratedId("stockOrders"), stockId: row.stockOrderId || row.stockId || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", length: row.length ?? "", quantity: row.availableQuantity ?? row.quantity ?? 1, lastFiniteQuantity: positiveWholeNumber(row.availableQuantity ?? row.quantity) ?? 1, unlimited: typeof row.unlimited === "boolean" ? row.unlimited : row.availableQuantity == null, price: row.price ?? "", autoFilled: Boolean(row.autoFilled) }));
+    state.stockOrders = (input.stockOrders || []).map(row => {
+      const grade = String(row.steelGrade || "").trim();
+      const allSteelGrades = typeof row.allSteelGrades === "boolean" ? row.allSteelGrades : !grade;
+      return { generatedId: migrateGeneratedOrderId(row.generatedId) || allocateGeneratedId("stockOrders"), stockId: row.stockOrderId || row.stockId || "", profile: row.profileName || row.profile || "", steelGrade: allSteelGrades ? "" : grade, lastSteelGrade: String(row.lastSteelGrade || grade).trim(), allSteelGrades, length: row.length ?? "", quantity: row.availableQuantity ?? row.quantity ?? 1, lastFiniteQuantity: stockQuantity(row.availableQuantity ?? row.quantity) ?? 1, unlimited: typeof row.unlimited === "boolean" ? row.unlimited : row.availableQuantity == null, price: row.price ?? "", autoFilled: Boolean(row.autoFilled) };
+    });
     state.storage = (input.storageStock || input.storage || []).map(row => ({ generatedId: row.generatedId || allocateGeneratedId("storage"), storageId: row.storageStockId || row.storageId || "", profile: row.profileName || row.profile || "", steelGrade: row.steelGrade || "", length: row.length ?? "", quantity: row.quantity ?? 1, storageArea: row.storageArea || "" }));
+    sortParts();
+    normalizeRestoredAutoFilledOrders();
     state.groupIds = clone(input.groupIds || state.groupIds || {});
     state.nextIds = { ...state.nextIds, ...(input.nextIds || {}) };
     state.projectGroups = clone(input.groups || []);
@@ -1063,8 +1702,13 @@
     state = createProjectState();
     backendErrors = [];
     ncImportErrors = [];
+    ncImportNotices = [];
+    preflightErrors = [];
+    preflightWarnings = [];
+    resetGroupComplexityAssessment();
     autoFillMessages = [];
     isSolving = false;
+    solvePhase = "idle";
 
     document.getElementById("projectName").value = "";
     document.getElementById("batchName").value = "";
@@ -1075,12 +1719,13 @@
     document.getElementById("currency").value = "";
     updatePriceVisibility();
     document.getElementById("ncErrors").textContent = "";
-    ["partsCsv", "stockCsv", "storageCsv", "ncFiles"].forEach(id => {
+    ["partsCsv", "stockCsv", "storageCsv", "ncFiles", "ncFolder"].forEach(id => {
       const input = document.getElementById(id);
       if (input) input.value = "";
     });
 
     ["parts", "stockOrders", "storage"].forEach(render);
+    renderNestingGroupControls();
     renderAutoFillState();
     NcNesting.clearActiveProject();
     history.replaceState({}, "", `${location.pathname}${location.hash}`);
@@ -1090,7 +1735,17 @@
 
   function releaseSolveLock() {
     isSolving = false;
+    solvePhase = "idle";
     validate(false);
+  }
+
+  function setSolvePhase(phase) {
+    solvePhase = phase;
+    validate(false);
+  }
+
+  function yieldToPage() {
+    return new Promise(resolve => setTimeout(resolve, 0));
   }
 
   function solveFailureMessage(error) {
@@ -1106,21 +1761,117 @@
     return errorDescriptor("error.solveGroup", {}, context);
   }
 
+  function preflightGroupContext(result) {
+    const profile = String(result?.profileName || "").trim();
+    const grade = String(result?.steelGrade || "").trim();
+    return [profile, grade].filter(Boolean).join(" · ") || t("common.batch");
+  }
+
+  function preflightBlockDescriptor(result) {
+    const reasons = new Set(result?.reasonCodes || []);
+    const context = preflightGroupContext(result);
+    if (reasons.has("invalid_integer")) return errorDescriptor("preflight.invalidValues", {}, context);
+    if (reasons.has("finite_capacity_insufficient")) return errorDescriptor("preflight.finiteCapacityInsufficient", {}, context);
+    if (reasons.has("complexity_hard_limit")) return errorDescriptor("preflight.groupTooLarge", {}, context);
+    return errorDescriptor("preflight.groupCannotFit", {}, context);
+  }
+
+  function preflightWarningDescriptor(result) {
+    return errorDescriptor("preflight.groupMayTakeLonger", {}, preflightGroupContext(result));
+  }
+
+  function applyPreflightFindings(screening) {
+    preflightErrors = (screening?.blockedGroups || []).map(preflightBlockDescriptor);
+    if (screening?.batchComplexity?.blocked) {
+      preflightErrors.push(errorDescriptor("preflight.batchTooComplex"));
+    }
+    preflightWarnings = (screening?.warningGroups || []).map(preflightWarningDescriptor);
+    const nextStatuses = new Map(groupVisualStatuses);
+    const nextComplexityResults = new Map(groupComplexityResults);
+    (screening?.results || []).forEach(result => {
+      const key = groupKey(result.profileName, result.steelGrade);
+      nextStatuses.set(key, visualStatusForResult(result));
+      nextComplexityResults.set(key, result);
+    });
+    groupVisualStatuses = nextStatuses;
+    groupComplexityResults = nextComplexityResults;
+    groupAssessmentState = {
+      status: "complete",
+      blockedGroups: screening?.blockedGroups || [],
+      warningGroups: screening?.warningGroups || [],
+      batchComplexity: screening?.batchComplexity || emptyGroupAssessmentState().batchComplexity
+    };
+    renderNestingGroupControls();
+  }
+
   async function executePreparedSolve(request, isDemoRequest) {
     state.solveRequest = clone(request);
     state.solveResponse = null;
     const projectBeforeSolve = persistProject(state.projectGroups) || projectSnapshot();
 
     try {
-      const result = isDemoRequest
-        ? NcNestingDemo.createSolveResult(request.requestId)
-        : await NcNesting.postSolve({
-            batch: request,
+      let result;
+      if (isDemoRequest) {
+        result = NcNestingDemo.createSolveResult(request.requestId);
+      } else {
+        const incremental = await NcNesting.prepareIncrementalSolve(request, state.projectId);
+        const changedGroups = incremental.changedGroups || [];
+        let backendResult = null;
+
+        if (changedGroups.length) {
+          setSolvePhase("checking");
+          await yieldToPage();
+          try {
+            const screening = await NcNestingSolvePreflight.screenBatch(
+              changedGroups,
+              request.cuttingSettings,
+              { limits: NcNestingConfig.solvePreflightLimits }
+            );
+            applyPreflightFindings(screening);
+          } catch {
+            preflightErrors = [];
+            preflightWarnings = changedGroups.map(group => preflightWarningDescriptor(group));
+          }
+          validate(false);
+          if (preflightErrors.length) return;
+
+          setSolvePhase("solving");
+          const backendRequest = {
+            ...clone(request),
+            requestId: NcNesting.createRequestId(),
+            groups: clone(changedGroups)
+          };
+          backendResult = await NcNesting.postSolve({
+            batch: backendRequest,
             telemetry: NcNestingTelemetry.createSolveTelemetry({
-              request,
+              request: backendRequest,
               projectId: state.projectId
             })
           });
+          if (!backendResult.succeeded) {
+            const resultErrors = Array.isArray(backendResult.errors) ? backendResult.errors : [];
+            backendErrors = resultErrors.length
+              ? resultErrors.map(visitorGroupError)
+              : [errorDescriptor("error.solve")];
+            return;
+          }
+        }
+
+        result = NcNesting.mergeIncrementalSolveResult(request, incremental, backendResult);
+        if (backendResult && changedGroups.length) {
+          try {
+            await NcNesting.writeGroupSolveCache(
+              state.projectId,
+              changedGroups.map(group => group.groupId),
+              incremental.fingerprints,
+              backendResult
+            );
+          } catch {
+            // Cache writes must not block a successful solve.
+          }
+        }
+      }
+
       if (!result.succeeded) {
         const resultErrors = Array.isArray(result.errors) ? result.errors : [];
         backendErrors = resultErrors.length
@@ -1150,6 +1901,7 @@
 
     const isDemoRequest = NcNestingDemo.matchesRequest(request);
     isSolving = true;
+    solvePhase = "solving";
     validate(false);
 
     if (isDemoRequest || NcNestingTerms.isAccepted()) {
@@ -1175,10 +1927,12 @@
       if (element.dataset.sourceValue) element.textContent = sourceLabel(element.dataset.sourceValue);
     });
     document.querySelectorAll(".unlimited-label").forEach(element => { element.textContent = t("common.unlimited"); });
+    document.querySelectorAll(".all-steel-grades-label").forEach(element => { element.textContent = t("common.allSteelGrades"); });
     document.querySelectorAll("button.remove").forEach(button => {
       button.title = t("action.removeRow");
       button.setAttribute("aria-label", t("action.removeRow"));
     });
+    renderNestingGroupControls();
     renderAutoFillState();
     renderNcErrors();
     validate(false);
@@ -1227,10 +1981,20 @@
 
   const drop = document.getElementById("drop");
   const ncFiles = document.getElementById("ncFiles");
+  const ncFolder = document.getElementById("ncFolder");
+  const selectNcFolder = document.getElementById("selectNcFolder");
   drop.onclick = () => ncFiles.click();
+  selectNcFolder.onclick = event => {
+    event.stopPropagation();
+    ncFolder.click();
+  };
   ncFiles.onchange = () => {
     importNc([...ncFiles.files]);
     ncFiles.value = "";
+  };
+  ncFolder.onchange = () => {
+    importNc([...ncFolder.files].filter(isNc1File));
+    ncFolder.value = "";
   };
   ["dragenter", "dragover"].forEach(name => drop.addEventListener(name, event => {
     event.preventDefault();
@@ -1240,7 +2004,7 @@
     event.preventDefault();
     drop.classList.remove("drag");
   }));
-  drop.addEventListener("drop", event => importNc([...event.dataTransfer.files]));
+  drop.addEventListener("drop", async event => importNc(await filesFromDrop(event.dataTransfer)));
 
   document.getElementById("autoFillOrders").onchange = event => {
     state.autoFillOrders = event.target.checked;
@@ -1256,6 +2020,7 @@
   document.getElementById("clearAll").onclick = clearAllInput;
   document.getElementById("demo").onclick = () => applyInput(NcNestingDemo.input);
   document.getElementById("solve").onclick = solveBatch;
+  document.getElementById("navbarSolve").onclick = solveBatch;
   document.getElementById("printPage").onclick = async () => {
     try {
       await NcNestingPrint.printInput(projectSnapshot());
@@ -1270,6 +2035,7 @@
     I18N.apply();
     translateCurrencyOptions();
     ["parts", "stockOrders", "storage"].forEach(render);
+    renderNestingGroupControls();
     renderAutoFillState();
 
     const params = new URLSearchParams(location.search);

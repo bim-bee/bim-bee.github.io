@@ -39,6 +39,9 @@
   function metrics(group) {
     const stock = Number(group.totalStockLengthConsumed) || 0;
     const used = Number(group.totalConsumedLength) || 0;
+    const part = Number.isFinite(Number(group.totalPartLength))
+      ? Math.max(0, Number(group.totalPartLength))
+      : used;
     const storage = Number(group.totalStorageStockLengthConsumed) || 0;
     const reusable = Number(group.totalReusableOffcutLength) || 0;
     const waste = group.totalOffcutLength == null
@@ -47,11 +50,12 @@
     return {
       stock,
       used,
+      part,
       storage,
       reusable,
       waste,
-      utilization: pct(used, stock),
-      wastePercent: pct(waste, stock)
+      utilization: NcNestingUtilization.optimisticPercentage(part, waste),
+      wastePercent: NcNestingUtilization.optimisticWastePercentage(part, waste)
     };
   }
 
@@ -122,6 +126,7 @@
       const groupMetrics = metrics(group);
       total.stock += groupMetrics.stock;
       total.used += groupMetrics.used;
+      total.part += groupMetrics.part;
       total.storageLength += groupMetrics.storage;
       total.reusable += groupMetrics.reusable;
       total.waste += groupMetrics.waste;
@@ -137,6 +142,7 @@
     }, {
       stock: 0,
       used: 0,
+      part: 0,
       storageLength: 0,
       reusable: 0,
       waste: 0,
@@ -178,8 +184,8 @@
     const total = totals();
     const cards = [
       [t("common.stockOrderQuantity"), I18N.inlineNumberHtml(total.order, { maximumFractionDigits: 0 }), I18N.supportingTextHtml("batch.required", { quantity: I18N.inlineNumberHtml(total.quantity, { maximumFractionDigits: 0 }) })],
-      [t("common.utilization"), `<bdi dir="ltr">${esc(d(pct(total.used, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.consumedLength", { length: len(total.used) })],
-      [t("common.waste"), `<bdi dir="ltr">${esc(d(pct(total.waste, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.offcutLength", { length: len(total.waste) })]
+      [t("common.utilization"), `<bdi dir="ltr">${esc(d(NcNestingUtilization.optimisticPercentage(total.part, total.waste)))}%</bdi>`, I18N.supportingTextHtml("batch.consumedLength", { length: len(total.part) })],
+      [t("common.waste"), `<bdi dir="ltr">${esc(d(NcNestingUtilization.optimisticWastePercentage(total.part, total.waste)))}%</bdi>`, I18N.supportingTextHtml("batch.offcutLength", { length: len(total.waste) })]
     ];
     if (hasCompleteWeight) cards.push([t("common.batchWeight"), ton(total.weight), I18N.supportingTextHtml("batch.groupCount", { count: I18N.inlineNumberHtml(data.groups.length, { maximumFractionDigits: 0 }) })]);
     cards.push(
@@ -192,8 +198,10 @@
   }
 
   function storageCell(group) {
+    const quantity = Number(group.storageStockQuantity) || 0;
+    if (quantity <= 0) return "—";
     const values = [
-      I18N.quantityHtml(group.storageStockQuantity, { maximumFractionDigits: 0 }),
+      I18N.quantityHtml(quantity, { maximumFractionDigits: 0 }),
       metres(group.totalStorageStockLengthConsumed)
     ];
     if (group.storageStockWeightTon != null) values.push(ton(group.storageStockWeightTon));
@@ -228,10 +236,10 @@
         const rowClass = isFirst && isLast ? "group-first group-last" : isFirst ? "group-first" : isLast ? "group-last" : "group-middle";
         output += `
           <tr class="${rowClass}" data-group-index="${groupIndex}" data-url="${esc(group.detailedPlanUrl || "#")}">
-            ${isFirst ? `<td class="profile" rowspan="${span}"><b>${bdi(group.profileName)}</b><span>${bdi(group.steelGrade)}</span></td>` : ""}
+            ${isFirst ? `<td class="profile" rowspan="${span}"><button class="group-result-remove no-print" type="button" data-remove-group="${esc(group.groupId)}" title="${esc(t("action.removeResultGroup"))}" aria-label="${esc(t("action.removeResultGroupNamed", { profile: I18N.isolate(group.profileName), grade: I18N.isolate(group.steelGrade) }))}">×</button><b>${bdi(group.profileName)}</b><span>${bdi(group.steelGrade)}</span></td>` : ""}
             <td class="num">${order.stockLength == null ? "—" : len(order.stockLength)}</td>
             ${isFirst ? `
-              <td class="num percent" rowspan="${span}">${percentLengthCell(groupMetrics.utilization, groupMetrics.used)}</td>
+              <td class="num percent" rowspan="${span}">${percentLengthCell(groupMetrics.utilization, groupMetrics.part)}</td>
               <td class="num percent" rowspan="${span}">${percentLengthCell(groupMetrics.wastePercent, groupMetrics.waste)}</td>
               <td class="num" rowspan="${span}">${group.weightTon == null ? "—" : ton(group.weightTon)}</td>
               ${hasCost ? `<td class="num" rowspan="${span}">${formatCost(calculatedCost)}</td>` : ""}
@@ -255,11 +263,11 @@
     document.getElementById("foot").innerHTML = `
       <tr>
         <td colspan="2">${esc(t("common.batchTotalWeighted"))}</td>
-        <td class="num" dir="ltr">${d(pct(total.used, total.stock))}%</td>
-        <td class="num" dir="ltr">${d(pct(total.waste, total.stock))}%</td>
+        <td class="num" dir="ltr">${d(NcNestingUtilization.optimisticPercentage(total.part, total.waste))}%</td>
+        <td class="num" dir="ltr">${d(NcNestingUtilization.optimisticWastePercentage(total.part, total.waste))}%</td>
         <td class="num">${hasCompleteWeight ? ton(total.weight) : "—"}</td>
         ${hasCost ? `<td class="num">${total.costKnown ? formatCost(total.cost) : "—"}</td>` : ""}
-        <td class="num">${I18N.inlineValuesHtml([I18N.quantityHtml(total.storageQuantity, { maximumFractionDigits: 0 }), metres(total.storageLength), ...(hasCompleteWeight ? [ton(total.storageWeight)] : [])], { className: "storage-summary" })}</td>
+        <td class="num">${total.storageQuantity > 0 ? I18N.inlineValuesHtml([I18N.quantityHtml(total.storageQuantity, { maximumFractionDigits: 0 }), metres(total.storageLength), ...(hasCompleteWeight ? [ton(total.storageWeight)] : [])], { className: "storage-summary" }) : "—"}</td>
         <td class="num" dir="ltr">${n(total.quantity)}</td>
         <td class="center" dir="ltr">${n(total.order)}</td>
         <td class="center" dir="ltr">${leftover < 0 ? `<span class="footer-negative">${signed(leftover)}</span>` : signed(leftover)}</td>
@@ -290,6 +298,26 @@
         data.groups[groupIndex].stockOrders[orderIndex].orderQuantity = Math.max(0, Math.trunc(Number(input.value) || 0));
         NcNesting.saveOrderQuantities(data.batchId, data.groups);
         render();
+      });
+    });
+
+    document.querySelectorAll("[data-remove-group]").forEach(button => {
+      button.addEventListener("click", async event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (button.disabled) return;
+        const groupId = button.dataset.removeGroup;
+        button.disabled = true;
+        try {
+          const removed = await NcNesting.removeSolvedGroup(data.batchId, groupId);
+          if (!removed) return;
+          data.groups = data.groups.filter(group => group.groupId !== groupId);
+          NcNesting.saveOrderQuantities(data.batchId, data.groups);
+          render();
+        } catch {
+          button.disabled = false;
+          window.alert(t("error.removeResultGroup"));
+        }
       });
     });
 
@@ -367,7 +395,7 @@
       });
     });
     const total = totals();
-    const totalRow = [tr("csv.batchTotal"), "", "", "", d(pct(total.used, total.stock)), d(pct(total.waste, total.stock)), hasCompleteWeight ? d(total.weight) : ""];
+    const totalRow = [tr("csv.batchTotal"), "", "", "", d(NcNestingUtilization.optimisticPercentage(total.part, total.waste)), d(NcNestingUtilization.optimisticWastePercentage(total.part, total.waste)), hasCompleteWeight ? d(total.weight) : ""];
     if (hasCost) totalRow.push(data.currency || "", total.costKnown ? Math.round(total.cost) : "");
     totalRow.push(total.storageQuantity, total.storageLength, total.quantity, total.order, total.order - total.quantity, "");
     rows.push(totalRow);

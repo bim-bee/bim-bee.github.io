@@ -467,3 +467,39 @@ main table input {
   text-align: center !important;
   vertical-align: middle;
 }
+
+/* Remove a solved nesting group without obscuring its identity. */
+td.profile {
+  position: relative;
+  min-width: 140px;
+  padding-inline-end: 34px;
+}
+
+.group-result-remove {
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-end: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--red);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.group-result-remove:hover {
+  border-color: #e5b7b7;
+  background: #fff0f0;
+}
+
+.group-result-remove:focus-visible {
+  outline: 3px solid rgba(162, 32, 32, .22);
+  outline-offset: 1px;
+}

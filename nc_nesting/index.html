@@ -13,6 +13,7 @@
   <main>
     <header class="head">
       <div>
+        <button id="navbarSolve" class="primary navbar-solve-button no-print" type="button" data-navbar-back disabled data-i18n="action.solve">Solve</button>
         <h1 data-i18n="page.input.title">NC Nesting Input Page</h1>
         <p data-i18n="input.description">Prepare the complete nesting batch before solving.</p>
       </div>
@@ -27,19 +28,19 @@
     <section class="panel">
       <div class="panel-head"><div><h2 data-i18n="page.jobParameters">Job parameters</h2><p data-i18n="input.lengthsInteger">All physical lengths use integer millimetres.</p></div></div>
       <div class="settings">
-        <div class="field job-name-field"><label for="projectName"><span data-i18n="common.project">Project</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><input id="projectName" type="text" maxlength="200" autocomplete="off" dir="auto"></div></div>
-        <div class="field job-name-field"><label for="batchName"><span data-i18n="common.batchName">Batch name</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><input id="batchName" type="text" maxlength="200" autocomplete="off" dir="auto"></div></div>
-        <div class="field physical-setting-field"><label for="toolWidth" data-i18n="common.toolWidth">Tool width</label><div class="input-shell measurement-input-shell"><input id="toolWidth" type="number" min="0" step="1" value="3" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
-        <div class="field physical-setting-field"><label for="trimStart" data-i18n="common.startTrim">Start trim</label><div class="input-shell measurement-input-shell"><input id="trimStart" type="number" min="0" step="1" value="20" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
-        <div class="field physical-setting-field"><label for="trimEnd" data-i18n="common.endTrim">End trim</label><div class="input-shell measurement-input-shell"><input id="trimEnd" type="number" min="0" step="1" value="20" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
-        <div class="field final-setting-field"><label for="reusableMinimum" data-i18n="common.reusableMinimum">Reusable minimum</label><div class="input-shell measurement-input-shell"><input id="reusableMinimum" type="number" min="0" step="1" value="1250" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
-        <div class="field final-setting-field"><label for="currency"><span data-i18n="common.currency">Currency</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><select id="currency"><option value="" selected></option><option value="Israeli New Shekel" data-currency-label="Israeli New Shekel">Israeli New Shekel</option><option value="US Dollar" data-currency-label="US Dollar">US Dollar</option><option value="Euro" data-currency-label="Euro">Euro</option><option value="Chinese Yuan (CNY)" data-currency-label="Chinese Yuan (CNY)">Chinese Yuan (CNY)</option></select></div></div>
+        <div class="field required-setting-field"><label for="toolWidth" data-i18n="common.toolWidth">Tool width</label><div class="input-shell measurement-input-shell"><input id="toolWidth" type="number" min="0" step="1" value="3" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
+        <div class="field required-setting-field"><label for="trimStart" data-i18n="common.startTrim">Start trim</label><div class="input-shell measurement-input-shell"><input id="trimStart" type="number" min="0" step="1" value="20" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
+        <div class="field required-setting-field"><label for="trimEnd" data-i18n="common.endTrim">End trim</label><div class="input-shell measurement-input-shell"><input id="trimEnd" type="number" min="0" step="1" value="20" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
+        <div class="field required-setting-field"><label for="reusableMinimum" data-i18n="common.reusableMinimum">Reusable minimum</label><div class="input-shell measurement-input-shell"><input id="reusableMinimum" type="number" min="0" step="1" value="1250" dir="ltr"><span class="unit" data-i18n="common.mm">mm</span></div></div>
+        <div class="field optional-setting-field"><label for="projectName"><span data-i18n="common.project">Project</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><input id="projectName" type="text" maxlength="200" autocomplete="off" dir="auto"></div></div>
+        <div class="field optional-setting-field"><label for="batchName"><span data-i18n="common.batchName">Batch name</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><input id="batchName" type="text" maxlength="200" autocomplete="off" dir="auto"></div></div>
+        <div class="field optional-setting-field"><label for="currency"><span data-i18n="common.currency">Currency</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><select id="currency"><option value="" selected></option><option value="Israeli New Shekel" data-currency-label="Israeli New Shekel">Israeli New Shekel</option><option value="US Dollar" data-currency-label="US Dollar">US Dollar</option><option value="Euro" data-currency-label="Euro">Euro</option><option value="Chinese Yuan (CNY)" data-currency-label="Chinese Yuan (CNY)">Chinese Yuan (CNY)</option></select></div></div>
       </div>
     </section>
 
     <section class="panel">
       <div class="solve-head"><div><h2 data-i18n="page.solveJob">Solve job</h2><p data-i18n="input.solveInstructions">Enter or import the required data, review the inputs, then select Solve.</p></div><button id="solve" class="primary" disabled data-i18n="action.solve">Solve</button></div>
-      <div id="drop" class="drop" role="button" tabindex="0" data-i18n-aria-label="input.dropNc"><strong data-i18n="input.dropNc">Drop NC1 files here</strong><span data-i18n="input.selectNc">or click to select a batch of .nc1 files</span><input id="ncFiles" type="file" accept=".nc1" multiple></div>
+      <div id="drop" class="drop" role="button" tabindex="0" data-i18n-aria-label="input.dropNc"><strong data-i18n="input.dropNc">Drop NC1 files here</strong><span class="drop-select-message"><span data-i18n="input.selectNc">or click to select a batch of .nc1 files or</span> <button id="selectNcFolder" class="drop-folder-link" type="button" data-i18n="action.selectFolder">choose a folder to pull from</button></span></div><input id="ncFiles" type="file" accept=".nc1" multiple><input id="ncFolder" type="file" webkitdirectory directory multiple>
       <div class="badges"><span id="partBadge" class="badge" data-i18n="input.zeroPartRows">0 part rows</span><span id="groupBadge" class="badge warn" data-i18n="input.noGroups">No nesting groups detected</span></div>
       <div id="ncErrors" class="errors" role="alert" aria-live="polite"></div><div id="validation" class="validation bad" aria-live="polite"></div>
     </section>
@@ -54,8 +55,8 @@
             <button data-download="stockOrders" data-i18n="action.downloadCsvTemplate">Download CSV / template</button><button data-add="stockOrders" data-i18n="action.addRow">Add row</button><button class="danger" data-clear="stockOrders" data-i18n="action.clear">Clear</button>
           </div>
         </div>
-        <div class="wrap"><table id="stockOrdersTable" class="stock-table prices-hidden"><thead><tr><th data-i18n="common.stockOrderId">Stock order ID</th><th data-i18n="common.profile">Profile</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.lengthMm">Length (mm)</th><th data-i18n="common.quantity">Quantity</th><th class="price-column"><span data-i18n="common.price">Price</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="stockBody"></tbody></table></div>
-        <div class="note" data-i18n="input.stockExplanation">Profile is required. Steel grade is optional: a blank value matches every grade of that profile. Blank IDs receive stable defaults such as Order-A and Order-B.</div>
+        <div class="wrap"><table id="stockOrdersTable" class="stock-table prices-hidden"><thead><tr><th data-i18n="common.profile">Profile</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.lengthMm">Length (mm)</th><th class="quantity-column" data-i18n="common.quantity">Quantity</th><th class="price-column"><span data-i18n="common.price">Price</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="stockBody"></tbody></table></div>
+        <div class="note" data-i18n="input.stockExplanation">Profile is required. Select All steel grades when the stock may be used for every grade of that profile.</div>
         <div id="autoFillNotice" class="auto-fill-notice" hidden></div>
       </section>
 
@@ -67,8 +68,8 @@
             <button data-download="storage" data-i18n="action.downloadCsvTemplate">Download CSV / template</button><button data-add="storage" data-i18n="action.addRow">Add row</button><button class="danger" data-clear="storage" data-i18n="action.clear">Clear</button>
           </div>
         </div>
-        <div class="wrap"><table class="storage-table"><thead><tr><th data-i18n="common.storageId">Storage ID</th><th data-i18n="common.profile">Profile</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.lengthMm">Length (mm)</th><th data-i18n="common.quantity">Quantity</th><th data-i18n="common.storageArea">Storage area</th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="storageBody"></tbody></table></div>
-        <div class="note" data-i18n="input.storageExplanation">Only storage stocks that exactly match a nesting group and can fit at least one requested part are grouped for solving. Blank IDs receive stable defaults such as Storage-A and Storage-B. Storage-area details remain in the browser project and are not sent for calculation.</div>
+        <div class="wrap"><table class="storage-table"><thead><tr><th data-i18n="common.profile">Profile</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.lengthMm">Length (mm)</th><th data-i18n="common.quantity">Quantity</th><th data-i18n="common.storageArea">Storage area</th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="storageBody"></tbody></table></div>
+        <div class="note" data-i18n="input.storageExplanation">Only storage stocks that exactly match a nesting group and can fit at least one requested part are grouped for solving. Storage-area details remain in the browser project and are not sent for calculation.</div>
       </section>
     </div>
 
@@ -76,6 +77,10 @@
       <div class="panel-head">
         <div><h2 data-i18n="common.partsToCut">Parts to cut</h2><p data-i18n="input.partsDescription">NC imports populate this table. Rows may also be imported, pasted from Excel, added manually, or edited.</p></div>
         <div class="actions"><label class="file-button" for="partsCsv" data-i18n="action.importCsv">Import CSV</label><input id="partsCsv" type="file" accept=".csv,.txt"><button data-download="parts" data-i18n="action.downloadCsvTemplate">Download CSV / template</button><button data-add="parts" data-i18n="action.addRow">Add row</button><button class="danger" data-clear="parts" data-i18n="action.clear">Clear</button></div>
+      </div>
+      <div class="nesting-groups" aria-labelledby="nestingGroupsLabel">
+        <div id="nestingGroupsLabel" class="nesting-groups-label" data-i18n="input.nestingGroupsLabel">Detected nesting groups</div>
+        <div id="nestingGroupControls" class="nesting-group-controls"></div>
       </div>
       <div class="wrap"><table><thead><tr><th data-i18n="common.position">Position</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.quantity">Quantity</th><th data-i18n="common.profile">Profile</th><th data-i18n="common.lengthMm">Length (mm)</th><th data-i18n="common.source">Source</th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="partsBody"></tbody></table></div>
       <div class="note" data-i18n="input.excelExplanation">Excel paste: copy a rectangular cell range, select the first destination cell, then paste. NC lengths are rounded up to the next whole millimetre. Position is required and is never generated automatically.</div>
@@ -94,12 +99,15 @@
 
   <script src="scripts/navbar.js"></script>
   <script src="scripts/config.js"></script>
+  <script src="scripts/utilization.js"></script>
   <script src="scripts/app-storage.js"></script>
   <script src="scripts/terms.js"></script>
   <script src="scripts/demo-data.js"></script>
   <script src="scripts/relevant-storage-stock-selector.js"></script>
+  <script src="scripts/layout-grouper.js"></script>
   <script src="scripts/print-renderer.js"></script>
   <script src="scripts/telemetry.js"></script>
+  <script src="scripts/solve-preflight.js"></script>
   <script src="scripts/input.js"></script>
 </body>
 </html>

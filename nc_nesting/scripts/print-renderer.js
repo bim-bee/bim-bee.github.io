@@ -2,6 +2,7 @@
   "use strict";
 
   const I18N = window.NCNestingI18n;
+  const Layouts = window.NcNestingLayouts;
   let printLanguage = I18N.getLanguage();
   const t = (key, params = {}) => I18N.t(key, params, printLanguage);
   const rich = (key, params = {}) => I18N.richText(key, params, printLanguage);
@@ -34,11 +35,6 @@
   const metres = value => realNumber(value) == null ? "—" : I18N.measurementHtml(Number(value) / 1000, "m", { maximumFractionDigits: 2 }, printLanguage);
   const ton = value => realNumber(value) == null ? "—" : I18N.measurementHtml(Number(value), "ton", { minimumFractionDigits: 1, maximumFractionDigits: 1 }, printLanguage);
   const cleanName = value => String(value || "").trim();
-  const generatedOrderId = value => /^Stock-[A-Z]+$/i.test(String(value || "").trim())
-    ? String(value).trim().replace(/^Stock-/i, "Order-")
-    : String(value || "").trim();
-  const orderId = row => String(row.stockId || row.stockOrderId || "").trim() || generatedOrderId(row.generatedId) || "—";
-  const storageId = row => String(row.storageId || row.storageStockId || "").trim() || String(row.generatedId || "").trim() || "—";
 
   function formatMoney(value, currency) {
     const amount = realNumber(value);
@@ -198,16 +194,17 @@
   function renderInput(project, heading = t("page.input.title")) {
     const inputs = project?.inputs || {};
     const hasCurrency = Boolean(cleanName(project?.currency));
-    const stockRows = (inputs.stockOrders || []).filter(row => [row.stockId, row.profile, row.steelGrade, row.length, row.price].some(value => String(value ?? "").trim()) || row.unlimited);
-    const storageRows = (inputs.storageStock || []).filter(row => [row.storageId, row.profile, row.steelGrade, row.length, row.storageArea].some(value => String(value ?? "").trim()));
+    const stockRows = (inputs.stockOrders || []).filter(row => [row.profile, row.steelGrade, row.length, row.price].some(value => String(value ?? "").trim()) || row.unlimited);
+    const storageRows = (inputs.storageStock || []).filter(row => [row.profile, row.steelGrade, row.length, row.storageArea].some(value => String(value ?? "").trim()));
     const partRows = (inputs.parts || []).filter(row => [row.position, row.steelGrade, row.profile, row.length].some(value => String(value ?? "").trim()));
-    const stockHeaders = [t("common.stockOrderId"), t("common.profile"), t("common.steelGrade"), t("common.length"), t("common.quantity")];
+    const stockHeaders = [t("common.profile"), t("common.steelGrade"), t("common.length"), t("common.quantity")];
     if (hasCurrency) stockHeaders.push(t("common.price"));
     const renderedStockRows = stockRows.map(row => {
+      const grade = cleanName(row.steelGrade);
+      const allSteelGrades = row.allSteelGrades === true || (row.allSteelGrades !== false && !grade);
       const result = [
-        bdi(orderId(row)),
         bdi(row.profile || row.profileName || ""),
-        bdi(row.steelGrade || ""),
+        allSteelGrades ? esc(t("common.allSteelGrades")) : (grade ? bdi(grade) : "—"),
         mm(row.length),
         (typeof row.unlimited === "boolean" ? row.unlimited : row.availableQuantity == null) ? esc(t("common.unlimited")) : bdi(integer(row.quantity ?? row.availableQuantity))
       ];
@@ -223,9 +220,9 @@
       ${table(stockHeaders, renderedStockRows, `stock-orders-table${hasCurrency ? "" : " no-price"}`)}
       <h2>${esc(t("common.storageStocks"))}</h2>
       ${table(
-        [t("common.storageId"), t("common.profile"), t("common.steelGrade"), t("common.length"), t("common.quantity"), t("common.storageArea")],
+        [t("common.profile"), t("common.steelGrade"), t("common.length"), t("common.quantity"), t("common.storageArea")],
         storageRows.map(row => [
-          bdi(storageId(row)), bdi(row.profile || row.profileName || ""), bdi(row.steelGrade || ""), mm(row.length),
+          bdi(row.profile || row.profileName || ""), bdi(row.steelGrade || ""), mm(row.length),
           bdi(integer(row.quantity)), row.storageArea ? `<span dir="auto">${esc(row.storageArea)}</span>` : "—"
         ]),
         "storage-stock-table"
@@ -245,10 +242,11 @@
   function batchMetrics(group) {
     const stock = finite(group.totalStockLengthConsumed);
     const used = finite(group.totalConsumedLength);
+    const part = realNumber(group.totalPartLength) ?? used;
     const storage = finite(group.totalStorageStockLengthConsumed);
     const reusable = finite(group.totalReusableOffcutLength);
     const waste = group.totalOffcutLength == null ? Math.max(stock - used, 0) : Math.max(finite(group.totalOffcutLength), 0);
-    return { stock, used, storage, reusable, waste };
+    return { stock, used, part, storage, reusable, waste };
   }
 
   function groupCost(group, currency) {
@@ -268,6 +266,7 @@
       const metrics = batchMetrics(group);
       total.stock += metrics.stock;
       total.used += metrics.used;
+      total.part += metrics.part;
       total.storage += metrics.storage;
       total.reusable += metrics.reusable;
       total.waste += metrics.waste;
@@ -279,7 +278,7 @@
         else total.cost += cost;
       }
       return total;
-    }, { stock: 0, used: 0, storage: 0, reusable: 0, waste: 0, storageQuantity: 0, weight: 0, required: 0, ordered: 0, cost: 0, costKnown: true });
+    }, { stock: 0, used: 0, part: 0, storage: 0, reusable: 0, waste: 0, storageQuantity: 0, weight: 0, required: 0, ordered: 0, cost: 0, costKnown: true });
     const quantities = NcNesting.calculateBatchOrderTotals(batchResult);
     result.required = quantities.orderQuantity;
     result.ordered = quantities.ordered;
@@ -298,8 +297,8 @@
     const completeWeight = groups.length > 0 && groups.every(group => group.weightTon != null && Number.isFinite(Number(group.weightTon)));
     const cards = [
       [t("common.stockOrderQuantity"), I18N.inlineNumberHtml(totals.ordered, { maximumFractionDigits: 0 }, printLanguage), I18N.supportingTextHtml("batch.required", { quantity: I18N.inlineNumberHtml(totals.required, { maximumFractionDigits: 0 }, printLanguage) }, printLanguage)],
-      [t("common.utilization"), bdi(percentText(percent(totals.used, totals.stock))), I18N.supportingTextHtml("batch.consumedLength", { length: metres(totals.used) }, printLanguage)],
-      [t("common.waste"), bdi(percentText(percent(totals.waste, totals.stock))), I18N.supportingTextHtml("batch.offcutLength", { length: metres(totals.waste) }, printLanguage)]
+      [t("common.utilization"), bdi(percentText(NcNestingUtilization.optimisticPercentage(totals.part, totals.waste))), I18N.supportingTextHtml("batch.consumedLength", { length: metres(totals.part) }, printLanguage)],
+      [t("common.waste"), bdi(percentText(NcNestingUtilization.optimisticWastePercentage(totals.part, totals.waste))), I18N.supportingTextHtml("batch.offcutLength", { length: metres(totals.waste) }, printLanguage)]
     ];
     if (completeWeight) cards.push([t("common.batchWeight"), ton(totals.weight), I18N.supportingTextHtml("batch.groupCount", { count: I18N.inlineNumberHtml(groups.length, { maximumFractionDigits: 0 }, printLanguage) }, printLanguage)]);
     cards.push(
@@ -307,7 +306,7 @@
       [t("common.reusableReturned"), bdi(percentText(percent(totals.reusable, totals.stock))), I18N.supportingTextHtml("batch.reusableLength", { length: metres(totals.reusable) }, printLanguage)]
     );
 
-    const headers = [t("common.nestingGroup"), t("common.stockOrderId"), t("common.length"), t("common.utilization"), t("common.waste"), t("common.weight")];
+    const headers = [t("common.nestingGroup"), t("common.length"), t("common.utilization"), t("common.waste"), t("common.weight")];
     if (hasCost) headers.push(t("common.cost"));
     headers.push(t("common.orderQty"));
     const rows = [];
@@ -317,20 +316,16 @@
       const cost = groupCost(group, batchResult.currency);
       orders.forEach((order, index) => {
         const required = finite(order.requiredQuantity);
-        const rawId = order.stockOrderId || order.stockTypeId || "—";
-        const displayId = rawId === "No stock order" ? esc(t("common.noStockOrder")) : bdi(rawId);
         const row = index === 0
           ? [
               { html: `<strong>${bdi(group.profileName || "")}</strong><br><span class="muted">${bdi(group.steelGrade || "")}</span>`, rowspan: orders.length, className: "group-cell" },
-              displayId,
               order.stockLength == null ? "—" : mm(order.stockLength),
-              { html: bdi(percentText(percent(metrics.used, metrics.stock))), rowspan: orders.length, className: "group-cell" },
-              { html: bdi(percentText(percent(metrics.waste, metrics.stock))), rowspan: orders.length, className: "group-cell" },
+              { html: bdi(percentText(NcNestingUtilization.optimisticPercentage(metrics.part, metrics.waste))), rowspan: orders.length, className: "group-cell" },
+              { html: bdi(percentText(NcNestingUtilization.optimisticWastePercentage(metrics.part, metrics.waste))), rowspan: orders.length, className: "group-cell" },
               { html: group.weightTon != null && Number.isFinite(Number(group.weightTon)) ? ton(group.weightTon) : "—", rowspan: orders.length, className: "group-cell" }
             ]
           : [
               { skip: 1 },
-              displayId,
               order.stockLength == null ? "—" : mm(order.stockLength),
               { skip: 3 }
             ];
@@ -343,9 +338,9 @@
       });
     });
     const totalRow = [
-      { html: esc(t("common.batchTotalWeighted")), colspan: 3, className: "total-label" },
-      bdi(percentText(percent(totals.used, totals.stock))),
-      bdi(percentText(percent(totals.waste, totals.stock))),
+      { html: esc(t("common.batchTotalWeighted")), colspan: 2, className: "total-label" },
+      bdi(percentText(NcNestingUtilization.optimisticPercentage(totals.part, totals.waste))),
+      bdi(percentText(NcNestingUtilization.optimisticWastePercentage(totals.part, totals.waste))),
       completeWeight ? ton(totals.weight) : "—"
     ];
     if (hasCost) totalRow.push(totals.costKnown ? formatMoney(totals.cost, batchResult.currency) : "—");
@@ -434,27 +429,32 @@
     return `<div class="print-legend" aria-label="${esc(t("common.cuttingPlanLegend"))}">${items.map(([className, label]) => `<div class="print-legend-item"><span class="print-legend-swatch ${className}"></span><span>${esc(label)}</span></div>`).join("")}</div>`;
   }
 
-  function renderPiece(piece) {
-    const source = piece.stockSource === "StorageStock" ? t("common.storageStock") : t("common.stockOrder");
-    const sourceId = piece.stockSource === "StorageStock" ? (piece.storageStockId || piece.stockTypeId) : (piece.stockOrderId || piece.stockTypeId);
-    const segmentMarkup = piece.segments.map(segment => {
+  function layoutDisplayName(layout) {
+    const quantity = layout.quantity > 1 ? ` × ${integer(layout.quantity)}` : "";
+    return `${layout.layoutName}${quantity}`;
+  }
+
+  function renderPiece(layout) {
+    const source = layout.stockSource === "StorageStock" ? t("common.storageStock") : t("common.stockOrder");
+    const segmentMarkup = layout.segments.map(segment => {
       const [label, className] = segmentLabel(segment);
-      const width = piece.stockLength > 0 ? Math.max(segment.length / piece.stockLength * 100, segment.type === "ToolCut" ? 0.35 : 0.6) : 1;
+      const width = layout.stockLength > 0 ? Math.max(segment.length / layout.stockLength * 100, segment.type === "ToolCut" ? 0.35 : 0.6) : 1;
       const title = `${label || t("common.toolCut")} ${mmText(segment.length)}`;
       return `<div class="print-segment ${className}" style="width:${width}%" title="${esc(title)}" aria-label="${esc(title)}">${label ? `<span><strong>${segment.type === "Part" ? bdi(label) : esc(label)}</strong><small>${mm(segment.length)}</small></span>` : ""}</div>`;
     }).join("");
-    const retrieval = piece.stockSource === "StorageStock"
-      ? `${piece.storageArea ? t("plan.retrieveArea", { area: I18N.isolate(piece.storageArea) }) : t("plan.unspecifiedArea")}. `
+    const retrievalIds = layout.storageRecordIds.length ? layout.storageRecordIds.join(", ") : "—";
+    const retrieval = layout.stockSource === "StorageStock"
+      ? `${t("plan.retrieve", { id: I18N.isolate(retrievalIds) })}: ${layout.storageArea ? t("plan.retrieveArea", { area: I18N.isolate(layout.storageArea) }) : t("plan.unspecifiedArea")}. `
       : "";
     const description = I18N.supportingTextHtml("plan.pieceDescription", {
-      partLength: mm(piece.partLength),
-      cutLength: mm(piece.cutLength),
-      consumed: mm(piece.consumed),
-      offcut: mm(piece.offcut),
-      status: esc(t(piece.reusable ? "common.reusableLower" : "common.nonReusableLower"))
+      partLength: mm(layout.partLength),
+      cutLength: mm(layout.cutLength),
+      consumed: mm(layout.consumed),
+      offcut: mm(layout.offcut),
+      status: esc(t(layout.reusable ? "common.reusableLower" : "common.nonReusableLower"))
     }, printLanguage);
     return `<article class="print-piece">
-      <div class="print-piece-heading"><strong>${esc(t("plan.piece", { number: I18N.isolate(piece.pieceNumber) }))}</strong><span>${esc(source)} · ${bdi(sourceId || "—")} · ${mm(piece.stockLength)} · ${bdi(percentText(percent(piece.partLength, piece.stockLength)))} ${esc(t("common.partYield"))}</span></div>
+      <div class="print-piece-heading"><strong>${bdi(layoutDisplayName(layout))}</strong><span>${esc(source)} · ${mm(layout.stockLength)} · ${bdi(percentText(NcNestingUtilization.optimisticPercentage(layout.partLength, layout.offcut)))} ${esc(t("common.utilization"))}</span></div>
       <div class="print-stock-bar" dir="ltr">${segmentMarkup}</div>
       <p>${esc(retrieval)}${description}</p>
     </article>`;
@@ -464,111 +464,103 @@
     const source = plan?.totals || {};
     const stock = realNumber(source.totalStockLengthConsumed) ?? pieces.reduce((sum, piece) => sum + finite(piece.stockLength), 0);
     const consumed = realNumber(source.totalConsumedLength) ?? pieces.reduce((sum, piece) => sum + piece.consumed, 0);
+    const part = realNumber(source.totalPartLength) ?? pieces.reduce((sum, piece) => sum + piece.partLength, 0);
     const offcut = realNumber(source.totalOffcutLength) ?? pieces.reduce((sum, piece) => sum + piece.offcut, 0);
     const storage = realNumber(source.totalStorageStockLengthConsumed) ?? pieces.filter(piece => piece.stockSource === "StorageStock").reduce((sum, piece) => sum + finite(piece.stockLength), 0);
     const reusable = realNumber(source.totalReusableOffcutLength) ?? pieces.filter(piece => piece.reusable).reduce((sum, piece) => sum + piece.offcut, 0);
-    return { stock, consumed, offcut, storage, reusable };
+    return { stock, consumed, part, offcut, storage, reusable };
   }
 
-  function groupedLayouts(plan, pieces) {
-    const partIds = (plan.requestedParts || []).map(part => part.partId);
-    const map = new Map();
-    pieces.forEach(piece => {
-      const counts = {};
-      piece.parts.forEach(part => counts[part.partId] = (counts[part.partId] || 0) + 1);
-      const key = `${piece.stockSource}|${piece.stockTypeId}|${piece.stockLength}|${piece.layoutId}|${JSON.stringify(counts)}|${piece.offcut}`;
-      if (!map.has(key)) map.set(key, { piece, counts, quantity: 0 });
-      map.get(key).quantity++;
-    });
-    const headers = [t("common.source"), t("common.stockLength"), t("common.stockQtyShort"), t("common.offcut"), t("common.utilization"), ...partIds.map(partId => I18N.isolate(partId))];
-    const rows = [...map.values()].map(({ piece, counts, quantity }) => [
-      esc(piece.stockSource === "StorageStock" ? t("common.storage") : t("common.stockOrder")),
-      mm(piece.stockLength), bdi(integer(quantity)), mm(piece.offcut), bdi(percentText(percent(piece.partLength, piece.stockLength))),
-      ...partIds.map(partId => counts[partId] ? bdi(integer(counts[partId])) : "")
-    ]);
-    return table(headers, rows, "matrix-table no-stock-id");
-  }
 
-  function sourceIds(piece) {
-    const values = piece.stockSource === "StorageStock"
-      ? [piece.storageStockId, piece.groupedStorageStockId, piece.stockTypeId]
-      : [piece.stockOrderId, piece.stockTypeId];
-    return [...new Set(values.map(value => cleanName(value).toLowerCase()).filter(Boolean))];
-  }
-
-  function matchingPieces(pieces, id, stockSource, length) {
-    const normalizedId = cleanName(id).toLowerCase();
-    const targetLength = realNumber(length);
-    return pieces.filter(piece => {
-      if (stockSource === "StorageStock" && piece.stockSource !== "StorageStock") return false;
-      if (stockSource !== "StorageStock" && piece.stockSource === "StorageStock") return false;
-      const ids = sourceIds(piece);
-      if (normalizedId && ids.length) return ids.includes(normalizedId);
-      return targetLength != null && realNumber(piece.stockLength) === targetLength;
-    });
-  }
-
-  function derivedSourceValues(record, stockSource, pieces) {
+  function sourceValues(record, stockSource, layouts) {
+    const usage = Layouts.usageForRecord(layouts, record, stockSource);
+    const matched = usage.matched;
     const id = stockSource === "StorageStock"
-      ? (record.storageStockId || record.groupedStorageStockId)
+      ? (record.storageStockId || record.groupedStorageStockId || record.stockTypeId)
       : (record.stockOrderId || record.stockTypeId);
-    const length = realNumber(record.stockLength ?? record.length);
-    const matched = matchingPieces(pieces, id, stockSource, length);
+    const length = realNumber(record.stockLength ?? record.length)
+      ?? (matched.length === 1 ? matched[0].stockLength : null);
     const explicitQuantity = realNumber(stockSource === "StorageStock" ? record.quantity : record.selectedPieceCount);
-    const quantity = explicitQuantity ?? (matched.length ? matched.length : null);
+    const quantity = explicitQuantity ?? usage.quantity;
     let totalStockLength = realNumber(stockSource === "StorageStock" ? record.totalRetrievedStockLength : record.selectedStockLength);
+    if (totalStockLength == null) totalStockLength = usage.totalStockLength;
     if (totalStockLength == null && quantity != null && length != null) totalStockLength = quantity * length;
-    if (totalStockLength == null && matched.length) totalStockLength = matched.reduce((sum, piece) => sum + finite(piece.stockLength), 0);
     const explicitPartLength = realNumber(stockSource === "StorageStock" ? record.totalPartLength : record.selectedPartLength);
-    const partLength = explicitPartLength ?? (matched.length ? matched.reduce((sum, piece) => sum + piece.partLength, 0) : null);
-    const suppliedUtilization = realNumber(record.utilizationPercentage);
-    const utilization = suppliedUtilization ?? (partLength != null && totalStockLength != null ? percent(partLength, totalStockLength) : Number.NaN);
+    const partLength = explicitPartLength ?? usage.totalPartLength;
     const suppliedWaste = realNumber(record.wasteLength ?? record.totalWasteLength);
-    const wasteLength = suppliedWaste ?? (matched.length ? matched.reduce((sum, piece) => sum + piece.offcut, 0) : null);
-    return { id, length, quantity, utilization, wasteLength };
+    const wasteLength = suppliedWaste ?? usage.totalOffcutLength;
+    const utilization = partLength != null && Number.isFinite(wasteLength)
+      ? NcNestingUtilization.optimisticPercentage(partLength, wasteLength)
+      : Number.NaN;
+    return { id, length, quantity, utilization, wasteLength, matched };
   }
 
-  function renderSourceSummaries(plan, pieces) {
-    const currency = cleanName(plan.currency);
-    const selectedOrders = (plan.stockOrderOptions || []).filter(order => {
+  function layoutNames(values) {
+    const names = values.matched.map(layout => layout.layoutName);
+    return names.length ? names.join(", ") : "—";
+  }
+
+  function renderSourceSummaries(plan, layouts) {
+    const orders = (plan.stockOrderOptions || []).filter(order => {
       const count = realNumber(order.selectedPieceCount);
-      return count != null ? count > 0 : matchingPieces(pieces, order.stockOrderId || order.stockTypeId, "StockOrder", order.length ?? order.stockLength).length > 0;
+      return count != null
+        ? count > 0
+        : Layouts.layoutsForRecord(layouts, order, "StockOrder").length > 0;
     });
-    const showCost = Boolean(currency) && selectedOrders.some(order => realNumber(order.cost) != null);
-    const orderHeaders = [t("common.stockId"), t("common.quantity"), t("common.length"), t("common.utilization"), t("common.totalOffcut")];
-    if (showCost) orderHeaders.push(t("common.price"));
-    const orderRows = selectedOrders.map(order => {
-      const values = derivedSourceValues(order, "StockOrder", pieces);
-      const row = [bdi(values.id || "—"), values.quantity == null ? "—" : bdi(integer(values.quantity)), mm(values.length), bdi(percentText(values.utilization)), values.wasteLength == null ? "—" : mm(values.wasteLength)];
-      if (showCost) row.push(realNumber(order.cost) == null ? "—" : formatMoney(order.cost, currency));
-      return row;
+    const storage = plan.storageRetrievals || [];
+    const orderRows = orders.map(order => {
+      const values = sourceValues(order, "StockOrder", layouts);
+      return [
+        values.quantity == null ? "—" : bdi(integer(values.quantity)),
+        mm(values.length),
+        bdi(percentText(values.utilization))
+      ];
     });
-    const storageRows = (plan.storageRetrievals || []).map(record => {
-      const values = derivedSourceValues(record, "StorageStock", pieces);
-      return [bdi(values.id || "—"), record.storageArea ? `<span dir="auto">${esc(record.storageArea)}</span>` : "—", values.quantity == null ? "—" : bdi(integer(values.quantity)), mm(values.length), bdi(percentText(values.utilization)), values.wasteLength == null ? "—" : mm(values.wasteLength)];
+    const storageRows = storage.map(record => {
+      const values = sourceValues(record, "StorageStock", layouts);
+      return [
+        bdi(layoutNames(values)),
+        values.id ? bdi(values.id) : "—",
+        record.storageArea ? `<span dir="auto">${esc(record.storageArea)}</span>` : "—",
+        values.quantity == null ? "—" : bdi(integer(values.quantity)), mm(values.length), bdi(percentText(values.utilization)), mm(values.wasteLength)
+      ];
     });
-    return `<section class="print-source-section"><h2>${esc(t("common.stockOrders"))}</h2>${table(orderHeaders, orderRows, `compact${showCost ? " has-cost" : ""}`)}</section><section class="print-source-section"><h2>${esc(t("common.storageRetrievals"))}</h2>${table([t("common.storageId"), t("common.area"), t("common.quantity"), t("common.length"), t("common.utilization"), t("common.totalOffcut")], storageRows, "compact")}</section>`;
+    return `<section class="print-source-section"><h2>${esc(t("common.stockOrders"))}</h2>${table([t("common.quantity"), t("common.length"), t("common.utilization")], orderRows, "compact stock-orders-table")}</section><section class="print-source-section"><h2>${esc(t("common.storageRetrievals"))}</h2>${table([t("common.layout"), t("common.retrievalIds"), t("common.area"), t("common.quantity"), t("common.length"), t("common.utilization"), t("common.totalOffcut")], storageRows, "compact")}</section>`;
   }
 
-  function groupedWasteRows(pieces) {
-    const groups = new Map();
-    pieces.forEach(piece => {
-      const source = piece.stockSource === "StorageStock" ? t("common.storage") : t("common.stockOrder");
-      const stockId = piece.stockSource === "StorageStock" ? (piece.storageStockId || piece.stockTypeId) : (piece.stockOrderId || piece.stockTypeId);
-      const key = `${source}\u0000${stockId}\u0000${piece.offcut}\u0000${piece.reusable}`;
-      if (!groups.has(key)) groups.set(key, { pieceNumbers: [], source, stockId, offcut: piece.offcut, reusable: piece.reusable });
-      groups.get(key).pieceNumbers.push(piece.pieceNumber);
-    });
-    return [...groups.values()].map(row => ({
-      ...row,
-      pieceNumbers: row.pieceNumbers.sort((a, b) => finite(a) - finite(b)),
-      quantity: row.pieceNumbers.length
-    })).sort((left, right) => right.offcut - left.offcut);
+  function groupedWasteRows(layouts) {
+    return layouts.map(layout => ({
+      layoutName: layout.layoutName,
+      source: layout.stockSource === "StorageStock"
+        ? `${t("common.storage")}${layout.storageArea ? ` · ${layout.storageArea}` : ""}`
+        : t("common.stockOrder"),
+      stockLength: layout.stockLength,
+      utilization: layout.partUtilization,
+      quantity: layout.quantity,
+      offcut: layout.offcut,
+      reusable: layout.reusable
+    }));
+  }
+
+  function wasteLayoutCell(row) {
+    return I18N.inlineValuesHtml([
+      bdi(row.layoutName),
+      mm(row.stockLength),
+      bdi(percentText(row.utilization))
+    ], { className: "waste-layout-details" });
   }
 
   function renderPlan(plan, identity = {}) {
     const pieces = sortedPieces(plan);
+    const layouts = Layouts.groupPieces(pieces);
     const totals = planTotals(plan, pieces);
+    const usage = Layouts.aggregateUsage(layouts);
+    if (usage.totalStockLength > 0) {
+      totals.stock = usage.totalStockLength;
+      totals.consumed = usage.totalConsumedLength;
+      totals.part = usage.totalPartLength;
+      totals.offcut = usage.totalOffcutLength;
+    }
     const settings = { unit: "mm", ...(plan.settings || plan.cuttingSettings || {}) };
     const profileName = identity.profileName || plan.profileName || "";
     const steelGrade = identity.steelGrade || plan.steelGrade || "";
@@ -577,17 +569,17 @@
     const summaryHeading = `${profileName} · ${steelGrade} · ${t("page.cutPlanSummary")}`;
     const diagramHeading = `${profileName} · ${steelGrade} · ${t("page.cuttingPlanDiagram")}`;
     const metrics = [
-      [t("common.utilization"), bdi(percentText(percent(totals.consumed, totals.stock))), I18N.supportingTextHtml("plan.includesParts", { length: mm(totals.consumed) }, printLanguage)],
-      [t("common.totalOffcut"), bdi(percentText(percent(totals.offcut, totals.stock))), I18N.supportingTextHtml("plan.totalOffcutNote", { length: mm(totals.offcut) }, printLanguage)],
+      [t("common.utilization"), bdi(percentText(NcNestingUtilization.optimisticPercentage(totals.part, totals.offcut))), I18N.supportingTextHtml("plan.includesParts", { length: mm(totals.part) }, printLanguage)],
+      [t("common.totalOffcut"), bdi(percentText(NcNestingUtilization.optimisticWastePercentage(totals.part, totals.offcut))), I18N.supportingTextHtml("plan.totalOffcutNote", { length: mm(totals.offcut) }, printLanguage)],
       [t("common.storageStockShare"), bdi(percentText(percent(totals.storage, totals.stock))), I18N.supportingTextHtml("plan.consumedStorageNote", { length: mm(totals.storage) }, printLanguage)],
       [t("common.reusableReturned"), bdi(percentText(percent(totals.reusable, totals.stock))), I18N.supportingTextHtml("plan.reusableNote", { length: mm(totals.reusable) }, printLanguage)]
     ];
-    const wasteRows = groupedWasteRows(pieces).map(row => [
-      bdi(row.pieceNumbers.join(", ")),
-      esc(row.source),
-      bdi(row.quantity >= 2 ? `${row.quantity} x ${row.stockId}` : row.stockId),
+    const wasteRows = groupedWasteRows(layouts).map(row => [
+      `<span dir="auto">${esc(row.source)}</span>`,
+      wasteLayoutCell(row),
+      bdi(integer(row.quantity)),
       mm(row.offcut),
-      esc(t(row.reusable ? "common.reusable" : "common.nonReusable"))
+      `<span dir="auto">${esc(t(row.reusable ? "common.reusable" : "common.nonReusable"))}</span>`
     ]);
     const nameMeta = metadata([[t("common.project"), projectName, false], [t("common.batchName"), batchName, false]]);
 
@@ -596,14 +588,13 @@
       ${nameMeta}
       <p class="print-meta">${esc(t("common.toolWidth"))}: <strong>${mm(settings.toolWidth)}</strong> · ${esc(t("common.startTrim"))}: <strong>${mm(settings.trimStart)}</strong> · ${esc(t("common.endTrim"))}: <strong>${mm(settings.trimEnd)}</strong> · ${esc(t("common.reusableMinimum"))}: <strong>${mm(settings.reusableMinimumLength)}</strong></p>
       <h2>${esc(t("common.planSummary"))}</h2>${renderMetricCards(metrics)}
-      <h2>${esc(t("page.stocksMatrix"))}</h2>${groupedLayouts(plan, pieces)}
-      ${renderSourceSummaries(plan, pieces)}
-      <h2>${esc(t("common.wasteList"))}</h2>${table([t("common.piece"), t("common.source"), t("common.stockId"), t("common.offcutLength"), t("common.status")], wasteRows, "compact")}
+      ${renderSourceSummaries(plan, layouts)}
+      <h2>${esc(t("common.wasteList"))}</h2>${table([t("common.source"), t("common.layout"), t("common.quantity"), t("common.offcutLength"), t("common.status")], wasteRows, "compact waste-table")}
     </section>
     <section class="print-major-section print-plan-diagram-section">
       <h1><span dir="ltr">${esc(profileName)} · ${esc(steelGrade)}</span> · ${esc(t("page.cuttingPlanDiagram"))}</h1>
       ${nameMeta}
-      ${pieces.length ? pieces.map(renderPiece).join("") : `<p>${esc(t("plan.noPieces"))}</p>`}
+      ${layouts.length ? layouts.map(renderPiece).join("") : `<p>${esc(t("plan.noPieces"))}</p>`}
       ${renderPrintLegend()}
     </section>`;
   }

@@ -2644,6 +2644,14 @@
   function comparableRequest(value) {
     const copy = clone(value || {});
     delete copy.requestId;
+    copy.groups = (copy.groups || []).map(group => ({
+      ...group,
+      partRequirements: [...(group.partRequirements || [])].sort((left, right) =>
+        String(left.partId || "").localeCompare(String(right.partId || ""), undefined, { sensitivity: "base", numeric: true })
+        || Number(left.length || 0) - Number(right.length || 0)
+        || Number(left.quantity || 0) - Number(right.quantity || 0)
+      )
+    }));
     return canonicalize(copy);
   }
 

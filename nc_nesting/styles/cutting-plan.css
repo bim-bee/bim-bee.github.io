@@ -331,6 +331,33 @@
       font-size: 16px;
     }
 
+    .stock-orders-table th,
+    .stock-orders-table td {
+      width: 33.333%;
+      text-align: center;
+    }
+
+    .waste-table {
+      direction: ltr;
+      min-width: 760px;
+      table-layout: fixed;
+    }
+
+    .waste-table th,
+    .waste-table td {
+      text-align: center;
+    }
+
+    .waste-layout-details {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: .3em;
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+
     .summary-percentage {
       font-size: 20px !important;
     }
@@ -390,22 +417,6 @@
     .center { text-align: center; }
     .right { text-align: end; }
 
-    .matrix-part-header {
-      min-width: 90px;
-      text-align: center;
-    }
-
-    .matrix-part-header strong,
-    .matrix-part-header span {
-      display: block;
-    }
-
-    .matrix-part-header span {
-      color: var(--muted);
-      font-weight: 500;
-      margin-top: 3px;
-    }
-
     .confirmed {
       background: var(--ok);
       font-weight: 750;
@@ -424,8 +435,6 @@
 
     @media (max-width: 900px) {
       .source-summary-grid { grid-template-columns: 1fr; }
-      .storage-retrievals-card { order: 1; }
-      .stock-orders-card { order: 2; }
     }
 
     @media (max-width: 780px) {

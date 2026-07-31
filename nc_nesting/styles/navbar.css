@@ -120,6 +120,7 @@ site-navbar {
   align-items: center;
   justify-content: flex-end;
   gap: clamp(12px, 1.5vw, 22px);
+  min-width: 0;
 }
 
 .nc-navbar__language {
@@ -523,4 +524,89 @@ html[dir="rtl"] .measurement { flex-direction: row-reverse; }
 .inline-value-list > .inline-separator {
   display: inline;
   flex: 0 0 auto;
+}
+
+/* Dedicated, always-visible back-navigation slot. */
+.nc-navbar {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  column-gap: clamp(8px, 1vw, 16px);
+}
+.nc-navbar__back-slot--ltr {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  min-width: 0;
+}
+.nc-navbar__controls { grid-column: 4; }
+.nc-navbar__back-slot--rtl {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.nc-navbar__back-slot[hidden] { display: none !important; }
+.nc-navbar .nc-navbar__back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #aeb8c7;
+  border-radius: 8px;
+  background: #fff;
+  color: #17202a;
+  font: inherit;
+  font-size: clamp(11.5px, .95vw, 13px);
+  font-weight: 650;
+  line-height: 1.15;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nc-navbar .nc-navbar__back-link:hover { background: #f7f8fa; }
+.nc-navbar .nc-navbar__back-link:focus-visible {
+  outline: 3px solid var(--nc-navbar-focus);
+  outline-offset: 2px;
+}
+.nc-navbar .nc-navbar__back-link .back-arrow {
+  flex: 0 0 auto;
+  font-size: 1.05em;
+}
+
+
+@media (max-width: 760px) {
+  .nc-navbar__controls { gap: 7px; }
+  .nc-navbar__language { flex: 0 0 auto; }
+  .nc-navbar__back-slot--rtl { overflow: hidden; }
+}
+
+@media (max-width: 560px) {
+  .nc-navbar { column-gap: 5px; }
+  .nc-navbar .nc-navbar__back-link {
+    gap: 4px;
+    min-height: 34px;
+    padding: 6px 7px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 420px) {
+  :root { --nc-navbar-inline-padding: 8px; }
+  .nc-navbar .nc-navbar__back-link {
+    width: 34px;
+    min-width: 34px;
+    justify-content: center;
+    padding-inline: 5px;
+  }
+  .nc-navbar .nc-navbar__back-link [data-i18n] {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
 }

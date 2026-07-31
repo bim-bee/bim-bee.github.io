@@ -7,11 +7,49 @@
   const searchParams = new URLSearchParams(window.location.search);
   const querySolveUrl = String(searchParams.get("solveUrl") || "").trim();
 
+  // Frontend pre-solve screening limits. Reference values mirror normal backend routing;
+  // hard ceilings are deliberately more generous for individual-group blocking.
+  const solvePreflightLimits = Object.freeze({
+    canonicalLayouts: Object.freeze({ reference: 20000, hard: 60000 }),
+    arcFlow: Object.freeze({
+      statesReference: 100000,
+      statesHard: 200000,
+      arcsReference: 250000,
+      arcsHard: 500000
+    }),
+    exactAssignment: Object.freeze({
+      stockSlotsReference: 500,
+      stockSlotsHard: 1000,
+      variablesReference: 100000,
+      variablesHard: 250000,
+      constraintsReference: 100000,
+      constraintsHard: 250000,
+      fixedAuxiliaryVariablesPerSlot: 3,
+      perStockSlotConstraints: 3
+    }),
+    // Hidden complexity scoring. The lowest reliable solver-representation burden
+    // is used for each group, then group costs are accumulated for the batch.
+    complexityScoring: Object.freeze({
+      batchBudget: 6,
+      perGroupOverhead: 0.05,
+      uncertainFallbackRawScore: 1.5,
+      greenMaximumCost: 0.5,
+      yellowMaximumCost: 1.0
+    }),
+    // Work budgets protect input-page responsiveness and never cause hard blocking.
+    work: Object.freeze({
+      maximumOperationsPerGroup: 500000,
+      maximumMillisecondsPerGroup: 50,
+      maximumMillisecondsPerBatch: 200
+    })
+  });
+
   window.NcNestingConfig = Object.freeze({
     solveUrl: querySolveUrl || (isLocalPreview ? localSolveUrl : productionSolveUrl),
     productionSolveUrl,
     localSolveUrl,
     requestTimeoutMs: 120000,
-    termsVersion: "2026-04-01"
+    termsVersion: "2026-04-01",
+    solvePreflightLimits
   });
 })();
