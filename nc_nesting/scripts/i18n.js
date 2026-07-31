@@ -177,7 +177,7 @@
     "action.close": "Close",
     "action.backInput": "Back to input",
     "action.backBatch": "Back to batch result",
-    "action.loadDemo": "Load dummy demo data",
+    "action.loadDemo": "Load demo data",
     "action.autoFillOrders": "Auto-fill orders",
     "action.solve": "Solve",
     "action.viewCutPlan": "View cut plan",
