@@ -13,7 +13,7 @@
   <main>
     <header class="head">
       <div>
-        <button id="navbarSolve" class="primary navbar-solve-button no-print" type="button" data-navbar-back disabled data-i18n="action.solve">Solve</button>
+        <button id="navbarSolve" class="primary solve-button no-print" type="button" data-navbar-solve hidden disabled data-i18n="action.solve">Solve</button>
         <h1 data-i18n="page.input.title">NC Nesting Input Page</h1>
         <p data-i18n="input.description">Prepare the complete nesting batch before solving.</p>
       </div>
@@ -39,7 +39,7 @@
     </section>
 
     <section class="panel">
-      <div class="solve-head"><div><h2 data-i18n="page.solveJob">Solve job</h2><p data-i18n="input.solveInstructions">Enter or import the required data, review the inputs, then select Solve.</p></div><button id="solve" class="primary" disabled data-i18n="action.solve">Solve</button></div>
+      <div class="solve-head"><div><h2 data-i18n="page.solveJob">Solve job</h2><p data-i18n="input.solveInstructions">Enter or import the required data, review the inputs, then select Solve.</p></div><button id="solve" class="primary solve-button" disabled data-i18n="action.solve">Solve</button></div>
       <div id="drop" class="drop" role="button" tabindex="0" data-i18n-aria-label="input.dropNc"><strong data-i18n="input.dropNc">Drop NC1 files here</strong><span class="drop-select-message"><span data-i18n="input.selectNc">or click to select a batch of .nc1 files or</span> <button id="selectNcFolder" class="drop-folder-link" type="button" data-i18n="action.selectFolder">choose a folder to pull from</button></span></div><input id="ncFiles" type="file" accept=".nc1" multiple><input id="ncFolder" type="file" webkitdirectory directory multiple>
       <div class="badges"><span id="partBadge" class="badge" data-i18n="input.zeroPartRows">0 part rows</span><span id="groupBadge" class="badge warn" data-i18n="input.noGroups">No nesting groups detected</span></div>
       <div id="ncErrors" class="errors" role="alert" aria-live="polite"></div><div id="validation" class="validation bad" aria-live="polite"></div>

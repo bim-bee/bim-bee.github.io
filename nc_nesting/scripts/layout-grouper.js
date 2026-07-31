@@ -233,6 +233,56 @@
     return { matched, ...aggregateUsage(matched) };
   }
 
+  function displayedUtilization(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.round((number + Number.EPSILON) * 10) / 10 : Number.NaN;
+  }
+
+  function aggregateWasteRows(layouts) {
+    const groups = new Map();
+
+    (layouts || []).forEach((layout, index) => {
+      const stockSource = normalizedSource(layout);
+      const storageArea = stockSource === "StorageStock" ? clean(layout?.storageArea) : "";
+      const utilization = displayedUtilization(layout?.partUtilization);
+      const stockLength = finite(layout?.stockLength);
+      const offcut = finite(layout?.offcut);
+      const reusable = Boolean(layout?.reusable);
+      const key = JSON.stringify([
+        stockSource,
+        stockSource === "StorageStock" ? normalizedArea(storageArea) : "",
+        stockLength,
+        Number.isFinite(utilization) ? utilization.toFixed(1) : "",
+        offcut,
+        reusable
+      ]);
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          stockSource,
+          storageArea,
+          stockLength,
+          utilization,
+          offcut,
+          reusable,
+          layoutNames: [],
+          quantity: 0,
+          firstIndex: index
+        });
+      }
+
+      const group = groups.get(key);
+      const layoutName = clean(layout?.layoutName);
+      if (layoutName) group.layoutNames.push(layoutName);
+      group.quantity += Math.max(0, Math.trunc(finite(layout?.quantity)));
+      if (!group.storageArea && storageArea) group.storageArea = storageArea;
+    });
+
+    return [...groups.values()]
+      .sort((left, right) => left.firstIndex - right.firstIndex)
+      .map(({ firstIndex, ...row }) => row);
+  }
+
   window.NcNestingLayouts = Object.freeze({
     groupPieces,
     layoutsForRecord,
@@ -241,6 +291,7 @@
     physicalSignature,
     letterSuffix,
     aggregateUsage,
-    usageForRecord
+    usageForRecord,
+    aggregateWasteRows
   });
 })();

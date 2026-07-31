@@ -313,7 +313,7 @@
     "nc.stMissing": "ST header was not found.",
     "nc.invalidFields": "Required ST fields are missing or invalid.",
     "nc.unsupported": "Unsupported file type; only .nc1 files are accepted.",
-    "nc.plateIgnored": "Plate profile type B was detected and ignored.",
+    "nc.plateIgnored": "Plate files were detected in the upload and ignored.",
 
     "planError.sequence": "Piece {number} has an invalid segment sequence.",
     "planError.trim": "Piece {number} has invalid trim segments.",
@@ -674,7 +674,7 @@
     "nc.stMissing": "קובץ ה־NC שהועלה אינו תקין.",
     "nc.invalidFields": "קובץ ה־NC שהועלה אינו תקין.",
     "nc.unsupported": "סוג הקובץ אינו נתמך. ניתן להעלות קובצי ‎.nc1 בלבד.",
-    "nc.plateIgnored": "זוהה קובץ פלטה מסוג פרופיל B והוא הוחרג מהייבוא.",
+    "nc.plateIgnored": "זוהו קובצי פלטות בהעלאה והם הוחרגו מהייבוא.",
 
     "planError.sequence": "רצף המקטעים במוט {number} אינו תקין.",
     "planError.trim": "חיתוך הקצה במוט {number} אינו תקין.",

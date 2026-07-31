@@ -342,7 +342,7 @@
     return I18N.priceHtml(amount, data.currency, { maximumFractionDigits: 2 });
   }
 
-  function summaryRecord(title, subtitleHtml, quantity, length, utilization, wasteLength) {
+  function summaryRecord(title, subtitleHtml, quantity, length, utilization, wasteLength, options = {}) {
     const percentageValue = Number.isFinite(utilization) ? pct(utilization) : "—";
     const wasteText = Number.isFinite(wasteLength)
       ? I18N.supportingTextHtml("plan.wasteLength", { length: mm(wasteLength) })
@@ -351,9 +351,12 @@
       `<strong class="summary-percentage" dir="ltr">${escapeHtml(percentageValue)}</strong>`,
       wasteText
     ], { className: "summary-percentage-line" });
+    const heading = options.showHeading === false
+      ? ""
+      : `<div class="source-summary-heading"><strong>${bdi(title || "—")}</strong><span class="source-summary-support">${subtitleHtml}</span></div>`;
     return `
-      <article class="source-summary-record">
-        <div class="source-summary-heading"><strong>${bdi(title || "—")}</strong><span class="source-summary-support">${subtitleHtml}</span></div>
+      <article class="source-summary-record${options.showHeading === false ? " source-summary-record--table-only" : ""}">
+        ${heading}
         <div class="source-table-wrap"><table class="source-summary-table"><thead><tr><th>${escapeHtml(t("common.quantity"))}</th><th>${escapeHtml(t("common.length"))}</th><th>${escapeHtml(t("common.utilization"))}</th></tr></thead><tbody><tr><td><strong dir="ltr">${quantity == null ? "—" : escapeHtml(I18N.formatNumber(quantity))}</strong></td><td><strong>${mm(length)}</strong></td><td>${percentageDetails}</td></tr></tbody></table></div>
       </article>`;
   }
@@ -391,17 +394,14 @@
     }
     document.getElementById("stockOrders").innerHTML = selectedOrders.map(stock => {
       const values = derivedSourceValues(stock, "StockOrder");
-      const orderLabel = values.id
-        ? `${t("common.stockOrder")} ${I18N.isolate(values.id)}`
-        : t("common.stockOrder");
-      const subtitle = `<span class="supporting-text" dir="auto">${escapeHtml(orderLabel)}</span>`;
       return summaryRecord(
-        layoutNamesForRecord(stock, "StockOrder"),
-        subtitle,
+        "",
+        "",
         values.quantity,
         values.length,
         values.utilization,
-        values.wasteLength
+        values.wasteLength,
+        { showHeading: false }
       );
     }).join("");
   }
@@ -412,12 +412,9 @@
       : t("common.stockOrder");
   }
 
-  function layoutDetailsHtml(layout) {
-    return I18N.inlineValuesHtml([
-      bdi(layout.layoutName),
-      mm(layout.stockLength),
-      `<span dir="ltr">${escapeHtml(pct(layout.partUtilization))}</span>`
-    ], { className: "waste-layout-details" });
+  function wasteLayoutNamesHtml(row) {
+    const names = row.layoutNames.length ? row.layoutNames : ["—"];
+    return `<span class="waste-layout-names">${names.map((name, index) => `<span class="waste-layout-name">${bdi(name)}${index < names.length - 1 ? '<span class="waste-layout-separator">,</span>' : ""}</span>`).join("")}</span>`;
   }
 
   function csvEscape(value) {
@@ -472,9 +469,10 @@
 
 
   function renderWasteList() {
+    const wasteRows = Layouts.aggregateWasteRows(layouts);
     document.getElementById("wasteList").innerHTML = `
-      <thead><tr><th>${escapeHtml(t("common.source"))}</th><th>${escapeHtml(t("common.layout"))}</th><th>${escapeHtml(t("common.quantity"))}</th><th>${escapeHtml(t("common.offcutLength"))}</th><th>${escapeHtml(t("common.status"))}</th></tr></thead>
-      <tbody>${layouts.map(layout => `<tr><td><span dir="auto">${escapeHtml(layoutSourceText(layout))}</span></td><td>${layoutDetailsHtml(layout)}</td><td dir="ltr">${escapeHtml(I18N.formatNumber(layout.quantity))}</td><td>${mm(layout.offcut)}</td><td><span dir="auto">${escapeHtml(layout.reusable ? t("common.reusable") : t("common.nonReusable"))}</span></td></tr>`).join("")}</tbody>`;
+      <thead><tr><th>${escapeHtml(t("common.source"))}</th><th>${escapeHtml(t("common.layout"))}</th><th>${escapeHtml(t("common.stockLength"))}</th><th>${escapeHtml(t("common.utilization"))}</th><th>${escapeHtml(t("common.quantity"))}</th><th>${escapeHtml(t("common.offcutLength"))}</th><th>${escapeHtml(t("common.status"))}</th></tr></thead>
+      <tbody>${wasteRows.map(row => `<tr><td><span dir="auto">${escapeHtml(layoutSourceText(row))}</span></td><td>${wasteLayoutNamesHtml(row)}</td><td>${mm(row.stockLength)}</td><td dir="ltr">${escapeHtml(pct(row.utilization))}</td><td dir="ltr">${escapeHtml(I18N.formatNumber(row.quantity))}</td><td>${mm(row.offcut)}</td><td><span dir="auto">${escapeHtml(row.reusable ? t("common.reusable") : t("common.nonReusable"))}</span></td></tr>`).join("")}</tbody>`;
   }
 
 

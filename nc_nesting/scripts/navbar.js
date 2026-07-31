@@ -120,6 +120,7 @@
       this.cacheElements();
       this.bindEvents();
       this.initializePageActions();
+      this.initializePageSolve();
       this.initializePageBack();
       this.applyLanguage(this.language, { persist: false, announce: false });
 
@@ -135,15 +136,17 @@
       window.removeEventListener('resize', this.handleWindowResize);
       window.removeEventListener('storage', this.handleStorageChange);
       this.pageActionsMedia?.removeEventListener?.('change', this.handlePageActionsMediaChange);
+      this.pageSolveMedia?.removeEventListener?.('change', this.handlePageSolveMediaChange);
       document.removeEventListener('DOMContentLoaded', this.handlePageActionsDomReady);
+      document.removeEventListener('DOMContentLoaded', this.handlePageSolveDomReady);
       document.removeEventListener('DOMContentLoaded', this.handlePageBackDomReady);
-      this.pageActionsResizeObserver?.disconnect();
+      this.layoutResizeObserver?.disconnect();
     }
 
     render() {
       const links = NAV_ITEMS.map((item) => `
         <li class="nc-navbar__item">
-          <a class="nc-navbar__link" href="${this.rootPath}${item.href}" data-nav-key="${item.key}"></a>
+          <a class="nc-navbar__link" href="${this.rootPath}${item.href}" target="_blank" rel="noopener noreferrer" data-nav-key="${item.key}"></a>
         </li>`).join('');
 
       this.innerHTML = `
@@ -152,6 +155,7 @@
             <img class="nc-navbar__logo" src="${this.rootPath}images/bimbee-logo.png" alt="BIMbee">
           </a>
 
+          <div class="nc-navbar__solve-host" hidden></div>
           <div class="nc-navbar__back-slot nc-navbar__back-slot--ltr" hidden></div>
           <div class="nc-navbar__page-actions" hidden></div>
 
@@ -201,6 +205,7 @@
       this.drawer = this.querySelector('.nc-navbar__drawer');
       this.drawerTitle = this.querySelector('.nc-navbar__drawer-title');
       this.pageActionsHost = this.querySelector('.nc-navbar__page-actions');
+      this.pageSolveHost = this.querySelector('.nc-navbar__solve-host');
       this.backSlotLtr = this.querySelector('.nc-navbar__back-slot--ltr');
       this.backSlotRtl = this.querySelector('.nc-navbar__back-slot--rtl');
       this.brand = this.querySelector('.nc-navbar__brand');
@@ -208,6 +213,21 @@
       this.languageGroup = this.querySelector('.nc-navbar__language');
       this.languageButtons = [...this.querySelectorAll('[data-language]')];
       this.navLinks = [...this.querySelectorAll('[data-nav-key]')];
+    }
+
+    ensureLayoutResizeObserver() {
+      if (!window.ResizeObserver) return;
+      if (!this.layoutResizeObserver) {
+        this.layoutResizeObserver = new ResizeObserver(() => this.updateNavbarLayout());
+      }
+      [this.brand, this.controls, this.pageActionGroup, this.pageSolveButton]
+        .filter(Boolean)
+        .forEach(element => this.layoutResizeObserver.observe(element));
+    }
+
+    updateNavbarLayout() {
+      this.updatePageSolvePosition();
+      this.updatePageActionClearance();
     }
 
 
@@ -261,13 +281,32 @@
       this.handlePageActionsMediaChange = () => this.syncPageActions();
       this.pageActionsMedia.addEventListener?.('change', this.handlePageActionsMediaChange);
 
-      if (window.ResizeObserver) {
-        this.pageActionsResizeObserver = new ResizeObserver(() => this.updatePageActionClearance());
-        this.pageActionsResizeObserver.observe(this.brand);
-        this.pageActionsResizeObserver.observe(this.controls);
-      }
+      this.ensureLayoutResizeObserver();
 
       this.syncPageActions();
+    }
+
+    initializePageSolve() {
+      if (this.pageSolveButton) return;
+      const solveButton = document.querySelector('[data-navbar-solve]');
+      if (!solveButton) {
+        if (document.readyState === 'loading' && !this.handlePageSolveDomReady) {
+          this.handlePageSolveDomReady = () => this.initializePageSolve();
+          document.addEventListener('DOMContentLoaded', this.handlePageSolveDomReady, { once: true });
+        }
+        return;
+      }
+
+      document.removeEventListener('DOMContentLoaded', this.handlePageSolveDomReady);
+      this.pageSolveButton = solveButton;
+      this.pageSolveAnchor = document.createComment('nc-navbar-page-solve');
+      solveButton.parentNode.insertBefore(this.pageSolveAnchor, solveButton);
+      this.pageSolveHost.appendChild(solveButton);
+      this.pageSolveMedia = window.matchMedia('(min-width: 1024px)');
+      this.handlePageSolveMediaChange = () => this.syncPageSolve();
+      this.pageSolveMedia.addEventListener?.('change', this.handlePageSolveMediaChange);
+      this.ensureLayoutResizeObserver();
+      this.syncPageSolve();
     }
 
     syncPageActions() {
@@ -283,14 +322,39 @@
         this.pageActionsHost.hidden = true;
         this.navbar.style.removeProperty('--nc-navbar-actions-side-clearance');
       }
+      window.requestAnimationFrame(() => this.updateNavbarLayout());
+    }
+
+    syncPageSolve() {
+      if (!this.pageSolveButton || !this.pageSolveMedia) return;
+      const show = this.pageSolveMedia.matches;
+      if (this.pageSolveButton.parentNode !== this.pageSolveHost) this.pageSolveHost.appendChild(this.pageSolveButton);
+      this.pageSolveHost.hidden = !show;
+      this.pageSolveButton.hidden = !show;
+      if (!show) this.pageSolveHost.style.removeProperty('left');
+      window.requestAnimationFrame(() => this.updateNavbarLayout());
+    }
+
+    updatePageSolvePosition() {
+      if (!this.pageSolveButton || !this.pageSolveMedia?.matches || this.pageSolveHost.hidden || this.pageActionsHost.hidden) return;
+      const navbarRect = this.navbar.getBoundingClientRect();
+      const brandRect = this.brand.getBoundingClientRect();
+      const actionsRect = this.pageActionsHost.getBoundingClientRect();
+      if (!navbarRect.width || !brandRect.width || !actionsRect.width) return;
+      const center = ((brandRect.right + actionsRect.left) / 2) - navbarRect.left;
+      this.pageSolveHost.style.left = `${center}px`;
     }
 
     updatePageActionClearance() {
       if (!this.pageActionGroup || this.pageActionsHost.hidden) return;
-      const brandWidth = this.brand.getBoundingClientRect().width + (this.backSlotLtr.hidden ? 0 : this.backSlotLtr.getBoundingClientRect().width + 12);
-      const controlsWidth = this.controls.getBoundingClientRect().width;
-      const inlinePadding = parseFloat(getComputedStyle(this.navbar).paddingInlineStart) || 0;
-      const clearance = Math.ceil(Math.max(brandWidth, controlsWidth) + inlinePadding + 18);
+      const navbarRect = this.navbar.getBoundingClientRect();
+      const brandRect = this.brand.getBoundingClientRect();
+      const controlsRect = this.controls.getBoundingClientRect();
+      let leftOccupied = brandRect.right - navbarRect.left;
+      if (!this.backSlotLtr.hidden) leftOccupied = Math.max(leftOccupied, this.backSlotLtr.getBoundingClientRect().right - navbarRect.left);
+      if (this.pageSolveButton && !this.pageSolveHost.hidden) leftOccupied = Math.max(leftOccupied, this.pageSolveButton.getBoundingClientRect().right - navbarRect.left);
+      const rightOccupied = navbarRect.right - controlsRect.left;
+      const clearance = Math.ceil(Math.max(leftOccupied, rightOccupied) + 18);
       this.navbar.style.setProperty('--nc-navbar-actions-side-clearance', `${clearance}px`);
     }
 
@@ -327,7 +391,8 @@
         // Closing on resize prevents a stale scroll lock after device rotation.
         if (this.menuOpen) this.setMenuOpen(false, { restoreFocus: false });
         this.syncPageActions();
-        this.updatePageActionClearance();
+        this.syncPageSolve();
+        this.updateNavbarLayout();
       };
 
       this.handleStorageChange = (event) => {
@@ -376,7 +441,8 @@
       if (persist) writeLanguage(this.storageKey, language);
       if (announce) announceLanguage(language);
       this.syncPageBack();
-      window.requestAnimationFrame(() => this.updatePageActionClearance());
+      this.syncPageSolve();
+      window.requestAnimationFrame(() => this.updateNavbarLayout());
     }
 
     setMenuOpen(open, options = {}) {

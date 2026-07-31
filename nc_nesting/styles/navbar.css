@@ -59,6 +59,18 @@ site-navbar {
   display: none !important;
 }
 
+.nc-navbar__solve-host {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: max-content;
+  transform: translate(-50%, -50%);
+}
+
+.nc-navbar__solve-host[hidden] {
+  display: none !important;
+}
+
 .nc-navbar__page-actions > .actions {
   display: flex;
   flex-wrap: nowrap;
@@ -473,7 +485,8 @@ html[dir="ltr"] .measurement { flex-direction: row; }
 html[dir="rtl"] .measurement { flex-direction: row-reverse; }
 
 @media (max-width: 1023px) {
-  .nc-navbar__page-actions { display: none !important; }
+  .nc-navbar__page-actions,
+  .nc-navbar__solve-host { display: none !important; }
 }
 
 /* Shared inline formatting for measurements, quantities, prices, and support text. */

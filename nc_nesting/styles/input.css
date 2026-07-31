@@ -146,6 +146,10 @@
             color: #fff
         }
 
+        .solve-button {
+            white-space: nowrap
+        }
+
         .danger {
             color: var(--danger)
         }
@@ -765,48 +769,4 @@ html[dir="rtl"] .measurement-input-shell .unit {
   background: #eaf7ef;
   color: #176b3a;
   font-size: 12px;
-}
-
-/* Input-page navbar solve mirrors the main solve control. */
-.nc-navbar .navbar-solve-button {
-  width: auto;
-  min-width: 86px;
-  min-height: 36px;
-  margin: 0;
-  padding: 7px 14px;
-  border-color: var(--primary);
-  background: var(--primary);
-  color: #fff;
-  font: inherit;
-  font-weight: 750;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
-.nc-navbar .navbar-solve-button:hover:not(:disabled) {
-  background: #1848bd;
-}
-
-.nc-navbar .navbar-solve-button:disabled {
-  border-color: #b8c0cc;
-  background: #d7dce4;
-  color: #697386;
-  cursor: not-allowed;
-}
-
-@media (max-width: 560px) {
-  .nc-navbar .navbar-solve-button {
-    min-width: 72px;
-    min-height: 34px;
-    padding: 6px 10px;
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 420px) {
-  .nc-navbar .navbar-solve-button {
-    width: auto;
-    min-width: 66px;
-    padding-inline: 8px;
-  }
 }

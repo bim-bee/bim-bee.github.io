@@ -599,8 +599,9 @@
       return `<div class="nc-import-error">${escapeHtml(`${fileName}: ${t(error.key, error.params || {})}`)}</div>`;
     });
     const notices = ncImportNotices.map(notice => {
-      const fileName = isolate(notice.fileName);
-      return `<div class="nc-import-notice">${escapeHtml(`${fileName}: ${t(notice.key, notice.params || {})}`)}</div>`;
+      const message = t(notice.key, notice.params || {});
+      const text = notice.fileName ? `${isolate(notice.fileName)}: ${message}` : message;
+      return `<div class="nc-import-notice">${escapeHtml(text)}</div>`;
     });
     document.getElementById("ncErrors").innerHTML = [...errors, ...notices].join("");
   }
@@ -697,6 +698,7 @@
   async function importNc(files) {
     ncImportErrors = [];
     ncImportNotices = [];
+    let plateDetected = false;
     for (const file of files) {
       if (!isNc1File(file)) {
         ncImportErrors.push({ fileName: file.name, key: "nc.unsupported" });
@@ -705,7 +707,7 @@
       try {
         const parsed = parseNc(file.name, await file.text());
         if (parsed?.ignored && parsed.reason === "plate") {
-          ncImportNotices.push({ fileName: file.name, key: "nc.plateIgnored" });
+          plateDetected = true;
           continue;
         }
         state.parts.push(parsed);
@@ -713,6 +715,7 @@
         ncImportErrors.push({ fileName: error.context || file.name, key: error.key || "nc.invalidFields", params: error.params || {} });
       }
     }
+    if (plateDetected) ncImportNotices.push({ key: "nc.plateIgnored" });
     renderNcErrors();
     render("parts");
     afterDataChange("parts");

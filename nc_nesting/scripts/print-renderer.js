@@ -528,26 +528,15 @@
     return `<section class="print-source-section"><h2>${esc(t("common.stockOrders"))}</h2>${table([t("common.quantity"), t("common.length"), t("common.utilization")], orderRows, "compact stock-orders-table")}</section><section class="print-source-section"><h2>${esc(t("common.storageRetrievals"))}</h2>${table([t("common.layout"), t("common.retrievalIds"), t("common.area"), t("common.quantity"), t("common.length"), t("common.utilization"), t("common.totalOffcut")], storageRows, "compact")}</section>`;
   }
 
-  function groupedWasteRows(layouts) {
-    return layouts.map(layout => ({
-      layoutName: layout.layoutName,
-      source: layout.stockSource === "StorageStock"
-        ? `${t("common.storage")}${layout.storageArea ? ` · ${layout.storageArea}` : ""}`
-        : t("common.stockOrder"),
-      stockLength: layout.stockLength,
-      utilization: layout.partUtilization,
-      quantity: layout.quantity,
-      offcut: layout.offcut,
-      reusable: layout.reusable
-    }));
+  function wasteSourceText(row) {
+    return row.stockSource === "StorageStock"
+      ? `${t("common.storage")}${row.storageArea ? ` · ${row.storageArea}` : ""}`
+      : t("common.stockOrder");
   }
 
   function wasteLayoutCell(row) {
-    return I18N.inlineValuesHtml([
-      bdi(row.layoutName),
-      mm(row.stockLength),
-      bdi(percentText(row.utilization))
-    ], { className: "waste-layout-details" });
+    const names = row.layoutNames.length ? row.layoutNames : ["—"];
+    return `<span class="waste-layout-names">${names.map((name, index) => `<span class="waste-layout-name">${bdi(name)}${index < names.length - 1 ? '<span class="waste-layout-separator">,</span>' : ""}</span>`).join("")}</span>`;
   }
 
   function renderPlan(plan, identity = {}) {
@@ -574,9 +563,11 @@
       [t("common.storageStockShare"), bdi(percentText(percent(totals.storage, totals.stock))), I18N.supportingTextHtml("plan.consumedStorageNote", { length: mm(totals.storage) }, printLanguage)],
       [t("common.reusableReturned"), bdi(percentText(percent(totals.reusable, totals.stock))), I18N.supportingTextHtml("plan.reusableNote", { length: mm(totals.reusable) }, printLanguage)]
     ];
-    const wasteRows = groupedWasteRows(layouts).map(row => [
-      `<span dir="auto">${esc(row.source)}</span>`,
+    const wasteRows = Layouts.aggregateWasteRows(layouts).map(row => [
+      `<span dir="auto">${esc(wasteSourceText(row))}</span>`,
       wasteLayoutCell(row),
+      mm(row.stockLength),
+      bdi(percentText(row.utilization)),
       bdi(integer(row.quantity)),
       mm(row.offcut),
       `<span dir="auto">${esc(t(row.reusable ? "common.reusable" : "common.nonReusable"))}</span>`
@@ -589,7 +580,7 @@
       <p class="print-meta">${esc(t("common.toolWidth"))}: <strong>${mm(settings.toolWidth)}</strong> · ${esc(t("common.startTrim"))}: <strong>${mm(settings.trimStart)}</strong> · ${esc(t("common.endTrim"))}: <strong>${mm(settings.trimEnd)}</strong> · ${esc(t("common.reusableMinimum"))}: <strong>${mm(settings.reusableMinimumLength)}</strong></p>
       <h2>${esc(t("common.planSummary"))}</h2>${renderMetricCards(metrics)}
       ${renderSourceSummaries(plan, layouts)}
-      <h2>${esc(t("common.wasteList"))}</h2>${table([t("common.source"), t("common.layout"), t("common.quantity"), t("common.offcutLength"), t("common.status")], wasteRows, "compact waste-table")}
+      <h2>${esc(t("common.wasteList"))}</h2>${table([t("common.source"), t("common.layout"), t("common.stockLength"), t("common.utilization"), t("common.quantity"), t("common.offcutLength"), t("common.status")], wasteRows, "compact waste-table")}
     </section>
     <section class="print-major-section print-plan-diagram-section">
       <h1><span dir="ltr">${esc(profileName)} · ${esc(steelGrade)}</span> · ${esc(t("page.cuttingPlanDiagram"))}</h1>
