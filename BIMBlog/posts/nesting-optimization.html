@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Material Ordering for Cutting Is Usually Done with a Greedy Algorithm — Is It Worth Stopping There?</title>
+  <link href="../../styles/global.css" rel="stylesheet" />
+  <link href="../../styles/navbar.css" rel="stylesheet" />
+  <link href="../styles/blog.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Alef&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="../styles/hebrew-fontsize.css" rel="stylesheet" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GD41K6C42F"></script>
+  <script src="../scripts/post-analytics.js"></script>
+  <script>window.defaultLang = 'en';</script>
+  <meta name="description" content="Why cutting-material ordering usually starts with a greedy algorithm, and how mathematical optimization can still improve the result." />
+</head>
+<body>
+  <site-navbar data-root="../../"></site-navbar>
+
+  <article class="post-page">
+    <header class="post-header">
+      <br />
+      <div class="post-backbar">
+        <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+        <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">חזרה לבימבלוג ← </a>
+      </div>
+
+      <h1 class="lang lang-en">Material Ordering for Cutting Is Usually Done with a Greedy Algorithm — Is It Worth Stopping There?</h1>
+      <p class="post-sub lang lang-en">August 10, 2026 • 8 min read</p>
+
+      <h1 class="lang lang-he" dir="rtl" style="display:none;">הזמנת חומר לחיתוך נעשית לרוב בעזרת אלגוריתם חמדן — האם כדאי להסתפק בכך?</h1>
+      <p class="post-sub lang lang-he" dir="rtl" style="display:none;">10 באוגוסט 2026 • 8 דקות קריאה</p>
+    </header>
+
+    <section class="post-content">
+      <h2 class="lang lang-en">What is nesting</h2>
+      <p class="lang lang-en">
+        In steel fabrication, arranging the cuts looks simple when there are only a few parts. As the project gets bigger, the problem becomes much more complex.
+      </p>
+      <p class="lang lang-en">
+        There can be parts with different lengths, several stock lengths you can order, remnants already in stock, saw width, end cuts, and other practical limits.
+      </p>
+      <p class="lang lang-en">
+        The main question is: <strong>How do we arrange all the parts so we buy and waste as little material as possible?</strong>
+      </p>
+      <p class="lang lang-en">
+        This problem is called <strong>nesting</strong>.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">מה זה נסטינג</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        השלב הראשון בייצור פלדה הוא הזמנת החומר הנדרש לחיתוך. סידור החיתוכים נראה פשוט כשיש רק כמה חלקים. ככל שהפרויקט גדל, הבעיה נהיית הרבה יותר מורכבת.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        יכולים להיות חלקים באורכים שונים, כמה אורכי חומר גלם שאפשר להזמין, שאריות שכבר נמצאות במלאי, רוחב מסור, חיתוכי קצה ומגבלות מעשיות נוספות.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        השאלה המרכזית היא: <strong>איך לסדר את כל החלקים כך שנקנה ונבזבז כמה שפחות חומר?</strong>
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לבעיה הזאת קוראים <strong>נסטינג</strong>.
+      </p>
+
+      <h2 class="lang lang-en">A good greedy solution already takes us a long way</h2>
+      <p class="lang lang-en">
+        Many basic nesting systems use some form of a <a data-greedy-en style="color:#22d3ee;">greedy algorithm</a>.
+        The idea is simple:
+      </p>
+      <ol class="lang lang-en">
+        <li>Take the largest part that has not been placed yet.</li>
+        <li>Put it into the tightest place where it still fits.</li>
+        <li>If it does not fit, open a new raw-material bar.</li>
+        <li>Continue until all parts have a place.</li>
+      </ol>
+      <p class="lang lang-en">
+        This method is fast and returns a complete cutting plan. It is also a real method used in many online nesting systems.
+      </p>
+      <p class="lang lang-en">
+        In many nesting groups, the greedy result may already be the best result. But we cannot know that without checking. Sometimes there is still a better arrangement.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">האלגוריתם החמדן כבר מביא אותנו רחוק</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        מערכות נסטינג בסיסיות רבות משתמשות בצורה כלשהי של <a data-greedy-he style="color:#22d3ee;">אלגוריתם חמדן</a>.
+        הרעיון פשוט:
+      </p>
+      <ol class="lang lang-he" dir="rtl" style="display:none;">
+        <li>לוקחים את החלק הגדול ביותר שעדיין לא שובץ.</li>
+        <li>מכניסים אותו למקום הצפוף ביותר שבו הוא עדיין נכנס.</li>
+        <li>אם הוא לא נכנס, פותחים מוט חומר גלם חדש.</li>
+        <li>ממשיכים עד שלכל החלקים יש מקום.</li>
+      </ol>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        השיטה הזאת מהירה ומחזירה תוכנית חיתוך מלאה. זו גם שיטה אמיתית שנמצאת בשימוש במערכות נסטינג מקוונות רבות.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בהרבה קבוצות נסטינג, התוצאה החמדנית יכולה כבר להיות התוצאה הטובה ביותר. אבל אי אפשר לדעת את זה בלי לבדוק. לפעמים עדיין קיים סידור טוב יותר.
+      </p>
+
+      <h2 class="lang lang-en">Did the greedy solution miss something?</h2>
+      <p class="lang lang-en">
+        Suppose the greedy solution needs 20 new raw-material bars. That can already be an excellent result. But maybe there is another arrangement that needs only 19.
+      </p>
+      <p class="lang lang-en">
+        Maybe it is also possible to keep a useful 2,500 mm remnant instead of leaving more small pieces of waste.
+      </p>
+      <p class="lang lang-en">
+        A greedy solution usually cannot answer these questions. That is why we add mathematical optimization after the greedy result.
+      </p>
+      <p class="lang lang-en">
+        The idea is: <strong>first get a good solution that can be used right away, then check mathematically if there is another option that can improve it.</strong>
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">האם הפתרון החמדן פספס משהו?</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        נניח שהפתרון החמדן צריך 20 מוטות חומר גלם חדשים. זו יכולה להיות תוצאה מצוינת. אבל אולי קיים סידור אחר שצריך רק 19?
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        ואולי אפשר להשאיר שארית שימושית של 2,500 מ״מ במקום יותר חתיכות קטנות של פסולת?
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        פתרון חמדן בדרך כלל לא יכול לענות על השאלות האלה. לכן אנחנו מוסיפים אופטימיזציה מתמטית אחרי התוצאה החמדנית.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        הרעיון הוא: <strong> קודם לקבל מיד פתרון טוב שאפשר להשתמש בו, ואז לבדוק מתמטית אפשרות חלופית שיכולה לשפר אותו.</strong>
+      </p>
+
+      <h2 class="lang lang-en">What our cutting calculator does differently</h2>
+      <p class="lang lang-en">
+        Our engine compares cutting plans in a fixed order of priority:
+      </p>
+      <ol class="lang lang-en">
+        <li>First, reduce the price of the new raw material that must be ordered.</li>
+        <li>If the price is the same, reduce the total length of raw material that is used.</li>
+        <li>If that is also the same, keep as much material as possible that can go back into stock and be used again.</li>
+        <li>If that is also the same, prefer a smaller number of useful remnants.</li>
+      </ol>
+      <p class="lang lang-en">
+        This matters because an improvement does not always mean saving one full bar. Two cutting plans can use the same amount of material and produce exactly the same parts, but leave very different remnants.
+      </p>
+      <p class="lang lang-en">
+        For example, two plans can both leave 6,000 mm of unused material. One plan may leave six remnants of 1,000 mm. Another plan may leave two remnants of 3,000 mm. The total amount is the same, but the second option is much more useful for future work.
+      </p>
+      <p class="lang lang-en">
+        In the current calculator, you define a minimum remnant length that can go back into stock, and the calculation tries to leave as much useful material of that kind as possible, even if it is divided into several remnants.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">מה המחשבון חיתוך שלנו עושה אחרת</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        המנוע שלנו משווה בין תוכניות חיתוך לפי סדר עדיפויות קבוע:
+      </p>
+      <ol class="lang lang-he" dir="rtl" style="display:none;">
+        <li>קודם כל, להקטין את המחיר של חומר הגלם החדש שצריך להזמין.</li>
+        <li>אם המחיר זהה, להקטין את האורך הכולל של חומר הגלם שנצרך.</li>
+        <li>אם גם זה זהה, שיהיה כמה שיותר חומר שניתן להחזיר למלאי ולהשתמש בו שוב.</li>
+        <li>אם גם זה זהה, להעדיף מספר קטן יותר של שאריות שימושיות.</li>
+      </ol>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        זה חשוב כי שיפור לא תמיד אומר שחסכנו מוט שלם. שתי תוכניות חיתוך יכולות להשתמש באותה כמות חומר ולייצר בדיוק את אותם חלקים, אבל להשאיר שאריות שונות מאוד.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לדוגמה, שתי תוכניות יכולות להשאיר 6,000 מ״מ חומר לא מנוצל. תוכנית אחת יכולה להשאיר שש שאריות של 1,000 מ״מ. תוכנית אחרת יכולה להשאיר שתי שאריות של 3,000 מ״מ. הכמות הכוללת זהה, אבל האפשרות השנייה הרבה יותר שימושית לעבודות עתידיות.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        במחשבון הנוכחי שמוצע מגדירים אורך מינימלי לשארית שיכולה לחזור למלאי, והחישוב מנסה להשאיר כמה שיותר חומר שימושי כזה, גם אם הוא מתחלק לכמה שאריות.
+
+      </p>
+
+      <h2 class="lang lang-en">Sometimes the Greedy Solution Is Already Optimal</h2>
+      <p class="lang lang-en">
+        A good greedy solution is already hard to improve in many normal jobs. So we should not expect the calculator to make a big change in every cutting group.
+      </p>
+      <p class="lang lang-en">
+        Each saving on its own may look small. Across many projects, these small improvements add up. The goal is not to create dramatic savings every time, but to keep finding small opportunities that the fast greedy method sometimes misses.
+      </p>
+      <p class="lang lang-en">
+        Suppose the greedy solution uses 20 bars. The optimizer also finds a 20-bar solution and proves that 20 is the minimum. The cutting plan does not change, but now we know there is no hidden 19-bar solution.
+      </p>
+      <p class="lang lang-en">
+        It is important to separate <strong>finding a complete cutting plan</strong> from <strong>proving that it is optimal</strong>. The calculator may find a better plan quickly but need more time to prove that nothing better exists. If the calculation stops before that proof is complete, the best plan found is still valid and ready for production. More calculation time only gives the solver more time to return it with certainty that it is the optimum.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">לפעמים הפתרון החמדן כבר טוב</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בהרבה עבודות רגילות, פתרון חמדן טוב כבר קשה לשיפור. לכן לא צריך לצפות שהמחשבון יעשה שינוי גדול בכל קבוצת חיתוך.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כל חיסכון בפני עצמו יכול להיראות קטן. אבל לאורך הרבה פרויקטים, השיפורים הקטנים האלה מצטברים. המטרה היא לא לייצר חיסכון דרמטי בכל פעם, אלא להמשיך למצוא הזדמנויות קטנות שהשיטה החמדנית המהירה לפעמים מפספסת.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        נניח שהפתרון החמדן משתמש ב-20 מוטות. ואז גם המחשבון מוכיח ש-20 הוא המינימום. תוכנית החיתוך לא משתנה, אבל עכשיו אנחנו יודעים שאין פתרון נסתר של 19 מוטות.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        חשוב להבדיל בין <strong>מציאת תוכנית חיתוך מלאה</strong> לבין <strong>הוכחה שהיא אופטימלית</strong>. המחשבון יכול למצוא מהר תוכנית טובה יותר, אבל להזדקק לעוד זמן כדי להוכיח שאין פתרון אפילו טוב יותר. אם עוצרים את החישוב לפני שההוכחה הושלמה, התוכנית הטובה ביותר שנמצאה עדיין תקפה ומוכנה לייצור. יותר זמן חישוב רק נותן יותר זמן להחזיר אותה עם ודאות מלאה שהיא האופטימום.
+      </p>
+
+      <h2 class="lang lang-en">That is why we start with a greedy solution</h2>
+      <p class="lang lang-en">
+        Optimization of cutting material becomes difficult very quickly when we add more parts, different raw-material lengths, available stock material, and rules for creating remnants that can return to stock.
+      </p>
+      <p class="lang lang-en">
+        That is why our system does not work by the rule: "either prove the perfect solution, or return nothing."
+      </p>
+      <p class="lang lang-en">
+        First we create a complete greedy cutting plan. This gives us a safe starting solution right away. After that, we look for better complete plans and continue working toward proof of the best result until the available calculation time ends.
+      </p>
+      <p class="lang lang-en">
+        So the returned result should always be at the level of the greedy solution or better. We attach two result statuses to each result:
+      </p>
+      <p class="lang lang-en">
+        <strong>Optimal</strong> means the engine found a complete plan and proved mathematically that no better plan exists.
+      </p>
+      <p class="lang lang-en">
+        <strong>Ready to use</strong> means the engine found a complete and valid plan, but did not have enough time to prove that it is the best possible result in the time available. This can be the original greedy plan or an improved plan. In either case, it can be used in production. What is unfinished is the proof, not the cutting plan.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">לכן אנחנו מתחילים עם פתרון חמדן</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לכן המערכת שלנו לא עובדת לפי העיקרון: ״או שנוכיח את הפתרון המושלם, או שלא נחזיר כלום״.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        קודם ניצור תוכנית חיתוך חמדנית מלאה. כך יש לנו מיד פתרון בסיס בטוח. אחר כך נחפש תוכניות מלאות טובות יותר ונמשיך לעבוד לכיוון הוכחה של התוצאה הטובה ביותר, עד שנגמר זמן החישוב שהוקצה.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        לכן התוצאה שמוחזרת אמורה להיות תמיד ברמה של הפתרון החמדן או טובה ממנו. אנחנו מצמידים לכל תוצאה שתי סטטוסי מצב:
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        <strong>אופטימלי</strong> - אומר שהמנוע מצא תוכנית מלאה והוכיח מתמטית שאין תוכנית טובה יותר.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        <strong>מוכן לשימוש</strong> - אומר שהמנוע מצא תוכנית מלאה ותקינה, אבל לא הספיק להוכיח שהיא התוצאה הטובה ביותר האפשרית בזמן שהיה זמין. זו יכולה להיות התוכנית החמדנית המקורית או תוכנית משופרת. בכל מקרה, אפשר להשתמש בה בייצור. מה שלא הסתיים הוא ההוכחה, לא תוכנית החיתוך.
+      </p>
+
+      <h2 class="lang lang-en">In large projects the calculation time is shared between all groups</h2>
+      <p class="lang lang-en">
+        The <a data-online-optimizer style="color:#22d3ee;">online calculator</a> is free and is meant to make a smart process for ordering material for cutting more available to our industry. In this version, we had to set a calculation time limit of two minutes.
+      </p>
+      <p class="lang lang-en">
+        In large projects, the system spends more of that time on groups that look most likely to improve beyond the greedy result.
+      </p>
+      <p class="lang lang-en">
+        When the shared time runs out, a group may stay with the greedy result, return an improved result that is still not proved optimal, or reach a proved optimum. In every case, the process stays complete and useful because every group starts with a valid greedy plan.
+      </p>
+      <p class="lang lang-en">
+        The free version is meant to explain the method and provide practical improvements when the calculation time allows it. If you need optimization without this limit, you can <a href="../../index.html#contact">contact us</a> for the full service.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">בפרויקטים גדולים זמן החישוב מתחלק בין כל הקבוצות</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        <a data-online-optimizer style="color:#22d3ee;">המחשבון המוצע ברשת</a> הוא חינמי ונועד להנגיש תהליך חכם להזמנת חומר לחיתוך לתעשייה שלנו בצורה רחבה. בגרסא זו נאלצנו לשים מגבלת זמן לחישוב של שתי דקות.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בפרויקטים גדולים, המערכת משקיעה יותר מהזמן הזה בקבוצות שנראות כבעלות הסיכוי הטוב ביותר להשתפר מעבר לתוצאה החמדנית.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        כאשר הזמן המשותף נגמר, קבוצה יכולה להישאר עם התוצאה החמדנית, לחזור עם תוצאה משופרת שעדיין לא הוכחה כאופטימלית, או להגיע לאופטימום מוכח. בכל מקרה, התהליך נשאר מלא ושימושי כי כל קבוצה מתחילה עם תוכנית חמדנית תקינה.
+      </p>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        הגרסה החינמית נועדה להסביר את השיטה ולספק שיפורים מעשיים כשזמן החישוב מאפשר זאת. אם אתם צריכים חישוב מלא בלי מגבלת הזמן, אפשר <a href="../../index.html#contact">לפנות אלינו</a> לקבלת השירות המלא.
+      </p>
+
+      <h2 class="lang lang-en">Conclusion</h2>
+      <p class="lang lang-en">
+        In every standard calculator for ordering cutting material, we will find the greedy algorithm, and that already gives us a fast and useful cutting plan. Mathematical optimization adds another step: it checks whether we can save more material, leave more useful remnants, or prove that the current plan is already optimal. This way, we always start with a solution that can be used, and improve it when possible.
+      </p>
+
+      <h2 class="lang lang-he" dir="rtl" style="display:none;">סיכום</h2>
+      <p class="lang lang-he" dir="rtl" style="display:none;">
+        בכל מחשבון הזמנת חומר לחיתוך סטנדרטי נפגוש את האלגוריתם החמדן וזה כבר נותן לנו תוכנית חיתוך מהירה ושימושית. האופטימיזציה המתמטית מוסיפה שלב נוסף: היא בודקת אם אפשר לחסוך עוד חומר, להשאיר שאריות שימושיות יותר, או להוכיח שהתוכנית הקיימת כבר אופטימלית. כך תמיד מתחילים עם פתרון שאפשר להשתמש בו, ומשפרים אותו כאשר זה אפשרי כדי להשיג חיסכון אמיתי.
+      </p>
+
+  
+    </section>
+  </article>
+
+  <footer class="blog-footer">
+    <div class="blog-footer-inner">
+      <a class="post-back lang lang-en" href="../blog.html">← Back to BIMblog</a>
+      <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">חזרה לבימבלוג ← </a>
+      <p>&copy; <span id="year"></span> BIMbee</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    (function(){
+      var links = {
+        greedyEn: 'https://en.wikipedia.org/wiki/Greedy_algorithm',
+        greedyHe: 'https://he.wikipedia.org/wiki/%D7%90%D7%9C%D7%92%D7%95%D7%A8%D7%99%D7%AA%D7%9D_%D7%97%D7%9E%D7%93%D7%9F',
+        onlineOptimizer: 'https://bim-bee.github.io/nc_nesting'
+      };
+      document.querySelectorAll('[data-greedy-en]').forEach(function(a){
+        a.setAttribute('href', links.greedyEn);
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+      document.querySelectorAll('[data-greedy-he]').forEach(function(a){
+        a.setAttribute('href', links.greedyHe);
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+      document.querySelectorAll('[data-online-optimizer]').forEach(function(a){
+        a.setAttribute('href', links.onlineOptimizer);
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+    })();
+  </script>
+  <script defer src="../../scripts/navbar.js"></script>
+  <script defer src="../../scripts/main.js"></script>
+</body>
+</html>
