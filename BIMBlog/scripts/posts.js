@@ -8,6 +8,31 @@ window.BIM_POSTS = {
   posts: [
 /* */
     {
+      date: "2026-08-10",
+
+      title: "Material Ordering for Cutting Usually Relies on a Greedy Algorithm — Is That Enough?",
+      title_en: "Material Ordering for Cutting Usually Relies on a Greedy Algorithm — Is That Enough?",
+      title_he: "הזמנת חומר לחיתוך נעשית לרוב בעזרת אלגוריתם חמדן — האם כדאי להסתפק בכך?",
+
+      excerpt:
+        "A practical look at nesting for cutting stock: how the standard approach works, whether it is enough, and how the result can be improved and even proven optimal.",
+      excerpt_en:
+        "A practical look at nesting for cutting stock: how the standard approach works, whether it is enough, and how the result can be improved and even proven optimal.",
+      excerpt_he:
+        "מבט פרקטי על נסטינג להזמנת חומר לחיתוך: איך השיטה המקובלת עובדת, האם כדאי להסתפק בה, ואיך אפשר לשפר את התוצאה ואף להוכיח שהגענו לאופטימום.",
+
+      tags: ["Optimization", "Fabrication", "Nesting", "Automation"],
+      tags_he: ["אופטימיזציה", ltrSpan("Fabrication"), ltrSpan("Nesting"), "אוטומציה"],
+
+      thumbnail: "pics/nesting-algorithm.jpg",
+      url: "posts/nesting-optimization.html",
+
+      readTime: "8 min read",
+      readTime_en: "8 min read",
+      readTime_he: "קריאה של 8 דק׳"
+    },
+
+    {
       date: "2026-06-15",
 
       title_en: "Your NC Files May Be Wasting Beam Line Time — Here’s How to Fix It",
