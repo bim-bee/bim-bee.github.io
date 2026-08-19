@@ -1,0 +1,1094 @@
+﻿{
+  "schema_version": "1.0.0",
+  "canonical_id_rules": {
+    "letters": "A-Z",
+    "numbers": "0-9",
+    "dimension_separator": "x",
+    "decimal_separator": ".",
+    "letters_before_numbers": true,
+    "example_ids": [
+      "IPE300",
+      "HEAA200",
+      "RHS100x50x6.3"
+    ]
+  },
+  "status_values": [
+    "verified",
+    "uncertain",
+    "unreadable",
+    "blank_in_source",
+    "not_provided",
+    "not_applicable",
+    "derived",
+    "external_source"
+  ],
+  "field_definitions": {
+    "id": {
+      "symbol": "ID",
+      "unit": null
+    },
+    "mass_kg_m": {
+      "symbol": "G",
+      "unit": "kg/m"
+    },
+    "area_cm2": {
+      "symbol": "A",
+      "unit": "cmֲ²"
+    },
+    "dimensions.h_mm": {
+      "symbol": "h",
+      "unit": "mm"
+    },
+    "dimensions.b_mm": {
+      "symbol": "b",
+      "unit": "mm"
+    },
+    "dimensions.a_mm": {
+      "symbol": "a",
+      "unit": "mm"
+    },
+    "dimensions.e_mm": {
+      "symbol": "e",
+      "unit": "mm"
+    },
+    "dimensions.r_mm": {
+      "symbol": "r",
+      "unit": "mm"
+    },
+    "dimensions.c_mm": {
+      "symbol": "c",
+      "unit": "mm"
+    },
+    "dimensions.d_mm": {
+      "symbol": "d",
+      "unit": "mm"
+    },
+    "dimensions.s_mm": {
+      "symbol": "s",
+      "unit": "mm"
+    },
+    "dimensions.t_mm": {
+      "symbol": "t",
+      "unit": "mm"
+    },
+    "dimensions.tw_mm": {
+      "symbol": "tw",
+      "unit": "mm"
+    },
+    "dimensions.tf_mm": {
+      "symbol": "tf",
+      "unit": "mm"
+    },
+    "dimensions.hi_mm": {
+      "symbol": "hi",
+      "unit": "mm"
+    },
+    "dimensions.r1_mm": {
+      "symbol": "r1",
+      "unit": "mm"
+    },
+    "dimensions.r2_mm": {
+      "symbol": "r2",
+      "unit": "mm"
+    },
+    "dimensions.r3_mm": {
+      "symbol": "r3",
+      "unit": "mm"
+    },
+    "dimensions.s_eq_t_mm": {
+      "symbol": "s=t",
+      "unit": "mm"
+    },
+    "dimensions.height_mm": {
+      "symbol": "H",
+      "unit": "mm"
+    },
+    "dimensions.width_mm": {
+      "symbol": "B",
+      "unit": "mm"
+    },
+    "dimensions.thickness_mm": {
+      "symbol": "t",
+      "unit": "mm"
+    },
+    "dimensions.leg_a_mm": {
+      "symbol": "a",
+      "unit": "mm"
+    },
+    "dimensions.leg_b_mm": {
+      "symbol": "a",
+      "unit": "mm"
+    },
+    "dimensions.outside_diameter_mm": {
+      "symbol": "D",
+      "unit": "mm"
+    },
+    "dimensions.inside_diameter_mm": {
+      "symbol": "d",
+      "unit": "mm"
+    },
+    "dimensions.diameter_mm": {
+      "symbol": "D",
+      "unit": "mm"
+    },
+    "dimensions.length_mm": {
+      "symbol": "L",
+      "unit": "mm"
+    },
+    "properties.Fa_cm2": {
+      "symbol": "Fa",
+      "unit": "cmֲ²"
+    },
+    "properties.U_m2_m": {
+      "symbol": "U",
+      "unit": "mֲ²/m"
+    },
+    "properties.Ix_cm4": {
+      "symbol": "Ix",
+      "unit": "cmג´"
+    },
+    "properties.Iy_cm4": {
+      "symbol": "Iy",
+      "unit": "cmג´"
+    },
+    "properties.Jx_cm4": {
+      "symbol": "Jx",
+      "unit": "cmג´"
+    },
+    "properties.Jy_cm4": {
+      "symbol": "Jy",
+      "unit": "cmג´"
+    },
+    "properties.I_cm4": {
+      "symbol": "I",
+      "unit": "cmג´"
+    },
+    "properties.Wx_cm3": {
+      "symbol": "Wx",
+      "unit": "cmֲ³"
+    },
+    "properties.Wy_cm3": {
+      "symbol": "Wy",
+      "unit": "cmֲ³"
+    },
+    "properties.W_cm3": {
+      "symbol": "W",
+      "unit": "cmֲ³"
+    },
+    "properties.ix_cm": {
+      "symbol": "ix",
+      "unit": "cm"
+    },
+    "properties.iy_cm": {
+      "symbol": "iy",
+      "unit": "cm"
+    },
+    "properties.i_cm": {
+      "symbol": "i",
+      "unit": "cm"
+    },
+    "properties.Wplx_cm3": {
+      "symbol": "Wpl,x",
+      "unit": "cmֲ³"
+    },
+    "properties.Wply_cm3": {
+      "symbol": "Wpl,y",
+      "unit": "cmֲ³"
+    },
+    "properties.Jt_cm4": {
+      "symbol": "Jt",
+      "unit": "cmג´"
+    },
+    "properties.Cm_x1e_minus2_cm6": {
+      "symbol": "Cm",
+      "unit": "ֳ—10ג»ֲ² cmג¶"
+    },
+    "properties.it_cm": {
+      "symbol": "it",
+      "unit": "cm"
+    },
+    "properties.ey_cm": {
+      "symbol": "ey",
+      "unit": "cm"
+    },
+    "properties.xM_cm": {
+      "symbol": "xM",
+      "unit": "cm"
+    },
+    "properties.ex_cm": {
+      "symbol": "ex",
+      "unit": "cm"
+    },
+    "properties.e_cm": {
+      "symbol": "e",
+      "unit": "cm"
+    },
+    "properties.w_cm": {
+      "symbol": "w",
+      "unit": "cm"
+    },
+    "properties.v1_cm": {
+      "symbol": "v1",
+      "unit": "cm"
+    },
+    "properties.v2_cm": {
+      "symbol": "v2",
+      "unit": "cm"
+    },
+    "properties.Jxi_cm4": {
+      "symbol": "J־¾",
+      "unit": "cmג´"
+    },
+    "properties.ixi_cm": {
+      "symbol": "i־¾",
+      "unit": "cm"
+    },
+    "properties.Jeta_cm4": {
+      "symbol": "J־·",
+      "unit": "cmג´"
+    },
+    "properties.Weta_cm3": {
+      "symbol": "W־·",
+      "unit": "cmֲ³"
+    },
+    "properties.ieta_cm": {
+      "symbol": "i־·",
+      "unit": "cm"
+    },
+    "properties.Zx_cm3": {
+      "symbol": "Zx",
+      "unit": "cmֲ³"
+    },
+    "properties.Zy_cm3": {
+      "symbol": "Zy",
+      "unit": "cmֲ³"
+    },
+    "properties.Sx_cm3": {
+      "symbol": "Sx",
+      "unit": "cmֲ³"
+    },
+    "properties.Sy_cm3": {
+      "symbol": "Sy",
+      "unit": "cmֲ³"
+    },
+    "properties.Z_cm3": {
+      "symbol": "Z",
+      "unit": "cmֲ³"
+    },
+    "properties.S_cm3": {
+      "symbol": "S",
+      "unit": "cmֲ³"
+    },
+    "properties.J_cm4": {
+      "symbol": "J",
+      "unit": "cmג´"
+    },
+    "properties.C_cm3": {
+      "symbol": "C",
+      "unit": "cmֲ³"
+    },
+    "properties.surface_m2_m": {
+      "symbol": "U",
+      "unit": "mֲ²/m"
+    },
+    "properties.length_m_per_tonne": {
+      "symbol": "L/t",
+      "unit": "m/t"
+    },
+    "properties.nominal_diameter": {
+      "symbol": "Nom.",
+      "unit": null
+    },
+    "properties.source_grade": {
+      "symbol": "S",
+      "unit": null
+    },
+    "properties.mass_6m_kg": {
+      "symbol": "Gג‚†",
+      "unit": "kg/6m"
+    },
+    "properties.grade": {
+      "symbol": "ST",
+      "unit": null
+    },
+    "properties.mass_kg_each": {
+      "symbol": "G",
+      "unit": "kg"
+    }
+  },
+  "families": {
+    "RHS": {
+      "code": "RHS",
+      "count": 79,
+      "source_pages": [
+        4
+      ],
+      "shape": "rhs",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.height_mm",
+        "dimensions.width_mm",
+        "dimensions.thickness_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4",
+        "properties.ix_cm",
+        "properties.iy_cm",
+        "properties.Zx_cm3",
+        "properties.Zy_cm3",
+        "properties.Sx_cm3",
+        "properties.Sy_cm3",
+        "properties.J_cm4",
+        "properties.C_cm3",
+        "properties.surface_m2_m",
+        "properties.length_m_per_tonne"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.height_mm",
+        "dimensions.width_mm",
+        "dimensions.thickness_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "SHS": {
+      "code": "SHS",
+      "count": 87,
+      "source_pages": [
+        5
+      ],
+      "shape": "shs",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.height_mm",
+        "dimensions.width_mm",
+        "dimensions.thickness_mm",
+        "properties.I_cm4",
+        "properties.i_cm",
+        "properties.Z_cm3",
+        "properties.S_cm3",
+        "properties.J_cm4",
+        "properties.C_cm3",
+        "properties.surface_m2_m",
+        "properties.length_m_per_tonne"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.height_mm",
+        "dimensions.thickness_mm",
+        "properties.I_cm4",
+        "properties.i_cm"
+      ]
+    },
+    "HEAA": {
+      "code": "HEAA",
+      "count": 24,
+      "source_pages": [
+        7,
+        9,
+        11
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "dimensions.r_mm",
+        "dimensions.c_mm",
+        "dimensions.d_mm",
+        "properties.Fa_cm2",
+        "properties.U_m2_m",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.Wplx_cm3",
+        "properties.Wply_cm3",
+        "properties.Jt_cm4",
+        "properties.Cm_x1e_minus2_cm6",
+        "properties.it_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "HEA": {
+      "code": "HEA",
+      "count": 25,
+      "source_pages": [
+        7,
+        9,
+        11
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "dimensions.r_mm",
+        "dimensions.c_mm",
+        "dimensions.d_mm",
+        "properties.Fa_cm2",
+        "properties.U_m2_m",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.Wplx_cm3",
+        "properties.Wply_cm3",
+        "properties.Jt_cm4",
+        "properties.Cm_x1e_minus2_cm6",
+        "properties.it_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "DIL": {
+      "code": "DIL",
+      "count": 19,
+      "source_pages": [
+        7,
+        9,
+        11
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "dimensions.r_mm",
+        "dimensions.c_mm",
+        "dimensions.d_mm",
+        "properties.Fa_cm2",
+        "properties.U_m2_m",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.Wplx_cm3",
+        "properties.Wply_cm3",
+        "properties.Jt_cm4",
+        "properties.Cm_x1e_minus2_cm6",
+        "properties.it_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "HEB": {
+      "code": "HEB",
+      "count": 25,
+      "source_pages": [
+        7,
+        9,
+        11
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "dimensions.r_mm",
+        "dimensions.c_mm",
+        "dimensions.d_mm",
+        "properties.Fa_cm2",
+        "properties.U_m2_m",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.Wplx_cm3",
+        "properties.Wply_cm3",
+        "properties.Jt_cm4",
+        "properties.Cm_x1e_minus2_cm6",
+        "properties.it_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "HEC": {
+      "code": "HEC",
+      "count": 1,
+      "source_pages": [
+        9
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "dimensions.r_mm",
+        "dimensions.c_mm",
+        "dimensions.d_mm",
+        "properties.Fa_cm2",
+        "properties.U_m2_m",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.Wplx_cm3",
+        "properties.Wply_cm3",
+        "properties.Jt_cm4",
+        "properties.Cm_x1e_minus2_cm6",
+        "properties.it_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "HEM": {
+      "code": "HEM",
+      "count": 25,
+      "source_pages": [
+        7,
+        9,
+        11
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "dimensions.r_mm",
+        "dimensions.c_mm",
+        "dimensions.d_mm",
+        "properties.Fa_cm2",
+        "properties.U_m2_m",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.Wplx_cm3",
+        "properties.Wply_cm3",
+        "properties.Jt_cm4",
+        "properties.Cm_x1e_minus2_cm6",
+        "properties.it_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "HER": {
+      "code": "HER",
+      "count": 1,
+      "source_pages": [
+        11
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "dimensions.r_mm",
+        "dimensions.c_mm",
+        "dimensions.d_mm",
+        "properties.Fa_cm2",
+        "properties.U_m2_m",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.Wplx_cm3",
+        "properties.Wply_cm3",
+        "properties.Jt_cm4",
+        "properties.Cm_x1e_minus2_cm6",
+        "properties.it_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.a_mm",
+        "dimensions.e_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "UB": {
+      "code": "UB",
+      "count": 43,
+      "source_pages": [
+        12,
+        13
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.tw_mm",
+        "dimensions.tf_mm",
+        "dimensions.r_mm",
+        "dimensions.hi_mm",
+        "dimensions.d_mm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.tw_mm",
+        "dimensions.tf_mm",
+        "dimensions.r_mm"
+      ]
+    },
+    "IPE": {
+      "code": "IPE",
+      "count": 18,
+      "source_pages": [
+        14
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_mm",
+        "dimensions.t_mm",
+        "dimensions.r_mm",
+        "properties.Jx_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Jy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_mm",
+        "dimensions.t_mm",
+        "properties.Jx_cm4",
+        "properties.Jy_cm4"
+      ]
+    },
+    "IPN": {
+      "code": "IPN",
+      "count": 23,
+      "source_pages": [
+        15
+      ],
+      "shape": "i",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_mm",
+        "dimensions.t_mm",
+        "dimensions.r1_mm",
+        "dimensions.r2_mm",
+        "properties.Jx_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Jy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_mm",
+        "dimensions.t_mm",
+        "properties.Jx_cm4",
+        "properties.Jy_cm4"
+      ]
+    },
+    "UPN": {
+      "code": "UPN",
+      "count": 19,
+      "source_pages": [
+        16
+      ],
+      "shape": "channel",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_mm",
+        "dimensions.t_mm",
+        "dimensions.r1_mm",
+        "dimensions.r2_mm",
+        "properties.Jx_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Jy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.ey_cm",
+        "properties.xM_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_mm",
+        "dimensions.t_mm",
+        "properties.Jx_cm4",
+        "properties.Jy_cm4"
+      ]
+    },
+    "L": {
+      "code": "L",
+      "count": 94,
+      "source_pages": [
+        17,
+        18,
+        19
+      ],
+      "shape": "angle",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.leg_a_mm",
+        "dimensions.leg_b_mm",
+        "dimensions.thickness_mm",
+        "dimensions.r1_mm",
+        "dimensions.r2_mm",
+        "properties.e_cm",
+        "properties.w_cm",
+        "properties.v1_cm",
+        "properties.v2_cm",
+        "properties.Jx_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Jxi_cm4",
+        "properties.ixi_cm",
+        "properties.Jeta_cm4",
+        "properties.Weta_cm3",
+        "properties.ieta_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.leg_a_mm",
+        "dimensions.thickness_mm",
+        "properties.Jx_cm4",
+        "properties.Jxi_cm4",
+        "properties.Jeta_cm4"
+      ]
+    },
+    "T": {
+      "code": "T",
+      "count": 14,
+      "source_pages": [
+        20
+      ],
+      "shape": "tee",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_eq_t_mm",
+        "dimensions.r1_mm",
+        "dimensions.r2_mm",
+        "dimensions.r3_mm",
+        "properties.ex_cm",
+        "properties.Jx_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Jy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.h_mm",
+        "dimensions.b_mm",
+        "dimensions.s_eq_t_mm",
+        "properties.Jx_cm4",
+        "properties.Jy_cm4"
+      ]
+    },
+    "TUBE": {
+      "code": "TUBE",
+      "count": 84,
+      "source_pages": [
+        21
+      ],
+      "shape": "tube",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.outside_diameter_mm",
+        "dimensions.thickness_mm",
+        "dimensions.inside_diameter_mm",
+        "properties.nominal_diameter",
+        "properties.source_grade",
+        "properties.I_cm4",
+        "properties.W_cm3",
+        "properties.i_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.outside_diameter_mm",
+        "dimensions.thickness_mm",
+        "dimensions.inside_diameter_mm",
+        "properties.I_cm4",
+        "properties.W_cm3"
+      ]
+    },
+    "FLAT": {
+      "code": "FLAT",
+      "count": 367,
+      "source_pages": [
+        22
+      ],
+      "shape": "flat",
+      "expected_fields": [
+        "mass_kg_m",
+        "dimensions.width_mm",
+        "dimensions.thickness_mm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "dimensions.width_mm",
+        "dimensions.thickness_mm"
+      ]
+    },
+    "PLATE": {
+      "code": "PLATE",
+      "count": 96,
+      "source_pages": [
+        23
+      ],
+      "shape": "plate",
+      "expected_fields": [
+        "dimensions.width_mm",
+        "dimensions.length_mm",
+        "dimensions.thickness_mm",
+        "properties.mass_kg_each"
+      ],
+      "table_fields": [
+        "properties.mass_kg_each",
+        "dimensions.width_mm",
+        "dimensions.length_mm",
+        "dimensions.thickness_mm"
+      ]
+    },
+    "ROUND": {
+      "code": "ROUND",
+      "count": 15,
+      "source_pages": [
+        24
+      ],
+      "shape": "round",
+      "expected_fields": [
+        "mass_kg_m",
+        "dimensions.diameter_mm",
+        "properties.mass_6m_kg"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "properties.mass_6m_kg",
+        "dimensions.diameter_mm"
+      ]
+    },
+    "SQUARE": {
+      "code": "SQUARE",
+      "count": 16,
+      "source_pages": [
+        24
+      ],
+      "shape": "square",
+      "expected_fields": [
+        "mass_kg_m",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "properties.mass_6m_kg",
+        "properties.grade"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "properties.mass_6m_kg",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "properties.grade"
+      ]
+    },
+    "SOLIDRECT": {
+      "code": "SOLIDRECT",
+      "count": 2,
+      "source_pages": [
+        24
+      ],
+      "shape": "rectsolid",
+      "expected_fields": [
+        "mass_kg_m",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "properties.mass_6m_kg",
+        "properties.grade"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "properties.mass_6m_kg",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "properties.grade"
+      ]
+    },
+    "C": {
+      "code": "C",
+      "count": 35,
+      "source_pages": [
+        25,
+        26
+      ],
+      "shape": "c",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "dimensions.c_mm",
+        "dimensions.t_mm",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm",
+        "properties.e_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "dimensions.c_mm",
+        "dimensions.t_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    },
+    "Z": {
+      "code": "Z",
+      "count": 19,
+      "source_pages": [
+        27
+      ],
+      "shape": "z",
+      "expected_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "dimensions.c_mm",
+        "dimensions.t_mm",
+        "properties.Ix_cm4",
+        "properties.Wx_cm3",
+        "properties.ix_cm",
+        "properties.Iy_cm4",
+        "properties.Wy_cm3",
+        "properties.iy_cm"
+      ],
+      "table_fields": [
+        "mass_kg_m",
+        "area_cm2",
+        "dimensions.a_mm",
+        "dimensions.b_mm",
+        "dimensions.c_mm",
+        "dimensions.t_mm",
+        "properties.Ix_cm4",
+        "properties.Iy_cm4"
+      ]
+    }
+  }
+}
+

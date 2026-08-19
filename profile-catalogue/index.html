@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f4f5f7">
+  <meta name="description" content="Complete structural steel profile catalogue">
+  <title>Bimbee Profile Catalogue</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="catalogue-shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">BIMBEE</p>
+        <h1>Profile catalogue</h1>
+      </div>
+      <div class="header-tools">
+        <label class="dev-toggle">
+          <input type="checkbox" id="developerToggle">
+          <span>Developer columns</span>
+        </label>
+        <div class="catalogue-count" id="catalogueCount">Loading…</div>
+      </div>
+    </header>
+
+    <section class="table-card" aria-label="Complete profile catalogue">
+      <div class="table-scroll">
+        <table class="catalogue-table" id="catalogueTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="loading-state" id="loadingState">Loading catalogue data…</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./data/profiles-data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
