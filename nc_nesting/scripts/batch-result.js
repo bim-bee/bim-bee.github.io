@@ -3,6 +3,7 @@
 
   const I18N = window.NCNestingI18n;
   const t = (key, params = {}, language) => I18N.t(key, params, language);
+  const Optimization = window.NcNestingOptimization;
   let data;
   let hasCost = false;
   let hasCompleteWeight = false;
@@ -29,11 +30,40 @@
     return error;
   }
 
+  function linkedGreedyAlgorithmHtml(text) {
+    return Optimization?.methodologyLinkedHtml?.(text) || esc(text);
+  }
+
 
   function formatCost(value) {
     if (value == null) return "—";
     const amount = Math.round(Number(value) || 0);
     return I18N.priceHtml(amount, data?.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function isGreedyOnly(group) {
+    if (Optimization?.isGreedyOnlyResult) return Optimization.isGreedyOnlyResult(group);
+    return String(group?.status || "").replace(/[\s_-]/g, "").toLowerCase() === "greedyonly"
+      || String(group?.resultSource || "").replace(/[\s_-]/g, "").toLowerCase() === "frontendgreedy";
+  }
+
+  function optimizationComparisonHtml(group) {
+    const message = Optimization?.resultMessage?.(group, group?.greedyBaseline);
+    if (!message) return "";
+    const tone = String(message.tone || "bestknown").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+    const stackedHeader = message.status === "Optimal" || message.status === "BestKnown";
+    const detailLead = message.detailLead || message.detail;
+    const detailContinuation = message.detailContinuation || "";
+    return `<div class="optimization-compare">
+      ${stackedHeader
+        ? `<div class="optimization-message-header"><span class="optimization-status optimization-status-${esc(tone)}">${esc(message.statusLabel || message.status)}</span><span class="optimization-message-title">${esc(message.headline)}</span></div>
+      <span class="optimization-message-detail">${linkedGreedyAlgorithmHtml(detailLead)}</span>${detailContinuation ? `
+      <span class="optimization-message-detail">${linkedGreedyAlgorithmHtml(detailContinuation)}</span>` : ""}`
+        : `<span class="optimization-status optimization-status-${esc(tone)}">${esc(message.statusLabel || message.status)}</span>
+      <span class="optimization-message-title">${esc(message.headline)}</span>
+      <span class="optimization-message-detail">${linkedGreedyAlgorithmHtml(message.detail)}</span>`}
+      ${data?.isDemoResult ? `<span class="optimization-message-detail optimization-demo-message">${esc(t("batch.demoMessage"))}</span>` : ""}
+    </div>`;
   }
 
   function metrics(group) {
@@ -66,11 +96,13 @@
     normalized.currency = String(normalized.currency || "").trim() || null;
     normalized.groups = (normalized.groups || []).map(group => {
       group.storageStockQuantity = Math.max(0, Math.trunc(Number(group.storageStockQuantity) || 0));
-      group.profileKeilogramPerMeter = group.profileKeilogramPerMeter != null
+      const catalogueWeight = group.profileWeightSource === "profile-catalogue"
+        && group.profileKeilogramPerMeter != null
         && Number.isFinite(Number(group.profileKeilogramPerMeter))
         && Number(group.profileKeilogramPerMeter) >= 0
         ? Number(group.profileKeilogramPerMeter)
         : null;
+      group.profileKeilogramPerMeter = catalogueWeight;
       group.weightTon = group.profileKeilogramPerMeter == null
         ? null
         : (Number(group.totalStockLengthConsumed) || 0) / 1000000 * group.profileKeilogramPerMeter;
@@ -180,6 +212,13 @@
     container.hidden = items.length === 0;
   }
 
+  function renderGreedyFallbackNotice() {
+    const notice = document.getElementById("greedyFallbackNotice");
+    const hasGreedyOnly = data.groups.some(isGreedyOnly);
+    notice.textContent = hasGreedyOnly ? t("batch.greedyFallbackNotice") : "";
+    notice.hidden = !hasGreedyOnly;
+  }
+
   function renderSummary() {
     const total = totals();
     const cards = [
@@ -236,7 +275,7 @@
         const rowClass = isFirst && isLast ? "group-first group-last" : isFirst ? "group-first" : isLast ? "group-last" : "group-middle";
         output += `
           <tr class="${rowClass}" data-group-index="${groupIndex}" data-url="${esc(group.detailedPlanUrl || "#")}">
-            ${isFirst ? `<td class="profile" rowspan="${span}"><button class="group-result-remove no-print" type="button" data-remove-group="${esc(group.groupId)}" title="${esc(t("action.removeResultGroup"))}" aria-label="${esc(t("action.removeResultGroupNamed", { profile: I18N.isolate(group.profileName), grade: I18N.isolate(group.steelGrade) }))}">×</button><b>${bdi(group.profileName)}</b><span>${bdi(group.steelGrade)}</span></td>` : ""}
+            ${isFirst ? `<td class="profile" rowspan="${span}"><button class="group-result-remove no-print" type="button" data-remove-group="${esc(group.groupId)}" title="${esc(t("action.removeResultGroup"))}" aria-label="${esc(t("action.removeResultGroupNamed", { profile: I18N.isolate(group.profileName), grade: I18N.isolate(group.steelGrade) }))}">×</button><b>${bdi(group.profileName)}</b><span>${bdi(group.steelGrade)}</span>${optimizationComparisonHtml(group)}</td>` : ""}
             <td class="num">${order.stockLength == null ? "—" : len(order.stockLength)}</td>
             ${isFirst ? `
               <td class="num percent" rowspan="${span}">${percentLengthCell(groupMetrics.utilization, groupMetrics.part)}</td>
@@ -248,7 +287,7 @@
             <td class="num" dir="ltr">${n(quantity)}</td>
             <td class="center"><div class="order" data-group="${groupIndex}" data-order="${orderIndex}" dir="ltr"><button type="button" data-change="-1" aria-label="${esc(t("action.decreaseOrder"))}">−</button><input type="number" min="0" step="1" value="${ordered}" aria-label="${esc(t("action.orderQuantity"))}"><button type="button" data-change="1" aria-label="${esc(t("action.increaseOrder"))}">+</button></div></td>
             <td class="center" dir="ltr"><span class="balance ${balanceClass(leftover)}">${signed(leftover)}</span></td>
-            ${isFirst ? `<td class="detail" rowspan="${span}"><a href="${esc(group.detailedPlanUrl || "#")}">${esc(t("action.viewCutPlan"))} <span aria-hidden="true">${I18N.direction() === "rtl" ? "←" : "→"}</span></a></td>` : ""}
+            ${isFirst ? `<td class="detail" rowspan="${span}"><div class="cut-plan-actions"><a href="${esc(group.detailedPlanUrl || "#")}">${esc(t("action.viewCutPlan"))} <span aria-hidden="true">${I18N.direction() === "rtl" ? "←" : "→"}</span></a></div></td>` : ""}
           </tr>`;
       });
     });
@@ -301,6 +340,7 @@
       });
     });
 
+
     document.querySelectorAll("[data-remove-group]").forEach(button => {
       button.addEventListener("click", async event => {
         event.preventDefault();
@@ -333,7 +373,7 @@
       row.addEventListener("click", event => {
         if (event.target.closest("a,button,input,.order")) return;
         const url = row.dataset.url;
-        if (url && url !== "#") location.href = url;
+        if (url && url !== "#") { if (window.NcNestingNavigation?.open) window.NcNestingNavigation.open(url); else window.location.assign(url); }
       });
     });
   }
@@ -350,6 +390,7 @@
     updateBackArrow();
     renderMeta();
     renderBatchMetadata();
+    renderGreedyFallbackNotice();
     renderSummary();
     renderTable();
   }

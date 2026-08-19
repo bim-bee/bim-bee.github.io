@@ -15,7 +15,7 @@
       <div><a id="backInput" class="action-button no-print" data-navbar-back href="index.html"><span class="back-arrow" aria-hidden="true">←</span> <span data-i18n="action.backInput">Back to input</span></a><h1 data-i18n="page.batch.title">NC Nesting Batch Result</h1><p data-i18n="batch.description">Global result across all nesting groups.</p><div id="meta" class="meta"></div></div>
       <div class="actions no-print" data-navbar-actions><button type="button" data-terms-button data-i18n="action.terms">Terms of Use</button><button id="csv" disabled data-i18n="action.downloadCsv">Download CSV</button><button id="printPage" disabled data-i18n="action.printPage">Print Page</button><button id="printFullSet" disabled data-i18n="action.printFullSet">Print Full Set</button></div>
     </header>
-    <section class="panel"><div id="batchMetadata" class="batch-metadata"></div><div id="summary" class="summary"></div></section>
+    <section class="panel"><div id="batchMetadata" class="batch-metadata"></div><div id="greedyFallbackNotice" class="greedy-fallback-notice" hidden></div><div id="summary" class="summary"></div></section>
     <section class="panel">
       <div class="table-head"><div><h2 data-i18n="page.batchGroups">Batch nesting groups</h2><p data-i18n="batch.orderExplanation">ORDER changes stock-order quantity only. LEFTOVER = ORDER − ORDER QTY.</p></div></div>
       <div id="state" data-i18n="batch.loadSolved" aria-live="polite">Load a solved batch from the NC Nesting Input Page.</div>
@@ -25,6 +25,6 @@
   </main>
   <script src="scripts/navbar.js"></script>
   <script src="scripts/config.js"></script>
-  <script src="scripts/utilization.js"></script><script src="scripts/app-storage.js"></script><script src="scripts/terms.js"></script><script src="scripts/layout-grouper.js"></script><script src="scripts/print-renderer.js"></script><script src="scripts/batch-result.js"></script>
+  <script src="scripts/utilization.js"></script><script src="scripts/cutting-geometry.js"></script><script src="scripts/optimization-comparison.js"></script><script src="scripts/app-storage.js"></script><script src="scripts/terms.js"></script><script src="scripts/layout-grouper.js"></script><script src="scripts/print-renderer.js"></script><script src="scripts/batch-result.js"></script>
 </body>
 </html>

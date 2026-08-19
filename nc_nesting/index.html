@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>NC Nesting Input Page</title>
   <script src="scripts/i18n.js"></script>
+  <script type="module">
+    import { loadCatalogue } from "../profile-catalogue/profile-api.js";
+    window.NcNestingProfileCatalogueReady = loadCatalogue().catch(() => null);
+  </script>
   <link rel="stylesheet" href="styles/navbar.css">
   <link rel="stylesheet" href="styles/input.css">
 </head>
@@ -36,6 +40,7 @@
         <div class="field optional-setting-field"><label for="batchName"><span data-i18n="common.batchName">Batch name</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><input id="batchName" type="text" maxlength="200" autocomplete="off" dir="auto"></div></div>
         <div class="field optional-setting-field"><label for="currency"><span data-i18n="common.currency">Currency</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></label><div class="input-shell"><select id="currency"><option value="" selected></option><option value="Israeli New Shekel" data-currency-label="Israeli New Shekel">Israeli New Shekel</option><option value="US Dollar" data-currency-label="US Dollar">US Dollar</option><option value="Euro" data-currency-label="Euro">Euro</option><option value="Chinese Yuan (CNY)" data-currency-label="Chinese Yuan (CNY)">Chinese Yuan (CNY)</option></select></div></div>
       </div>
+      <div id="settingsValidation" class="panel-validation" role="alert" aria-live="polite" hidden></div>
     </section>
 
     <section class="panel">
@@ -56,6 +61,7 @@
           </div>
         </div>
         <div class="wrap"><table id="stockOrdersTable" class="stock-table prices-hidden"><thead><tr><th data-i18n="common.profile">Profile</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.lengthMm">Length (mm)</th><th class="quantity-column" data-i18n="common.quantity">Quantity</th><th class="price-column"><span data-i18n="common.price">Price</span> <span class="optional">(<span data-i18n="common.optional">optional</span>)</span></th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="stockBody"></tbody></table></div>
+        <div id="stockValidation" class="panel-validation" role="alert" aria-live="polite" hidden></div>
         <div class="note" data-i18n="input.stockExplanation">Profile is required. Select All steel grades when the stock may be used for every grade of that profile.</div>
         <div id="autoFillNotice" class="auto-fill-notice" hidden></div>
       </section>
@@ -69,6 +75,7 @@
           </div>
         </div>
         <div class="wrap"><table class="storage-table"><thead><tr><th data-i18n="common.profile">Profile</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.lengthMm">Length (mm)</th><th data-i18n="common.quantity">Quantity</th><th data-i18n="common.storageArea">Storage area</th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="storageBody"></tbody></table></div>
+        <div id="storageValidation" class="panel-validation" role="alert" aria-live="polite" hidden></div>
         <div class="note" data-i18n="input.storageExplanation">Only storage stocks that exactly match a nesting group and can fit at least one requested part are grouped for solving. Storage-area details remain in the browser project and are not sent for calculation.</div>
       </section>
     </div>
@@ -83,14 +90,32 @@
         <div id="nestingGroupControls" class="nesting-group-controls"></div>
       </div>
       <div class="wrap"><table><thead><tr><th data-i18n="common.position">Position</th><th data-i18n="common.steelGrade">Steel grade</th><th data-i18n="common.quantity">Quantity</th><th data-i18n="common.profile">Profile</th><th data-i18n="common.lengthMm">Length (mm)</th><th data-i18n="common.source">Source</th><th data-i18n-aria-label="action.removeRow"></th></tr></thead><tbody id="partsBody"></tbody></table></div>
+      <div id="partsValidation" class="panel-validation" role="alert" aria-live="polite" hidden></div>
       <div class="note" data-i18n="input.excelExplanation">Excel paste: copy a rectangular cell range, select the first destination cell, then paste. NC lengths are rounded up to the next whole millimetre. Position is required and is never generated automatically.</div>
     </section>
   </main>
 
+  <dialog id="solveProcessingDialog" class="solve-processing-dialog" aria-labelledby="solveProcessingTitle">
+    <div class="solve-processing-content">
+      <h2 id="solveProcessingTitle" data-i18n="processing.title">Optimizing your cutting plan</h2>
+      <div id="solveProcessingStatus" class="solve-processing-status" aria-live="polite"></div>
+      <p class="solve-processing-links"><span data-i18n="processing.waitPrefix">While you wait, you can read </span><a id="solveMethodologyLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="processing.methodologyLink">how our nesting method works</a><span data-i18n="processing.waitMiddle"> or re-review the </span><a id="solveTermsLink" href="terms.html" target="_blank" rel="noopener noreferrer" data-i18n="processing.termsLink">Terms of Use</a><span data-i18n="processing.waitSuffix">.</span></p>
+      <p class="solve-processing-limit"><span data-i18n="processing.limitPrefix">We can only provide two minutes of optimization per batch in this free version. For longer runs to fully prove all nesting groups, or for full Tekla Structures integration, you can </span><a id="solveContactLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="processing.contactLink">contact us</a><span data-i18n="processing.limitSuffix">.</span></p>
+    </div>
+  </dialog>
+
+  <dialog id="greedyFallbackDialog" class="greedy-fallback-dialog" aria-labelledby="greedyFallbackTitle">
+    <div class="dialog-head"><strong id="greedyFallbackTitle" data-i18n="error.serviceUnavailable">The calculation service is currently unavailable.</strong></div>
+    <div class="dialog-body greedy-fallback-dialog-body">
+      <p data-i18n="fallback.greedyExplanation">You can still continue using the local greedy cutting solution. This result has not been optimized or validated by the calculation service.</p>
+      <div class="greedy-fallback-dialog-actions"><button id="greedyFallbackCancel" type="button" data-i18n="action.cancel">Cancel</button><button id="greedyFallbackContinue" class="primary" type="button" data-i18n="action.continueGreedy">Continue with greedy solution</button></div>
+    </div>
+  </dialog>
+
   <dialog id="termsDialog" class="terms-dialog" aria-labelledby="termsDialogTitle">
     <div class="dialog-head"><strong id="termsDialogTitle" data-i18n="terms.agreementTitle">Agreement to Terms of Use</strong><button id="termsCloseButton" type="button" data-i18n="action.close">Close</button></div>
     <div class="dialog-body terms-dialog-body">
-      <p><span data-i18n="terms.before">Before using this calculator, please read the Terms of Use.</span> <a href="terms.html" target="_blank" rel="noopener" data-open-terms data-i18n="action.terms">Terms of Use</a></p>
+      <p><span data-i18n="terms.before">Before using this calculator, please read the Terms of Use.</span> <a href="terms.html" target="_blank" rel="noopener noreferrer" data-open-terms data-i18n="action.terms">Terms of Use</a></p>
       <p data-i18n="terms.confirm">By checking the box below and selecting Agree and Proceed, you confirm that you have read, understood, and agree to be bound by the Terms of Use governing your use of this calculator.</p>
       <label class="terms-agreement" for="termsAgreementCheckbox"><input id="termsAgreementCheckbox" type="checkbox"><span data-i18n="terms.checkbox">I have read and agree to the Terms of Use.</span></label>
       <div class="terms-dialog-actions"><button id="termsAgreeButton" class="primary" type="button" disabled data-i18n="terms.agree">Agree and Proceed</button></div>
@@ -100,6 +125,10 @@
   <script src="scripts/navbar.js"></script>
   <script src="scripts/config.js"></script>
   <script src="scripts/utilization.js"></script>
+  <script src="scripts/cutting-geometry.js"></script>
+  <script src="scripts/optimization-comparison.js"></script>
+  <script src="scripts/greedy-solver.js"></script>
+  <script src="scripts/greedy-plan-builder.js"></script>
   <script src="scripts/app-storage.js"></script>
   <script src="scripts/terms.js"></script>
   <script src="scripts/demo-data.js"></script>

@@ -406,6 +406,25 @@
                 padding: 0
             }
 
+        .panel-validation {
+            margin-top: 10px;
+            border: 1px solid #e5b7b7;
+            border-radius: 9px;
+            padding: 9px 11px;
+            background: #fff0f0;
+            color: var(--danger);
+            font-size: 12px
+        }
+
+        .panel-validation[hidden] {
+            display: none
+        }
+
+        .panel-validation ul {
+            margin: 0;
+            padding-inline-start: 20px
+        }
+
         .note {
             font-size: 12px;
             margin-top: 9px
@@ -420,9 +439,12 @@
 
         dialog {
             width: min(960px,calc(100% - 30px));
+            max-height: min(90dvh, 820px);
             border: 0;
             border-radius: 14px;
             padding: 0;
+            color: var(--text);
+            font: inherit;
             box-shadow: 0 28px 80px rgba(0,0,0,.25)
         }
 
@@ -614,9 +636,83 @@
     .no-print { display: none !important; }
 }
 
-.terms-dialog { max-width: 680px; }
-.terms-dialog-body p { margin-bottom: 16px; }
-.terms-dialog-body a { color: var(--primary); }
+.greedy-fallback-dialog { max-width: 620px; }
+.greedy-fallback-dialog-body p { margin: 0 0 18px; line-height: 1.55; }
+.greedy-fallback-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+.solve-processing-dialog {
+    width: min(690px, calc(100% - 30px));
+    max-width: 690px;
+    overflow: hidden;
+}
+
+.solve-processing-content {
+    padding: clamp(24px, 4vw, 34px);
+    overflow-wrap: anywhere;
+}
+
+.solve-processing-content h2 {
+    margin: 0;
+    font-size: clamp(25px, 3vw, 30px);
+    line-height: 1.18;
+}
+
+.solve-processing-status {
+    margin: clamp(18px, 3vw, 24px) 0 clamp(20px, 3vw, 26px);
+    font-size: clamp(31px, 4.4vw, 40px);
+    font-weight: 850;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+}
+
+.solve-processing-links,
+.solve-processing-limit {
+    margin: 0;
+    font-size: clamp(16px, 1.65vw, 18px);
+    line-height: 1.65;
+}
+
+.solve-processing-limit {
+    margin-top: 17px;
+    color: var(--muted);
+}
+
+.solve-processing-dialog a {
+    color: var(--primary);
+    font-weight: 750;
+    text-underline-offset: .16em;
+}
+
+html[dir="rtl"] .solve-processing-dialog {
+    text-align: right;
+}
+
+.terms-dialog {
+    width: min(760px, calc(100% - 30px));
+    max-width: 760px;
+    max-height: min(88dvh, 760px);
+    overflow: hidden;
+}
+.terms-dialog .dialog-head {
+    gap: 16px;
+}
+.terms-dialog .dialog-head strong {
+    font-size: clamp(19px, 2vw, 23px);
+    line-height: 1.25;
+}
+.terms-dialog-body {
+    max-height: calc(min(88dvh, 760px) - 74px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    font-size: clamp(16px, 1.5vw, 17.5px);
+    line-height: 1.65;
+}
+.terms-dialog-body p { margin-bottom: 18px; }
+.terms-dialog-body a {
+    color: var(--primary);
+    font-weight: 700;
+    text-underline-offset: .16em;
+}
 .terms-agreement {
   display: flex;
   align-items: flex-start;
@@ -629,6 +725,70 @@
 }
 .terms-agreement input { width: 18px; height: 18px; margin: 1px 0 0; flex: 0 0 auto; }
 .terms-dialog-actions { display: flex; justify-content: flex-end; margin-top: 18px; }
+
+@media (max-width: 560px) {
+  dialog {
+    width: calc(100% - 18px);
+    max-height: 92dvh;
+    border-radius: 11px;
+  }
+
+  .solve-processing-dialog {
+    width: calc(100% - 18px);
+  }
+
+  .solve-processing-content {
+    padding: 21px 18px 23px;
+  }
+
+  .solve-processing-content h2 {
+    font-size: 22px;
+  }
+
+  .solve-processing-status {
+    margin: 16px 0 19px;
+    font-size: clamp(28px, 9vw, 34px);
+  }
+
+  .solve-processing-links,
+  .solve-processing-limit {
+    font-size: 15.5px;
+    line-height: 1.58;
+  }
+
+  .solve-processing-limit {
+    margin-top: 14px;
+  }
+
+  .terms-dialog {
+    width: calc(100% - 18px);
+    max-height: 92dvh;
+  }
+
+  .terms-dialog .dialog-head {
+    padding: 15px 16px;
+  }
+
+  .terms-dialog .dialog-head strong {
+    font-size: 18px;
+  }
+
+  .terms-dialog-body {
+    max-height: calc(92dvh - 66px);
+    padding: 16px;
+    font-size: 15.5px;
+    line-height: 1.58;
+  }
+
+  .terms-agreement {
+    padding: 12px;
+    gap: 9px;
+  }
+
+  .terms-dialog-actions {
+    margin-top: 15px;
+  }
+}
 
 
 .field .optional { color: var(--muted); font-weight: 500; }

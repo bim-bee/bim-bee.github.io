@@ -59,6 +59,87 @@
     return root.endsWith('/') ? root : `${root}/`;
   }
 
+  const TOOL_WORKFLOW_PAGES = new Set(['index.html', 'batch-result.html', 'cutting-plan.html']);
+
+  function toolDirectoryUrl() {
+    return new URL('./', window.location.href);
+  }
+
+  function isToolWorkflowUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw || raw.startsWith('#')) return true;
+    try {
+      const url = new URL(raw, window.location.href);
+      if (!['http:', 'https:', 'file:'].includes(url.protocol) || url.origin !== window.location.origin) return false;
+      const toolDirectory = toolDirectoryUrl();
+      if (url.pathname.slice(0, url.pathname.lastIndexOf('/') + 1) !== toolDirectory.pathname) return false;
+      const fileName = url.pathname.slice(url.pathname.lastIndexOf('/') + 1) || 'index.html';
+      return TOOL_WORKFLOW_PAGES.has(fileName);
+    } catch {
+      return false;
+    }
+  }
+
+  function configureLinkBehavior(link) {
+    if (!(link instanceof HTMLAnchorElement) || link.hasAttribute('download')) return;
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#')) {
+      link.removeAttribute('target');
+      link.removeAttribute('rel');
+      return;
+    }
+
+    if (link.dataset.ncForceNewTab === 'true') {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.dataset.ncLinkBehavior = 'forced-new-tab';
+      return;
+    }
+
+    if (isToolWorkflowUrl(href)) {
+      link.removeAttribute('target');
+      link.removeAttribute('rel');
+      link.dataset.ncLinkBehavior = 'workflow';
+      return;
+    }
+
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.dataset.ncLinkBehavior = 'external';
+  }
+
+  function applyLinkBehavior(root = document) {
+    if (root instanceof HTMLAnchorElement) configureLinkBehavior(root);
+    root.querySelectorAll?.('a[href]').forEach(configureLinkBehavior);
+  }
+
+  function openByPolicy(value) {
+    const url = String(value || '').trim();
+    if (!url) return;
+    if (isToolWorkflowUrl(url)) {
+      window.location.assign(url);
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function initializeLinkPolicy() {
+    applyLinkBehavior(document);
+    if (!window.MutationObserver) return;
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes') {
+          configureLinkBehavior(mutation.target);
+          return;
+        }
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof Element) applyLinkBehavior(node);
+        });
+      });
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
+  }
+
   function normalizeLanguage(value) {
     const language = String(value || '').trim().toLowerCase().split('-')[0];
     return SUPPORTED_LANGUAGES.has(language) ? language : null;
@@ -151,7 +232,7 @@
 
       this.innerHTML = `
         <header class="nc-navbar" data-menu-open="false">
-          <a class="nc-navbar__brand" href="${this.rootPath}index.html" aria-label="BIMbee home" data-brand-home>
+          <a class="nc-navbar__brand" href="${this.rootPath}index.html" target="_blank" rel="noopener noreferrer" aria-label="BIMbee home" data-brand-home>
             <img class="nc-navbar__logo" src="${this.rootPath}images/bimbee-logo.png" alt="BIMbee">
           </a>
 
@@ -253,6 +334,11 @@
 
     syncPageBack() {
       if (!this.pageBackLink) return;
+      if (this.pageBackLink.hidden) {
+        this.backSlotLtr.hidden = true;
+        this.backSlotRtl.hidden = true;
+        return;
+      }
       const target = this.language === 'he' ? this.backSlotRtl : this.backSlotLtr;
       const inactive = this.language === 'he' ? this.backSlotLtr : this.backSlotRtl;
       if (this.pageBackLink.parentNode !== target) target.appendChild(this.pageBackLink);
@@ -492,6 +578,14 @@
   if (!window.customElements.get('site-navbar')) {
     window.customElements.define('site-navbar', SiteNavbar);
   }
+
+  initializeLinkPolicy();
+
+  window.NcNestingNavigation = Object.freeze({
+    isToolWorkflowUrl,
+    applyLinkBehavior,
+    open: openByPolicy
+  });
 
   // Small public API for NC Nesting scripts that need the active language.
   window.NCNestingLanguage = Object.freeze({

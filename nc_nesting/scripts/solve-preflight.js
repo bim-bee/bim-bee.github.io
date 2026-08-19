@@ -1,6 +1,8 @@
 (function initNcNestingSolvePreflight() {
   "use strict";
 
+  const Geometry = window.NcNestingCuttingGeometry;
+
   const Decision = Object.freeze({
     ALLOW: "Allow",
     WARNING: "Warning",
@@ -16,7 +18,16 @@
     COMPLEXITY_PREFERRED_LIMIT: "complexity_preferred_limit",
     COMPLEXITY_UNCERTAIN: "complexity_uncertain",
     COMPLEXITY_ESTIMATES_DISAGREE: "complexity_estimates_disagree",
-    BATCH_COMPLEXITY_LIMIT: "batch_complexity_limit"
+    BATCH_COMPLEXITY_LIMIT: "batch_complexity_limit",
+    TOO_MANY_GROUPS: "too_many_groups"
+  });
+
+  const ValidationCategory = Object.freeze({
+    PARTS: "parts",
+    STOCK: "stock",
+    STORAGE: "storage",
+    CUTTING_SETTINGS: "cuttingSettings",
+    GENERAL: "general"
   });
 
   const ComplexityBand = Object.freeze({
@@ -66,6 +77,7 @@
     const scoring = { ...(base.complexityScoring || {}), ...(overrides?.complexityScoring || {}) };
     const work = { ...(base.work || {}), ...(overrides?.work || {}) };
     return {
+      maxNestingGroups: positiveLimit(overrides?.maxNestingGroups ?? base.maxNestingGroups, "maxNestingGroups"),
       canonicalLayouts: {
         reference: positiveLimit(canonical.reference, "canonicalLayouts.reference"),
         hard: positiveLimit(canonical.hard, "canonicalLayouts.hard")
@@ -139,11 +151,12 @@
     };
   }
 
-  function invalidGroupResult(group, measurements = {}) {
+  function invalidGroupResult(group, category = ValidationCategory.GENERAL, measurements = {}) {
     return {
       ...groupIdentity(group),
       decision: Decision.BLOCK,
       reasonCodes: [ReasonCode.INVALID_INTEGER],
+      category,
       measurements
     };
   }
@@ -155,31 +168,28 @@
     const trimEnd = normalizedInteger(cuttingSettings?.trimEnd, 0);
     const reusableMinimumLength = normalizedInteger(cuttingSettings?.reusableMinimumLength, 0);
     if ([toolWidth, trimStart, trimEnd, reusableMinimumLength].some(value => value === null)) {
-      return { result: invalidGroupResult(group), prepared: null };
+      return { result: invalidGroupResult(group, ValidationCategory.CUTTING_SETTINGS), prepared: null };
     }
-    const doubleToolWidth = safeMultiply(toolWidth, 2);
-    if (doubleToolWidth === null) return { result: invalidGroupResult(group), prepared: null };
-
     const aggregatedByLength = new Map();
     let totalPartQuantity = 0;
     let totalEffectivePartDemand = 0;
     for (const part of Array.isArray(group?.partRequirements) ? group.partRequirements : []) {
       const length = normalizedInteger(part?.length, 1);
       const quantity = normalizedInteger(part?.quantity, 1);
-      if (length === null || quantity === null) return { result: invalidGroupResult(group), prepared: null };
-      const effectiveSize = safeAdd(length, toolWidth);
-      if (effectiveSize === null || effectiveSize <= 0) return { result: invalidGroupResult(group), prepared: null };
+      if (length === null || quantity === null) return { result: invalidGroupResult(group, ValidationCategory.PARTS), prepared: null };
+      const effectiveSize = Geometry?.effectiveItemSize(length, toolWidth) ?? null;
+      if (effectiveSize === null || effectiveSize <= 0) return { result: invalidGroupResult(group, ValidationCategory.PARTS), prepared: null };
       const nextQuantity = safeAdd(aggregatedByLength.get(length)?.quantity || 0, quantity);
       const demand = safeMultiply(effectiveSize, quantity);
       totalPartQuantity = safeAdd(totalPartQuantity, quantity);
       totalEffectivePartDemand = demand === null || totalEffectivePartDemand === null ? null : safeAdd(totalEffectivePartDemand, demand);
       if (nextQuantity === null || totalPartQuantity === null || totalEffectivePartDemand === null) {
-        return { result: invalidGroupResult(group), prepared: null };
+        return { result: invalidGroupResult(group, ValidationCategory.PARTS), prepared: null };
       }
       aggregatedByLength.set(length, { length, effectiveSize, quantity: nextQuantity });
     }
 
-    if (!aggregatedByLength.size || totalPartQuantity <= 0) return { result: invalidGroupResult(group), prepared: null };
+    if (!aggregatedByLength.size || totalPartQuantity <= 0) return { result: invalidGroupResult(group, ValidationCategory.PARTS), prepared: null };
 
     const aggregatedParts = [...aggregatedByLength.values()]
       .sort((left, right) => left.effectiveSize - right.effectiveSize || left.length - right.length);
@@ -207,11 +217,20 @@
     for (const stock of stockRows) {
       const length = normalizedInteger(stock.length, 1);
       const quantity = stock.unlimited ? null : normalizedInteger(stock.quantity, 1);
-      if (length === null || (!stock.unlimited && quantity === null)) return { result: invalidGroupResult(group), prepared: null };
-      let capacity = length - trimStart;
-      capacity = safeAdd(capacity, -trimEnd);
-      capacity = capacity === null ? null : safeAdd(capacity, -doubleToolWidth);
-      if (capacity === null || !Number.isSafeInteger(capacity)) return { result: invalidGroupResult(group), prepared: null };
+      if (length === null || (!stock.unlimited && quantity === null)) {
+        const category = stock.source === "StorageStock" ? ValidationCategory.STORAGE : ValidationCategory.STOCK;
+        return { result: invalidGroupResult(group, category), prepared: null };
+      }
+      const capacity = Geometry?.effectiveFitCapacity(length, {
+        toolWidth,
+        trimStart,
+        trimEnd,
+        reusableMinimumLength
+      }) ?? null;
+      if (capacity === null || !Number.isSafeInteger(capacity)) {
+        const category = stock.source === "StorageStock" ? ValidationCategory.STORAGE : ValidationCategory.STOCK;
+        return { result: invalidGroupResult(group, category), prepared: null };
+      }
       const option = { ...stock, length, quantity, capacity };
       stockOptions.push(option);
       if (!stock.unlimited && capacity > 0) {
@@ -219,7 +238,8 @@
         totalFiniteEffectiveStockCapacity = optionCapacity === null ? null : safeAdd(totalFiniteEffectiveStockCapacity, optionCapacity);
         totalFiniteStockQuantity = safeAdd(totalFiniteStockQuantity, quantity);
         if (optionCapacity === null || totalFiniteEffectiveStockCapacity === null || totalFiniteStockQuantity === null) {
-          return { result: invalidGroupResult(group), prepared: null };
+          const category = stock.source === "StorageStock" ? ValidationCategory.STORAGE : ValidationCategory.STOCK;
+          return { result: invalidGroupResult(group, category), prepared: null };
         }
       }
     }
@@ -242,14 +262,14 @@
 
     if (!stockOptions.length || !usableStockOptions.length) {
       return {
-        result: { ...identity, decision: Decision.BLOCK, reasonCodes: [ReasonCode.NO_USABLE_STOCK], measurements },
+        result: { ...identity, decision: Decision.BLOCK, reasonCodes: [ReasonCode.NO_USABLE_STOCK], category: ValidationCategory.STOCK, measurements },
         prepared: null
       };
     }
 
     if (aggregatedParts.some(part => part.effectiveSize > largestUsableStockCapacity)) {
       return {
-        result: { ...identity, decision: Decision.BLOCK, reasonCodes: [ReasonCode.PART_DOES_NOT_FIT], measurements },
+        result: { ...identity, decision: Decision.BLOCK, reasonCodes: [ReasonCode.PART_DOES_NOT_FIT], category: ValidationCategory.STOCK, measurements },
         prepared: null
       };
     }
@@ -257,7 +277,7 @@
     const allUsableStockIsFinite = usableStockOptions.every(option => !option.unlimited);
     if (allUsableStockIsFinite && totalFiniteEffectiveStockCapacity < totalEffectivePartDemand) {
       return {
-        result: { ...identity, decision: Decision.BLOCK, reasonCodes: [ReasonCode.FINITE_CAPACITY_INSUFFICIENT], measurements },
+        result: { ...identity, decision: Decision.BLOCK, reasonCodes: [ReasonCode.FINITE_CAPACITY_INSUFFICIENT], category: ValidationCategory.STOCK, measurements },
         prepared: null
       };
     }
@@ -708,9 +728,69 @@
     return {
       totalCost,
       budget,
-      blocked: totalCost > budget,
+      blocked: false,
+      exceeded: totalCost > budget,
       scoredGroupCount: scoredGroups.length,
       reasonCodes: totalCost > budget ? [ReasonCode.BATCH_COMPLEXITY_LIMIT] : []
+    };
+  }
+
+  function complexityResultList(complexityResults) {
+    if (complexityResults instanceof Map) return [...complexityResults.values()];
+    if (Array.isArray(complexityResults)) return complexityResults;
+    if (complexityResults && typeof complexityResults === "object") return Object.values(complexityResults);
+    return [];
+  }
+
+  function createSolveContext(groups, complexityResults, options = {}) {
+    const limits = resolveLimits(options.limits);
+    const requestedGroups = Array.isArray(groups) ? groups : [];
+    const resultById = new Map(
+      complexityResultList(complexityResults)
+        .filter(result => String(result?.groupId || ""))
+        .map(result => [String(result.groupId), result])
+    );
+    const perGroup = {};
+    let totalComplexityCost = 0;
+    let complete = true;
+    let reliable = true;
+
+    requestedGroups.forEach(group => {
+      const groupId = String(group?.groupId || "");
+      const result = resultById.get(groupId);
+      const complexity = result?.complexity || null;
+      const cost = Number(complexity?.cost);
+      const hasCost = Number.isFinite(cost) && cost >= 0;
+      if (!hasCost) complete = false;
+      else totalComplexityCost += cost;
+      if (!hasCost || complexity?.reliable !== true) reliable = false;
+      if (groupId) {
+        perGroup[groupId] = {
+          cost: hasCost ? cost : null,
+          rawScore: Number.isFinite(Number(complexity?.rawScore)) ? Number(complexity.rawScore) : null,
+          band: String(complexity?.band || "") || null,
+          selectedRepresentation: String(complexity?.selectedRepresentation || "") || null,
+          reliable: complexity?.reliable === true
+        };
+      }
+    });
+
+    const groupCount = requestedGroups.length;
+    const perGroupOverhead = limits.complexityScoring.perGroupOverhead;
+    const batchComplexityCost = complete ? totalComplexityCost : null;
+    // complexity.cost already includes the configured per-group overhead, so the
+    // summed cost is also the deterministic backend-pressure estimate.
+    const batchPressureScore = batchComplexityCost;
+
+    return {
+      backendRequestedGroupCount: groupCount,
+      batchComplexityCost,
+      batchPressureScore,
+      complexityReliable: complete && reliable,
+      complexityComplete: complete,
+      perGroupOverhead,
+      groupOverheadCost: groupCount * perGroupOverhead,
+      perGroup
     };
   }
 
@@ -743,7 +823,7 @@
     const reasonCodes = [];
     let decision = Decision.ALLOW;
     if (complexityBlocked) {
-      decision = Decision.BLOCK;
+      decision = Decision.WARNING;
       reasonCodes.push(ReasonCode.COMPLEXITY_HARD_LIMIT);
     } else if (uncertain || estimatesDisagree || !referenceFits || conclusiveReferenceExceeded) {
       decision = Decision.WARNING;
@@ -771,11 +851,31 @@
   async function screenBatch(groups, cuttingSettings, options = {}) {
     const limits = resolveLimits(options.limits);
     const batchStartedAt = currentTime();
+    const requestedGroups = Array.isArray(groups) ? groups : [];
+    const batchSafety = {
+      groupCount: requestedGroups.length,
+      maxNestingGroups: limits.maxNestingGroups,
+      blocked: requestedGroups.length > limits.maxNestingGroups,
+      reasonCodes: requestedGroups.length > limits.maxNestingGroups ? [ReasonCode.TOO_MANY_GROUPS] : []
+    };
+    if (batchSafety.blocked) {
+      return {
+        decision: Decision.BLOCK,
+        results: [],
+        blockedGroups: [],
+        warningGroups: [],
+        batchComplexity: batchComplexitySummary([], limits),
+        batchSafety,
+        limits,
+        elapsedMilliseconds: Math.max(0, currentTime() - batchStartedAt)
+      };
+    }
+
     const batchDeadline = batchStartedAt + limits.work.maximumMillisecondsPerBatch;
     const preparedGroups = [];
     const results = [];
 
-    for (const group of Array.isArray(groups) ? groups : []) {
+    for (const group of requestedGroups) {
       const prepared = prepareGroup(group, cuttingSettings);
       if (prepared.result) results.push(prepared.result);
       else preparedGroups.push(prepared.prepared);
@@ -810,13 +910,13 @@
       if (index + 1 < preparedGroups.length) await new Promise(resolve => setTimeout(resolve, 0));
     }
 
-    const order = new Map((Array.isArray(groups) ? groups : []).map((group, index) => [String(group?.groupId || ""), index]));
+    const order = new Map(requestedGroups.map((group, index) => [String(group?.groupId || ""), index]));
     results.sort((left, right) => (order.get(left.groupId) ?? Number.MAX_SAFE_INTEGER) - (order.get(right.groupId) ?? Number.MAX_SAFE_INTEGER));
     const blockedGroups = results.filter(result => result.decision === Decision.BLOCK);
     const warningGroups = results.filter(result => result.decision === Decision.WARNING);
     const batchComplexity = batchComplexitySummary(results, limits);
     return {
-      decision: blockedGroups.length || batchComplexity.blocked
+      decision: blockedGroups.length
         ? Decision.BLOCK
         : warningGroups.length
           ? Decision.WARNING
@@ -825,6 +925,7 @@
       blockedGroups,
       warningGroups,
       batchComplexity,
+      batchSafety,
       limits,
       elapsedMilliseconds: Math.max(0, currentTime() - batchStartedAt)
     };
@@ -832,9 +933,11 @@
 
   globalThis.NcNestingSolvePreflight = Object.freeze({
     screenBatch,
+    createSolveContext,
     decisions: Decision,
     reasonCodes: ReasonCode,
     complexityBands: ComplexityBand,
+    validationCategories: ValidationCategory,
     probeStatuses: ProbeStatus,
     defaultLimits: globalThis.NcNestingConfig?.solvePreflightLimits || null
   });

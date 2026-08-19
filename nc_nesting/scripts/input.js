@@ -5,7 +5,23 @@
   const I18N = window.NCNestingI18n;
   const t = (key, params = {}, language) => I18N.t(key, params, language);
   const isolate = value => I18N.isolate(value);
+  const ValidationCategory = Object.freeze({
+    PARTS: "parts",
+    STOCK: "stock",
+    STORAGE: "storage",
+    CUTTING_SETTINGS: "cuttingSettings",
+    GENERAL: "general"
+  });
+  const PANEL_VALIDATION_TARGETS = Object.freeze({
+    [ValidationCategory.PARTS]: "partsValidation",
+    [ValidationCategory.STOCK]: "stockValidation",
+    [ValidationCategory.STORAGE]: "storageValidation",
+    [ValidationCategory.CUTTING_SETTINGS]: "settingsValidation"
+  });
   const errorDescriptor = (key, params = {}, context = "", htmlParams = {}) => ({ key, params, context, htmlParams });
+  const categorizedError = (error, category = ValidationCategory.GENERAL) => typeof error === "string"
+    ? { text: error, category }
+    : { ...(error || {}), category: error?.category || category };
   const normalizedErrorParams = error => {
     const params = { ...(error?.params || {}) };
     if (params.fieldKey) { params.field = t(params.fieldKey); delete params.fieldKey; }
@@ -14,11 +30,13 @@
   };
   const errorText = error => {
     if (typeof error === "string") return error;
+    if (error?.text) return String(error.text);
     const message = t(error?.key || "error.prepare", normalizedErrorParams(error));
     return error?.context ? `${isolate(error.context)}: ${message}` : message;
   };
   const errorHtml = error => {
     if (typeof error === "string") return escapeHtml(error);
+    if (error?.text) return escapeHtml(error.text);
     const params = Object.fromEntries(Object.entries(normalizedErrorParams(error)).map(([key, value]) => [key, escapeHtml(value)]));
     Object.assign(params, error?.htmlParams || {});
     const message = I18N.richText(error?.key || "error.prepare", params);
@@ -63,6 +81,9 @@
   let groupAssessmentState = emptyGroupAssessmentState();
   let isSolving = false;
   let solvePhase = "idle";
+  const SOLVE_PROCESSING_SECONDS = 120;
+  let solveProcessingStartedAt = null;
+  let solveProcessingTimer = null;
 
 
   function emptyGroupAssessmentState() {
@@ -70,10 +91,17 @@
       status: "idle",
       blockedGroups: [],
       warningGroups: [],
+      batchSafety: {
+        blocked: false,
+        groupCount: 0,
+        maxNestingGroups: Number(NcNestingConfig?.solvePreflightLimits?.maxNestingGroups) || 50,
+        reasonCodes: []
+      },
       batchComplexity: {
         totalCost: 0,
         budget: Number(NcNestingConfig?.solvePreflightLimits?.complexityScoring?.batchBudget) || 0,
         blocked: false,
+        exceeded: false,
         scoredGroupCount: 0,
         reasonCodes: []
       }
@@ -840,8 +868,13 @@
     validate();
   }
 
-  function evaluateSolveConstraints() {
-    return [];
+  function evaluateSolveConstraints({ groups = [] } = {}) {
+    const maxGroups = Math.max(1, Math.trunc(Number(NcNestingConfig?.solvePreflightLimits?.maxNestingGroups) || 50));
+    if ((Array.isArray(groups) ? groups.length : 0) <= maxGroups) return [];
+    return [categorizedError(
+      errorDescriptor("preflight.tooManyGroups", { max: I18N.formatNumber(maxGroups) }),
+      ValidationCategory.GENERAL
+    )];
   }
 
   function collectGroups(parts) {
@@ -1104,6 +1137,24 @@
     validate();
   }
 
+  function renderPanelValidation(errors) {
+    const grouped = new Map(Object.keys(PANEL_VALIDATION_TARGETS).map(category => [category, []]));
+    (errors || []).forEach(error => {
+      const category = error?.category;
+      if (grouped.has(category)) grouped.get(category).push(error);
+    });
+
+    Object.entries(PANEL_VALIDATION_TARGETS).forEach(([category, elementId]) => {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      const panelErrors = grouped.get(category) || [];
+      element.hidden = panelErrors.length === 0;
+      element.innerHTML = panelErrors.length
+        ? `<ul>${panelErrors.map(error => `<li>${errorHtml(error)}</li>`).join("")}</ul>`
+        : "";
+    });
+  }
+
   function validate(clearBackendErrors = true, options = {}) {
     if (clearBackendErrors) {
       backendErrors = [];
@@ -1124,47 +1175,51 @@
       reusableMinimumLength: t("common.reusableMinimum")
     };
     Object.entries(settings).forEach(([key, value]) => {
-      if (!Number.isFinite(value) || value < 0) errors.push(t("validation.nonNegativeInteger", { field: settingLabels[key] }));
+      if (!Number.isFinite(value) || value < 0) {
+        errors.push(categorizedError(
+          errorDescriptor("validation.nonNegativeInteger", { field: settingLabels[key] }),
+          ValidationCategory.CUTTING_SETTINGS
+        ));
+      }
     });
 
     const parts = active("parts");
     const stockOrders = active("stockOrders");
     const storage = active("storage");
-    if (!parts.length) errors.push(t("validation.addPart"));
+    if (!parts.length) errors.push(categorizedError(errorDescriptor("validation.addPart"), ValidationCategory.PARTS));
 
     parts.forEach((row, index) => {
       row.source = String(row.source || "").trim() || "Manual";
       const prefix = `${t("validation.partRow")} ${I18N.formatNumber(index + 1)}`;
-      if (!String(row.position || "").trim()) errors.push(`${prefix}: ${t("validation.positionRequired")}`);
-      if (!String(row.steelGrade || "").trim()) errors.push(`${prefix}: ${t("validation.steelGradeRequired")}`);
-      if (!String(row.profile || "").trim()) errors.push(`${prefix}: ${t("validation.profileRequired")}`);
-      if (!(rowNumber(row, "quantity") > 0)) errors.push(`${prefix}: ${t("validation.quantityPositive")}`);
-      if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
+      if (!String(row.position || "").trim()) errors.push(categorizedError(`${prefix}: ${t("validation.positionRequired")}`, ValidationCategory.PARTS));
+      if (!String(row.steelGrade || "").trim()) errors.push(categorizedError(`${prefix}: ${t("validation.steelGradeRequired")}`, ValidationCategory.PARTS));
+      if (!String(row.profile || "").trim()) errors.push(categorizedError(`${prefix}: ${t("validation.profileRequired")}`, ValidationCategory.PARTS));
+      if (!(rowNumber(row, "quantity") > 0)) errors.push(categorizedError(`${prefix}: ${t("validation.quantityPositive")}`, ValidationCategory.PARTS));
+      if (!(rowNumber(row, "length") > 0)) errors.push(categorizedError(`${prefix}: ${t("validation.lengthPositive")}`, ValidationCategory.PARTS));
     });
 
     const displayGroups = detectedPartGroups(parts, { includeIncomplete: true });
     const detectedGroups = displayGroups.filter(group => group.profileName && group.steelGrade);
     renderNestingGroupControls(displayGroups);
     let groups = [];
-    if (!errors.length) {
-      try { groups = collectGroups(parts); } catch (error) { errors.push(errorText(error)); }
+    if (!errors.some(error => error.category === ValidationCategory.PARTS)) {
+      try { groups = collectGroups(parts); } catch (error) { errors.push(categorizedError(error, ValidationCategory.PARTS)); }
     }
     const solveConstraintIssues = evaluateSolveConstraints({ groups: detectedGroups });
     errors.push(...solveConstraintIssues);
-    if (!isSolving && !options.skipGroupAssessment) {
+    if (!isSolving && !options.skipGroupAssessment && !errors.length) {
       scheduleGroupStatusAssessment(settings, displayGroups);
     }
 
     const groupBadge = document.getElementById("groupBadge");
-    const assessmentBlocked = groupAssessmentState.blockedGroups.length > 0 || groupAssessmentState.batchComplexity.blocked;
+    const hardGroupLimitExceeded = solveConstraintIssues.some(error => error?.key === "preflight.tooManyGroups");
+    const assessmentBlocked = groupAssessmentState.blockedGroups.length > 0 || hardGroupLimitExceeded;
     const assessmentHasCaution = [...groupVisualStatuses.values()].some(status => status === "warning" || status === "orange" || status === "checking");
     if (detectedGroups.length) {
       groupBadge.className = assessmentBlocked ? "badge bad" : assessmentHasCaution ? "badge warn" : "badge ok";
-      groupBadge.textContent = groupAssessmentState.batchComplexity.blocked
-        ? t("input.groupComplexityExceeded", { count: I18N.formatNumber(detectedGroups.length) })
-        : detectedGroups.length === 1
-          ? t("input.oneGroup")
-          : t("input.groupCount", { count: I18N.formatNumber(detectedGroups.length) });
+      groupBadge.textContent = detectedGroups.length === 1
+        ? t("input.oneGroup")
+        : t("input.groupCount", { count: I18N.formatNumber(detectedGroups.length) });
     } else {
       groupBadge.className = "badge warn";
       groupBadge.textContent = t("input.noGroups");
@@ -1175,15 +1230,15 @@
       const id = finalId("stockOrders", row);
       const stockOrderId = id.toLowerCase();
       const prefix = `${t("validation.stockOrderRow")} ${I18N.formatNumber(index + 1)}`;
-      if (stockOrderIds.has(stockOrderId)) errors.push(t("validation.duplicateId", { id: isolate(id) }));
+      if (stockOrderIds.has(stockOrderId)) errors.push(categorizedError(errorDescriptor("validation.duplicateId", { id }), ValidationCategory.STOCK));
       stockOrderIds.add(stockOrderId);
-      if (!String(row.profile || "").trim()) errors.push(`${prefix}: ${t("validation.profileRequired")}`);
-      if (!row.allSteelGrades && !String(row.steelGrade || "").trim()) errors.push(`${prefix}: ${t("validation.steelGradeRequired")}`);
-      if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
-      if (!row.unlimited && stockQuantity(row.quantity) === null) errors.push(`${prefix}: ${t("validation.stockQuantityRange")}`);
+      if (!String(row.profile || "").trim()) errors.push(categorizedError(`${prefix}: ${t("validation.profileRequired")}`, ValidationCategory.STOCK));
+      if (!row.allSteelGrades && !String(row.steelGrade || "").trim()) errors.push(categorizedError(`${prefix}: ${t("validation.steelGradeRequired")}`, ValidationCategory.STOCK));
+      if (!(rowNumber(row, "length") > 0)) errors.push(categorizedError(`${prefix}: ${t("validation.lengthPositive")}`, ValidationCategory.STOCK));
+      if (!row.unlimited && stockQuantity(row.quantity) === null) errors.push(categorizedError(`${prefix}: ${t("validation.stockQuantityRange")}`, ValidationCategory.STOCK));
       if (currencySelected()) {
         const parsedPrice = optionalPositiveWholeNumber(row.price);
-        if (!parsedPrice.blank && parsedPrice.value === null) errors.push(`${prefix}: ${t("validation.pricePositive")}`);
+        if (!parsedPrice.blank && parsedPrice.value === null) errors.push(categorizedError(`${prefix}: ${t("validation.pricePositive")}`, ValidationCategory.STOCK));
       }
     });
 
@@ -1192,15 +1247,15 @@
       const id = finalId("storage", row);
       const storageId = id.toLowerCase();
       const prefix = `${t("validation.storageRow")} ${I18N.formatNumber(index + 1)}`;
-      if (storageIds.has(storageId)) errors.push(t("validation.duplicateId", { id: isolate(id) }));
+      if (storageIds.has(storageId)) errors.push(categorizedError(errorDescriptor("validation.duplicateId", { id }), ValidationCategory.STORAGE));
       storageIds.add(storageId);
-      if (!String(row.profile || "").trim()) errors.push(`${prefix}: ${t("validation.profileRequired")}`);
-      if (!String(row.steelGrade || "").trim()) errors.push(`${prefix}: ${t("validation.steelGradeRequired")}`);
-      if (!(rowNumber(row, "length") > 0)) errors.push(`${prefix}: ${t("validation.lengthPositive")}`);
-      if (!(rowNumber(row, "quantity") > 0)) errors.push(`${prefix}: ${t("validation.quantityPositive")}`);
+      if (!String(row.profile || "").trim()) errors.push(categorizedError(`${prefix}: ${t("validation.profileRequired")}`, ValidationCategory.STORAGE));
+      if (!String(row.steelGrade || "").trim()) errors.push(categorizedError(`${prefix}: ${t("validation.steelGradeRequired")}`, ValidationCategory.STORAGE));
+      if (!(rowNumber(row, "length") > 0)) errors.push(categorizedError(`${prefix}: ${t("validation.lengthPositive")}`, ValidationCategory.STORAGE));
+      if (!(rowNumber(row, "quantity") > 0)) errors.push(categorizedError(`${prefix}: ${t("validation.quantityPositive")}`, ValidationCategory.STORAGE));
     });
 
-    if (!stockOrders.length && !storage.length) errors.push(t("validation.addStock"));
+    if (!stockOrders.length && !storage.length) errors.push(categorizedError(errorDescriptor("validation.addStock"), ValidationCategory.STOCK));
 
     document.getElementById("partBadge").textContent = parts.length === 0
       ? t("input.zeroPartRows")
@@ -1210,25 +1265,16 @@
       && !preflightErrors.length
       ? groupAssessmentState.blockedGroups.map(preflightBlockDescriptor)
       : [];
-    const batchComplexityErrors = !isSolving
-      && groupAssessmentState.status === "complete"
-      && groupAssessmentState.batchComplexity.blocked
-      && !preflightErrors.some(error => error?.key === "preflight.batchTooComplex")
-      ? [errorDescriptor("preflight.batchTooComplex")]
-      : [];
     const complexityChecking = !isSolving
       && groupAssessmentState.status === "checking"
       && detectedGroups.length > 0
       && !errors.length;
-    const allErrors = [...errors, ...backendErrors, ...preflightErrors, ...liveAssessmentBlockers, ...batchComplexityErrors];
+    const allErrors = [...errors, ...backendErrors, ...preflightErrors, ...liveAssessmentBlockers];
+    renderPanelValidation(allErrors);
+
     const validation = document.getElementById("validation");
     const solveButtons = [document.getElementById("solve"), document.getElementById("navbarSolve")].filter(Boolean);
-    const solveDisabled = isSolving
-      || complexityChecking
-      || Boolean(errors.length)
-      || Boolean(preflightErrors.length)
-      || Boolean(liveAssessmentBlockers.length)
-      || Boolean(batchComplexityErrors.length);
+    const solveDisabled = isSolving || Boolean(allErrors.length);
     const solveText = isSolving
       ? t(solvePhase === "checking" ? "input.checkingCalculationSize" : "input.solving")
       : t("action.solve");
@@ -1239,20 +1285,17 @@
 
     if (allErrors.length) {
       validation.className = "validation bad";
-      const onlyPreflightBlockers = !errors.length && !backendErrors.length
-        && (preflightErrors.length || liveAssessmentBlockers.length || batchComplexityErrors.length);
-      const heading = onlyPreflightBlockers
+      const hasBlockedGroups = Boolean(preflightErrors.length || liveAssessmentBlockers.length);
+      const heading = hasBlockedGroups
         ? t("input.preflightBlockedBatch")
         : allErrors.length === 1
           ? t("input.oneIssue")
           : t("input.issueCount", { count: I18N.formatNumber(allErrors.length) });
-      validation.innerHTML = `<strong>${escapeHtml(heading)}</strong><ul>${allErrors.map(error => `<li>${errorHtml(error)}</li>`).join("")}</ul>`;
-    } else if (complexityChecking) {
-      validation.className = "validation warning";
-      validation.innerHTML = `<strong>${escapeHtml(t("input.checkingCalculationSize"))}</strong><span>${escapeHtml(t("input.complexityCheckingDescription"))}</span>`;
-    } else if (preflightWarnings.length) {
-      validation.className = "validation warning";
-      validation.innerHTML = `<strong>${escapeHtml(t("input.preflightWarningBatch"))}</strong><ul>${preflightWarnings.map(warning => `<li>${errorHtml(warning)}</li>`).join("")}</ul>`;
+      const generalErrors = allErrors.filter(error => !error?.category || error.category === ValidationCategory.GENERAL);
+      const details = generalErrors.length
+        ? `<ul>${generalErrors.map(error => `<li>${errorHtml(error)}</li>`).join("")}</ul>`
+        : `<span>${escapeHtml(t("input.fixHighlightedPanels"))}</span>`;
+      validation.innerHTML = `<strong>${escapeHtml(heading)}</strong>${details}`;
     } else {
       validation.className = "validation good";
       validation.innerHTML = `<strong>${escapeHtml(t("input.ready"))}</strong><span>${escapeHtml(t("input.selectSolve"))}</span>`;
@@ -1271,7 +1314,7 @@
       displayGroups,
       solveConstraintIssues,
       complexityAssessmentPending: complexityChecking,
-      solveAdmissionBlocked: Boolean(liveAssessmentBlockers.length || batchComplexityErrors.length)
+      solveAdmissionBlocked: Boolean(liveAssessmentBlockers.length || preflightErrors.length)
     };
   }
 
@@ -1327,7 +1370,10 @@
 
       const selection = selector.select(group.profileName, group.steelGrade, group.partRequirements, input.settings, selectorRecords);
       if (!matchingStockOrders.length && !selection.groupedStorageStock.length) {
-        throw errorDescriptor("validation.noMaterial", {}, `${group.profileName} · ${group.steelGrade}`);
+        throw categorizedError(
+          errorDescriptor("validation.noMaterial", {}, `${group.profileName} · ${group.steelGrade}`),
+          ValidationCategory.STOCK
+        );
       }
 
       return {
@@ -1480,7 +1526,8 @@
             profileName: group.profileName,
             steelGrade: group.steelGrade,
             decision: NcNestingSolvePreflight.decisions.BLOCK,
-            reasonCodes: ["no_usable_stock"]
+            reasonCodes: ["no_usable_stock"],
+            category: ValidationCategory.STOCK
           });
         }
       } else {
@@ -1550,6 +1597,7 @@
           status: "complete",
           blockedGroups: [...localBlockedGroups, ...(screening.blockedGroups || [])],
           warningGroups: screening.warningGroups || [],
+          batchSafety: screening.batchSafety || emptyGroupAssessmentState().batchSafety,
           batchComplexity: screening.batchComplexity || emptyGroupAssessmentState().batchComplexity
         };
       } catch {
@@ -1573,7 +1621,6 @@
     const finalConstraintIssues = evaluateSolveConstraints({ groups: input.detectedGroups || [] });
     if (input.errors.length
       || finalConstraintIssues.length
-      || input.complexityAssessmentPending
       || input.solveAdmissionBlocked) return null;
 
     try {
@@ -1751,17 +1798,169 @@
     return new Promise(resolve => setTimeout(resolve, 0));
   }
 
-  function solveFailureMessage(error) {
-    if (error?.code === "INVALID_RESULT") return errorDescriptor("error.invalidResult");
-    if (error?.code === "SERVICE_UNAVAILABLE" || error?.name === "AbortError") return errorDescriptor("error.serviceUnavailable");
-    return errorDescriptor("error.solve");
+  function currentComplexityResultsForRequest(request) {
+    const byGroupId = new Map();
+    groupComplexityResults.forEach(result => {
+      const groupId = String(result?.groupId || "");
+      if (groupId) byGroupId.set(groupId, result);
+    });
+    return (request?.groups || []).map(group => byGroupId.get(group.groupId)).filter(Boolean);
+  }
+
+  function greedyBaselinesForGroups(groups, cuttingSettings, cachedEntries = null) {
+    const baselines = {};
+    const requestGroups = (groups || []).map(group => {
+      const cachedBaseline = cachedEntries?.get?.(group.groupId)?.greedyBaseline || null;
+      if (cachedBaseline) {
+        baselines[group.groupId] = clone(cachedBaseline);
+        return { ...clone(group), greedyBaseline: clone(cachedBaseline) };
+      }
+
+      let baseline = null;
+      try {
+        baseline = globalThis.NcNestingGreedy?.solve?.(group, cuttingSettings) || null;
+      } catch {
+        baseline = null;
+      }
+      if (!baseline) return clone(group);
+      baselines[group.groupId] = clone(baseline);
+      return { ...clone(group), greedyBaseline: clone(baseline) };
+    });
+    return { requestGroups, baselines };
   }
 
   function visitorGroupError(error) {
     const profile = String(error?.profileName || "").trim();
     const grade = String(error?.steelGrade || "").trim();
     const context = [profile, grade].filter(Boolean).join(" · ") || t("common.batch");
-    return errorDescriptor("error.solveGroup", {}, context);
+    const category = Object.values(ValidationCategory).includes(String(error?.category || ""))
+      ? String(error.category)
+      : ValidationCategory.GENERAL;
+    const message = String(error?.message || "").trim();
+    if (message) return categorizedError(`${isolate(context)}: ${message}`, category);
+    return categorizedError(errorDescriptor("error.solveGroup", {}, context), category);
+  }
+
+  function solveFailureMessages(error) {
+    if (error?.code === "INVALID_RESULT") return [errorDescriptor("error.invalidResult")];
+    if (error?.code === "SERVICE_UNAVAILABLE") return [errorDescriptor("error.serviceUnavailable")];
+    if (error?.code === "SAFETY_TIMEOUT") return [errorDescriptor("error.serviceStoppedResponding")];
+    if (error?.code === "BACKEND_HTTP_ERROR") {
+      const returned = Array.isArray(error.backendErrors) ? error.backendErrors : [];
+      if (returned.length) return returned.map(visitorGroupError);
+      const message = String(error?.message || "").trim();
+      return message ? [message] : [errorDescriptor("error.solve")];
+    }
+    return [errorDescriptor("error.solve")];
+  }
+
+  function isGreedyFallbackFailure(error) {
+    return error?.code === "SERVICE_UNAVAILABLE" || error?.code === "SAFETY_TIMEOUT";
+  }
+
+  function promptGreedyFallback(error) {
+    const dialog = document.getElementById("greedyFallbackDialog");
+    const title = document.getElementById("greedyFallbackTitle");
+    const continueButton = document.getElementById("greedyFallbackContinue");
+    const cancelButton = document.getElementById("greedyFallbackCancel");
+    if (!dialog || !title || !continueButton || !cancelButton || typeof dialog.showModal !== "function") {
+      return Promise.resolve(false);
+    }
+
+    title.dataset.i18n = error?.code === "SAFETY_TIMEOUT"
+      ? "error.serviceStoppedResponding"
+      : "error.serviceUnavailable";
+    I18N.apply(dialog);
+
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = accepted => {
+        if (settled) return;
+        settled = true;
+        continueButton.removeEventListener("click", accept);
+        cancelButton.removeEventListener("click", cancel);
+        dialog.removeEventListener("cancel", cancelEvent);
+        dialog.removeEventListener("close", closeEvent);
+        if (dialog.open) dialog.close();
+        resolve(accepted);
+      };
+      const accept = () => finish(true);
+      const cancel = () => finish(false);
+      const cancelEvent = event => {
+        event.preventDefault();
+        finish(false);
+      };
+      const closeEvent = () => finish(false);
+      continueButton.addEventListener("click", accept);
+      cancelButton.addEventListener("click", cancel);
+      dialog.addEventListener("cancel", cancelEvent);
+      dialog.addEventListener("close", closeEvent);
+      dialog.showModal();
+      continueButton.focus();
+    });
+  }
+
+  function solveProcessingClock(seconds) {
+    const safe = Math.max(0, Math.trunc(Number(seconds) || 0));
+    return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
+  }
+
+  function updateSolveProcessingPopup() {
+    const dialog = document.getElementById("solveProcessingDialog");
+    const status = document.getElementById("solveProcessingStatus");
+    if (!dialog || !status) return;
+
+    I18N.apply(dialog);
+    const methodologyLink = document.getElementById("solveMethodologyLink");
+    const termsLink = document.getElementById("solveTermsLink");
+    const contactLink = document.getElementById("solveContactLink");
+    if (methodologyLink) methodologyLink.href = String(NcNestingConfig?.methodologyUrl || "#");
+    if (termsLink) termsLink.href = NcNestingTerms?.termsUrl?.() || "terms.html";
+    if (contactLink) contactLink.href = String(NcNestingConfig?.contactUrl || "#");
+
+    const elapsedSeconds = solveProcessingStartedAt == null
+      ? 0
+      : Math.floor(Math.max(0, Date.now() - solveProcessingStartedAt) / 1000);
+    const remainingSeconds = Math.max(0, SOLVE_PROCESSING_SECONDS - elapsedSeconds);
+    status.textContent = remainingSeconds > 0
+      ? t("processing.timeRemaining", { time: solveProcessingClock(remainingSeconds) })
+      : t("processing.finishing");
+
+    if (remainingSeconds === 0 && solveProcessingTimer != null) {
+      clearInterval(solveProcessingTimer);
+      solveProcessingTimer = null;
+    }
+  }
+
+  function openSolveProcessingPopup() {
+    const dialog = document.getElementById("solveProcessingDialog");
+    if (!dialog || typeof dialog.showModal !== "function") return;
+    if (!dialog.dataset.cancelLocked) {
+      dialog.dataset.cancelLocked = "true";
+      dialog.addEventListener("cancel", event => event.preventDefault());
+    }
+    solveProcessingStartedAt = Date.now();
+    updateSolveProcessingPopup();
+    if (!dialog.open) dialog.showModal();
+    clearInterval(solveProcessingTimer);
+    solveProcessingTimer = setInterval(updateSolveProcessingPopup, 250);
+  }
+
+  function closeSolveProcessingPopup() {
+    clearInterval(solveProcessingTimer);
+    solveProcessingTimer = null;
+    solveProcessingStartedAt = null;
+    const dialog = document.getElementById("solveProcessingDialog");
+    if (dialog?.open) dialog.close();
+  }
+
+  async function postSolveWithProcessing(payload) {
+    openSolveProcessingPopup();
+    try {
+      return await NcNesting.postSolve(payload);
+    } finally {
+      closeSolveProcessingPopup();
+    }
   }
 
   function preflightGroupContext(result) {
@@ -1770,25 +1969,38 @@
     return [profile, grade].filter(Boolean).join(" · ") || t("common.batch");
   }
 
+  function preflightCategory(result) {
+    const direct = String(result?.category || "");
+    if (Object.values(ValidationCategory).includes(direct)) return direct;
+    const reasons = new Set(result?.reasonCodes || []);
+    if (reasons.has("part_does_not_fit") || reasons.has("no_usable_stock") || reasons.has("finite_capacity_insufficient")) {
+      return ValidationCategory.STOCK;
+    }
+    return ValidationCategory.GENERAL;
+  }
+
   function preflightBlockDescriptor(result) {
     const reasons = new Set(result?.reasonCodes || []);
     const context = preflightGroupContext(result);
-    if (reasons.has("invalid_integer")) return errorDescriptor("preflight.invalidValues", {}, context);
-    if (reasons.has("finite_capacity_insufficient")) return errorDescriptor("preflight.finiteCapacityInsufficient", {}, context);
-    if (reasons.has("complexity_hard_limit")) return errorDescriptor("preflight.groupTooLarge", {}, context);
-    return errorDescriptor("preflight.groupCannotFit", {}, context);
+    const category = preflightCategory(result);
+    if (reasons.has("invalid_integer")) return categorizedError(errorDescriptor("preflight.invalidValues", {}, context), category);
+    if (reasons.has("finite_capacity_insufficient")) return categorizedError(errorDescriptor("preflight.finiteCapacityInsufficient", {}, context), category);
+    return categorizedError(errorDescriptor("preflight.groupCannotFit", {}, context), category);
   }
 
   function preflightWarningDescriptor(result) {
-    return errorDescriptor("preflight.groupMayTakeLonger", {}, preflightGroupContext(result));
+    return categorizedError(errorDescriptor("preflight.groupMayTakeLonger", {}, preflightGroupContext(result)), ValidationCategory.GENERAL);
   }
 
   function applyPreflightFindings(screening) {
     preflightErrors = (screening?.blockedGroups || []).map(preflightBlockDescriptor);
-    if (screening?.batchComplexity?.blocked) {
-      preflightErrors.push(errorDescriptor("preflight.batchTooComplex"));
+    if (screening?.batchSafety?.blocked) {
+      preflightErrors.push(categorizedError(
+        errorDescriptor("preflight.tooManyGroups", { max: I18N.formatNumber(screening.batchSafety.maxNestingGroups) }),
+        ValidationCategory.GENERAL
+      ));
     }
-    preflightWarnings = (screening?.warningGroups || []).map(preflightWarningDescriptor);
+    preflightWarnings = [];
     const nextStatuses = new Map(groupVisualStatuses);
     const nextComplexityResults = new Map(groupComplexityResults);
     (screening?.results || []).forEach(result => {
@@ -1802,6 +2014,7 @@
       status: "complete",
       blockedGroups: screening?.blockedGroups || [],
       warningGroups: screening?.warningGroups || [],
+      batchSafety: screening?.batchSafety || emptyGroupAssessmentState().batchSafety,
       batchComplexity: screening?.batchComplexity || emptyGroupAssessmentState().batchComplexity
     };
     renderNestingGroupControls();
@@ -1817,40 +2030,66 @@
       if (isDemoRequest) {
         result = NcNestingDemo.createSolveResult(request.requestId);
       } else {
-        const incremental = await NcNesting.prepareIncrementalSolve(request, state.projectId);
-        const changedGroups = incremental.changedGroups || [];
+        const currentComplexityResults = currentComplexityResultsForRequest(request);
+        const incremental = await NcNesting.prepareIncrementalSolve(request, state.projectId, {
+          complexityResults: currentComplexityResults
+        });
+        const groupsToSolve = incremental.groupsToSolve || incremental.changedGroups || [];
         let backendResult = null;
+        let solvedGreedyBaselines = {};
+        let backendSolveContext = incremental.solveContext || null;
 
-        if (changedGroups.length) {
+        if (groupsToSolve.length) {
           setSolvePhase("checking");
           await yieldToPage();
           try {
             const screening = await NcNestingSolvePreflight.screenBatch(
-              changedGroups,
+              groupsToSolve,
               request.cuttingSettings,
               { limits: NcNestingConfig.solvePreflightLimits }
             );
             applyPreflightFindings(screening);
+            backendSolveContext = NcNestingSolvePreflight.createSolveContext?.(
+              groupsToSolve,
+              screening.results,
+              { limits: NcNestingConfig.solvePreflightLimits }
+            ) || backendSolveContext;
           } catch {
             preflightErrors = [];
-            preflightWarnings = changedGroups.map(group => preflightWarningDescriptor(group));
+            preflightWarnings = groupsToSolve.map(group => preflightWarningDescriptor(group));
           }
           validate(false);
           if (preflightErrors.length) return;
 
           setSolvePhase("solving");
+          const greedy = greedyBaselinesForGroups(groupsToSolve, request.cuttingSettings, incremental.cachedEntries);
+          solvedGreedyBaselines = greedy.baselines;
           const backendRequest = {
             ...clone(request),
             requestId: NcNesting.createRequestId(),
-            groups: clone(changedGroups)
+            groups: greedy.requestGroups
           };
-          backendResult = await NcNesting.postSolve({
-            batch: backendRequest,
-            telemetry: NcNestingTelemetry.createSolveTelemetry({
-              request: backendRequest,
-              projectId: state.projectId
-            })
-          });
+          try {
+            backendResult = await postSolveWithProcessing({
+              batch: backendRequest,
+              telemetry: NcNestingTelemetry.createSolveTelemetry({
+                request: backendRequest,
+                projectId: state.projectId
+              })
+            });
+          } catch (error) {
+            if (!isGreedyFallbackFailure(error)) throw error;
+            const greedyFallbackResult = globalThis.NcNestingGreedyPlanBuilder?.buildSolveResult?.(
+              backendRequest,
+              groupsToSolve,
+              solvedGreedyBaselines,
+              state.projectGroups
+            ) || null;
+            if (!greedyFallbackResult) throw error;
+            const accepted = await promptGreedyFallback(error);
+            if (!accepted) return;
+            backendResult = greedyFallbackResult;
+          }
           if (!backendResult.succeeded) {
             const resultErrors = Array.isArray(backendResult.errors) ? backendResult.errors : [];
             backendErrors = resultErrors.length
@@ -1860,14 +2099,22 @@
           }
         }
 
-        result = NcNesting.mergeIncrementalSolveResult(request, incremental, backendResult);
-        if (backendResult && changedGroups.length) {
+        result = NcNesting.mergeIncrementalSolveResult(
+          request,
+          incremental,
+          backendResult,
+          solvedGreedyBaselines,
+          backendSolveContext
+        );
+        if (backendResult && groupsToSolve.length) {
           try {
             await NcNesting.writeGroupSolveCache(
               state.projectId,
-              changedGroups.map(group => group.groupId),
+              groupsToSolve.map(group => group.groupId),
               incremental.fingerprints,
-              backendResult
+              backendResult,
+              solvedGreedyBaselines,
+              backendSolveContext
             );
           } catch {
             // Cache writes must not block a successful solve.
@@ -1885,13 +2132,15 @@
       state.solveResponse = {
         batchId: result.batchId,
         batchResult: clone(result.batchResult),
-        plans: clone(result.plans || {})
+        plans: clone(result.plans || {}),
+        greedyBaselines: clone(result.greedyBaselines || {}),
+        groupSolveContexts: clone(result.groupSolveContexts || {})
       };
       const solvedProject = persistProject(state.projectGroups) || projectSnapshot();
       await NcNesting.saveSolveResponse(result, solvedProject || projectBeforeSolve);
       location.href = `batch-result.html?batchId=${encodeURIComponent(result.batchId)}`;
     } catch (error) {
-      backendErrors = [solveFailureMessage(error)];
+      backendErrors = solveFailureMessages(error);
     } finally {
       releaseSolveLock();
     }
@@ -1925,6 +2174,7 @@
 
   function retranslateInputPage() {
     I18N.apply();
+    if (document.getElementById("solveProcessingDialog")?.open) updateSolveProcessingPopup();
     translateCurrencyOptions();
     document.querySelectorAll(".read-only-value[data-source-value]").forEach(element => {
       if (element.dataset.sourceValue) element.textContent = sourceLabel(element.dataset.sourceValue);

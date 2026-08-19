@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  const Geometry = window.NcNestingCuttingGeometry;
+
   function localizedError(key, params = {}) {
     const error = new Error(key);
     error.key = key;
@@ -38,8 +40,9 @@
 
       const trimStart = validateNonNegativeInteger(cuttingSettings.trimStart, "common.startTrim");
       const trimEnd = validateNonNegativeInteger(cuttingSettings.trimEnd, "common.endTrim");
-      validateNonNegativeInteger(cuttingSettings.toolWidth, "common.toolWidth");
-      validateNonNegativeInteger(cuttingSettings.reusableMinimumLength, "common.reusableMinimum");
+      const toolWidth = validateNonNegativeInteger(cuttingSettings.toolWidth, "common.toolWidth");
+      const reusableMinimumLength = validateNonNegativeInteger(cuttingSettings.reusableMinimumLength, "common.reusableMinimum");
+      const normalizedSettings = { trimStart, trimEnd, toolWidth, reusableMinimumLength };
 
       const partIds = new Set();
       const normalizedParts = partRequirements.map(part => {
@@ -77,7 +80,7 @@
           return;
         }
 
-        const fitsAnyPart = normalizedParts.some(part => trimStart + part.length + trimEnd <= normalized.length);
+        const fitsAnyPart = normalizedParts.some(part => Geometry?.measureLayout(normalized.length, part.length, 1, normalizedSettings)?.fits);
         if (!fitsAnyPart) {
           tooShortRejected.push(normalized);
           return;

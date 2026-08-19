@@ -2666,6 +2666,8 @@
     rawResponse.generatedAt = new Date().toISOString();
     const normalized = window.NcNesting.normalizeSolveResponse(rawResponse);
     if (!normalized.succeeded) throw new Error("The committed demo response could not be normalized.");
+    normalized.isDemoResult = true;
+    normalized.batchResult.isDemoResult = true;
     return normalized;
   }
 

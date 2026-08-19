@@ -3,6 +3,7 @@
 
   const I18N = window.NCNestingI18n;
   const Layouts = window.NcNestingLayouts;
+  const Geometry = window.NcNestingCuttingGeometry;
   let printLanguage = I18N.getLanguage();
   const t = (key, params = {}) => I18N.t(key, params, printLanguage);
   const rich = (key, params = {}) => I18N.richText(key, params, printLanguage);
@@ -290,6 +291,17 @@
     return `<div class="print-metrics">${cards.map(([label, value, note]) => `<div class="print-metric"><small>${esc(label)}</small><strong>${value}</strong><span class="metric-support">${note}</span></div>`).join("")}</div>`;
   }
 
+  function orderQuantityBreakdown(requiredValue, orderedValue) {
+    const required = Math.max(0, Math.trunc(finite(requiredValue)));
+    const ordered = Math.max(0, Math.trunc(finite(orderedValue, required)));
+    const difference = ordered - required;
+    if (!difference) return `<span class="print-order-qty" dir="ltr">${bdi(integer(required))}</span>`;
+    const stateClass = difference < 0 ? "missing" : "extra";
+    const stateLabel = t(difference < 0 ? "common.missing" : "common.extra");
+    const operator = difference < 0 ? "−" : "+";
+    return `<span class="print-order-qty print-order-qty--${stateClass}" dir="ltr"><span>${bdi(integer(required))}</span><span class="print-order-operator"> ${operator} </span><span>${bdi(integer(Math.abs(difference)))}</span> <span class="print-order-state" dir="auto">${esc(stateLabel)}</span><span class="print-order-operator"> = </span><span>${bdi(integer(ordered))}</span></span>`;
+  }
+
   function renderBatch(batchResult, heading = t("page.batch.title")) {
     const groups = batchResult?.groups || [];
     const hasCost = Boolean(cleanName(batchResult?.currency)) && groups.some(group => (group.stockOrders || []).some(order => realNumber(order.unitPrice) != null));
@@ -333,7 +345,7 @@
           if (index === 0) row.push({ html: cost == null ? "—" : formatMoney(cost, batchResult.currency), rowspan: orders.length, className: "group-cell" });
           else row.push({ skip: 1 });
         }
-        row.push(bdi(integer(required)));
+        row.push({ html: orderQuantityBreakdown(required, order.orderQuantity), className: "order-qty-cell" });
         rows.push(row);
       });
     });
@@ -344,8 +356,7 @@
       completeWeight ? ton(totals.weight) : "—"
     ];
     if (hasCost) totalRow.push(totals.costKnown ? formatMoney(totals.cost, batchResult.currency) : "—");
-    totalRow.push(bdi(integer(totals.required)));
-    const leftoverRows = [[bdi(integer(totals.required)), bdi(integer(totals.ordered)), bdi(String(totals.leftover))]];
+    totalRow.push({ html: orderQuantityBreakdown(totals.required, totals.ordered), className: "order-qty-cell" });
 
     return `<section class="print-major-section print-batch-section">
       <h1>${esc(heading)}</h1>
@@ -358,8 +369,6 @@
       ${renderMetricCards(cards)}
       <h2>${esc(t("page.batchGroups"))}</h2>
       ${table(headers, rows, `batch-table${hasCost ? " has-cost" : ""}`, [totalRow])}
-      <h2>${esc(t("common.expectedLeftovers"))}</h2>
-      ${table([t("common.orderQty"), t("common.orderedUpper"), t("common.leftoverUpper")], leftoverRows, "expected-leftovers-table compact")}
     </section>`;
   }
 
@@ -374,18 +383,32 @@
     return aliases[raw] || segment.type || segment.segmentType || "Unknown";
   }
 
-  function normalizedPiece(piece) {
-    const segments = (piece.segments || piece.layoutSegments || []).map(segment => ({
+  function canonicalPrintSegments(rawSegments, stockLength, settings) {
+    const segments = (rawSegments || []).map(segment => ({
       ...segment,
       type: segmentType(segment),
       length: finite(segment.length),
       partId: segment.partId || segment.id || segment.label || null
     }));
+    const looksLegacy = segments[0]?.type === "StartTrim" && segments[1]?.type === "ToolCut";
+    if (!looksLegacy || !Geometry?.buildSegments || !Number.isFinite(Number(stockLength))) return segments;
+    const parts = segments.filter(segment => segment.type === "Part");
+    if (!parts.length) return segments;
+    try {
+      return Geometry.buildSegments(parts, Number(stockLength), settings)?.segments || segments;
+    } catch (_error) {
+      return segments;
+    }
+  }
+
+  function normalizedPiece(piece, settings) {
+    const segments = canonicalPrintSegments(piece.segments || piece.layoutSegments || [], piece.stockLength, settings);
     const parts = segments.filter(segment => segment.type === "Part");
     const offcut = segments.find(segment => segment.type === "ReusableOffcut" || segment.type === "NonReusableOffcut");
     const partLength = parts.reduce((sum, segment) => sum + segment.length, 0);
     const cutLength = segments.filter(segment => segment.type === "ToolCut").reduce((sum, segment) => sum + segment.length, 0);
-    const trimLength = segments.filter(segment => segment.type === "StartTrim" || segment.type === "EndTrim").reduce((sum, segment) => sum + segment.length, 0);
+    const stockLength = finite(piece.stockLength);
+    const netOffcut = finite(offcut?.length);
     return {
       ...piece,
       stockSource: piece.stockSource === "RegularStock" ? "StockOrder" : piece.stockSource,
@@ -393,23 +416,21 @@
       parts,
       partLength,
       cutLength,
-      consumed: partLength + cutLength + trimLength,
-      offcut: finite(offcut?.length),
-      reusable: offcut?.type === "ReusableOffcut"
+      consumed: Math.max(0, stockLength - netOffcut),
+      offcut: netOffcut,
+      reusable: netOffcut > 0 && offcut?.type === "ReusableOffcut"
     };
   }
 
   function sortedPieces(plan) {
-    return (plan?.stockPieces || []).map(normalizedPiece).sort((left, right) => {
-      const source = (left.stockSource === "StorageStock" ? 0 : 1) - (right.stockSource === "StorageStock" ? 0 : 1);
-      return source || finite(left.stockLength) - finite(right.stockLength) || finite(left.pieceNumber) - finite(right.pieceNumber);
-    });
+    const settings = { unit: "mm", ...(plan?.settings || plan?.cuttingSettings || {}) };
+    return (plan?.stockPieces || []).map(piece => normalizedPiece(piece, settings));
   }
 
   function segmentLabel(segment) {
     switch (segment.type) {
-      case "StartTrim": return [t("common.startTrim"), "trim"];
-      case "EndTrim": return [t("common.endTrim"), "trim"];
+      case "StartTrim": return [t("common.startTrim"), "trim start-trim"];
+      case "EndTrim": return [t("common.endTrim"), "trim end-trim"];
       case "ToolCut": return ["", "tool-cut"];
       case "Part": return [segment.partId || t("common.parts"), "part"];
       case "ReusableOffcut": return [t("common.reusable"), "reusable"];
@@ -434,14 +455,87 @@
     return `${layout.layoutName}${quantity}`;
   }
 
-  function renderPiece(layout) {
-    const source = layout.stockSource === "StorageStock" ? t("common.storageStock") : t("common.stockOrder");
-    const segmentMarkup = layout.segments.map(segment => {
+  function printSegmentWeight(segment, partVisualTotal = 0) {
+    const length = Math.max(0, finite(segment.length));
+    if (length <= 0) return 0;
+    switch (segment.type) {
+      case "StartTrim":
+      case "EndTrim": return 1;
+      case "ReusableOffcut":
+      case "NonReusableOffcut": {
+        const minimumVisibleWeight = 180;
+        const partPriorityCap = partVisualTotal > 0 ? Math.max(minimumVisibleWeight, partVisualTotal * .8) : length;
+        return Math.min(Math.max(length, minimumVisibleWeight), partPriorityCap);
+      }
+      case "Part": return Math.max(length, 1100);
+      case "ToolCut": return 1;
+      default: return length;
+    }
+  }
+
+  function printOffcutContent(segment, label) {
+    if (!(finite(segment.length) > 0)) return "";
+    const reusable = segment.type === "ReusableOffcut";
+    const labelClass = reusable ? "print-offcut-label--reusable" : "print-offcut-label--non-reusable";
+    return `<span class="print-offcut-label ${labelClass}">
+      <strong class="print-offcut-full-label">${esc(label)}</strong>
+      <small class="print-offcut-measurement">${mm(segment.length)}</small>
+    </span>`;
+  }
+
+  function printTrimContent(segment) {
+    return `<span class="print-trim-label"><small class="print-trim-measurement">${mm(segment.length)}</small></span>`;
+  }
+
+  function printKerfWidthMm(segments) {
+    const visibleKerfs = Math.max(1, segments.filter(segment => segment.type === "ToolCut" && finite(segment.length) > 0).length);
+    return Math.max(.25, Math.min(.8, 20 / visibleKerfs));
+  }
+
+  function renderPrintSegments(segments, toolWidth) {
+    const partVisualTotal = segments
+      .filter(segment => segment.type === "Part")
+      .reduce((sum, segment) => sum + printSegmentWeight(segment), 0);
+    const markup = [];
+    for (let index = 0; index < segments.length; index++) {
+      const segment = segments[index];
+      const next = segments[index + 1];
+      if (segment.type === "ToolCut" && ["ReusableOffcut", "NonReusableOffcut"].includes(next?.type)) {
+        const [label, className] = segmentLabel(next);
+        const rawRemainder = Math.max(0, finite(segment.length)) + Math.max(0, finite(next.length));
+        if (rawRemainder > 0) {
+          const flexWeight = printSegmentWeight(next, partVisualTotal);
+          const title = `${label} ${mmText(next.length)}; ${t("common.toolCut")} ${mmText(segment.length)}`;
+          const text = printOffcutContent(next, label);
+          const kerf = finite(segment.length) > 0 ? `<i class="print-terminal-kerf" aria-hidden="true"></i>` : "";
+          markup.push(`<div class="print-segment trailing-remainder ${className}" style="flex-grow:${flexWeight};flex-basis:0" title="${esc(title)}" aria-label="${esc(title)}">${kerf}${text}</div>`);
+        }
+        index++;
+        continue;
+      }
+
+      if (segment.type === "ToolCut" && !(finite(segment.length) > 0)) continue;
       const [label, className] = segmentLabel(segment);
-      const width = layout.stockLength > 0 ? Math.max(segment.length / layout.stockLength * 100, segment.type === "ToolCut" ? 0.35 : 0.6) : 1;
+      const flexWeight = printSegmentWeight(segment, partVisualTotal);
       const title = `${label || t("common.toolCut")} ${mmText(segment.length)}`;
-      return `<div class="print-segment ${className}" style="width:${width}%" title="${esc(title)}" aria-label="${esc(title)}">${label ? `<span><strong>${segment.type === "Part" ? bdi(label) : esc(label)}</strong><small>${mm(segment.length)}</small></span>` : ""}</div>`;
-    }).join("");
+      let text = "";
+      if (segment.type === "StartTrim" || segment.type === "EndTrim") {
+        text = printTrimContent(segment);
+      } else if (segment.type === "Part") {
+        text = `<span><strong>${bdi(label)}</strong><small>${mm(segment.length)}</small></span>`;
+      } else if (segment.type === "ReusableOffcut" || segment.type === "NonReusableOffcut") {
+        text = printOffcutContent(segment, label);
+      }
+      const boundaryKerf = ["StartTrim", "EndTrim"].includes(segment.type) && Number(toolWidth) > 0 ? " has-boundary-kerf" : "";
+      markup.push(`<div class="print-segment ${className}${boundaryKerf}" style="flex-grow:${flexWeight};flex-basis:0" title="${esc(title)}" aria-label="${esc(title)}">${text}</div>`);
+    }
+    return markup.join("");
+  }
+
+  function renderPiece(layout, settings) {
+    const source = layout.stockSource === "StorageStock" ? t("common.storageStock") : t("common.stockOrder");
+    const segmentMarkup = renderPrintSegments(layout.segments, settings?.toolWidth);
+    const kerfWidth = printKerfWidthMm(layout.segments);
     const retrievalIds = layout.storageRecordIds.length ? layout.storageRecordIds.join(", ") : "—";
     const retrieval = layout.stockSource === "StorageStock"
       ? `${t("plan.retrieve", { id: I18N.isolate(retrievalIds) })}: ${layout.storageArea ? t("plan.retrieveArea", { area: I18N.isolate(layout.storageArea) }) : t("plan.unspecifiedArea")}. `
@@ -455,7 +549,7 @@
     }, printLanguage);
     return `<article class="print-piece">
       <div class="print-piece-heading"><strong>${bdi(layoutDisplayName(layout))}</strong><span>${esc(source)} · ${mm(layout.stockLength)} · ${bdi(percentText(NcNestingUtilization.optimisticPercentage(layout.partLength, layout.offcut)))} ${esc(t("common.utilization"))}</span></div>
-      <div class="print-stock-bar" dir="ltr">${segmentMarkup}</div>
+      <div class="print-stock-bar" dir="ltr" style="--print-kerf-display-width:${kerfWidth.toFixed(4)}mm">${segmentMarkup}</div>
       <p>${esc(retrieval)}${description}</p>
     </article>`;
   }
@@ -495,11 +589,6 @@
     return { id, length, quantity, utilization, wasteLength, matched };
   }
 
-  function layoutNames(values) {
-    const names = values.matched.map(layout => layout.layoutName);
-    return names.length ? names.join(", ") : "—";
-  }
-
   function renderSourceSummaries(plan, layouts) {
     const orders = (plan.stockOrderOptions || []).filter(order => {
       const count = realNumber(order.selectedPieceCount);
@@ -519,13 +608,13 @@
     const storageRows = storage.map(record => {
       const values = sourceValues(record, "StorageStock", layouts);
       return [
-        bdi(layoutNames(values)),
-        values.id ? bdi(values.id) : "—",
         record.storageArea ? `<span dir="auto">${esc(record.storageArea)}</span>` : "—",
-        values.quantity == null ? "—" : bdi(integer(values.quantity)), mm(values.length), bdi(percentText(values.utilization)), mm(values.wasteLength)
+        values.quantity == null ? "—" : bdi(integer(values.quantity)),
+        mm(values.length),
+        bdi(percentText(values.utilization))
       ];
     });
-    return `<section class="print-source-section"><h2>${esc(t("common.stockOrders"))}</h2>${table([t("common.quantity"), t("common.length"), t("common.utilization")], orderRows, "compact stock-orders-table")}</section><section class="print-source-section"><h2>${esc(t("common.storageRetrievals"))}</h2>${table([t("common.layout"), t("common.retrievalIds"), t("common.area"), t("common.quantity"), t("common.length"), t("common.utilization"), t("common.totalOffcut")], storageRows, "compact")}</section>`;
+    return `<section class="print-source-section"><h2>${esc(t("common.stockOrders"))}</h2>${table([t("common.quantity"), t("common.length"), t("common.utilization")], orderRows, "compact stock-orders-table")}</section><section class="print-source-section"><h2>${esc(t("common.storageRetrievals"))}</h2>${table([t("common.area"), t("common.quantity"), t("common.length"), t("common.utilization")], storageRows, "compact")}</section>`;
   }
 
   function wasteSourceText(row) {
@@ -585,7 +674,7 @@
     <section class="print-major-section print-plan-diagram-section">
       <h1><span dir="ltr">${esc(profileName)} · ${esc(steelGrade)}</span> · ${esc(t("page.cuttingPlanDiagram"))}</h1>
       ${nameMeta}
-      ${layouts.length ? layouts.map(renderPiece).join("") : `<p>${esc(t("plan.noPieces"))}</p>`}
+      ${layouts.length ? layouts.map(layout => renderPiece(layout, settings)).join("") : `<p>${esc(t("plan.noPieces"))}</p>`}
       ${renderPrintLegend()}
     </section>`;
   }

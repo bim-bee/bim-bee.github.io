@@ -184,6 +184,7 @@
     acceptedAt,
     currentVersion,
     isAccepted,
+    termsUrl,
     openTerms,
     requestAcceptance,
     updateButtons

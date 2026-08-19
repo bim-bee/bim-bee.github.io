@@ -6,10 +6,22 @@
   const isLocalPreview = currentHostname === "localhost" || currentHostname === "127.0.0.1";
   const searchParams = new URLSearchParams(window.location.search);
   const querySolveUrl = String(searchParams.get("solveUrl") || "").trim();
+  const methodologyUrl = "https://bim-bee.github.io/BIMBlog/posts/nesting-optimization.html";
+  const contactUrl = new URL("../index.html#contact", window.location.href).href;
 
-  // Frontend pre-solve screening limits. Reference values mirror normal backend routing;
-  // hard ceilings are deliberately more generous for individual-group blocking.
+  // DEV/QA feature. Set to false for the production UI.
+  // When enabled, only genuinely improved cut plans redirect the existing greedy-methodology link
+  // to the original frontend greedy baseline in a separate comparison tab.
+  const featureFlags = Object.freeze({
+    greedyCutPlanComparison: true,
+    // DEV/QA only. Shows exact stock-piece/segment data when cut-plan validation fails.
+    cutPlanValidationDiagnostics: true
+  });
+
+  // Frontend pre-solve screening limits. Solver-size ceilings classify difficulty only;
+  // maxNestingGroups is the explicit frontend batch safety limit.
   const solvePreflightLimits = Object.freeze({
+    maxNestingGroups: 50,
     canonicalLayouts: Object.freeze({ reference: 20000, hard: 60000 }),
     arcFlow: Object.freeze({
       statesReference: 100000,
@@ -28,7 +40,7 @@
       perStockSlotConstraints: 3
     }),
     // Hidden complexity scoring. The lowest reliable solver-representation burden
-    // is used for each group, then group costs are accumulated for the batch.
+    // is used for each group. Aggregate cost is informational/backend context only.
     complexityScoring: Object.freeze({
       batchBudget: 6,
       perGroupOverhead: 0.05,
@@ -44,12 +56,23 @@
     })
   });
 
+  const bestKnownRetry = Object.freeze({
+    enabled: true,
+    minimumPressureReductionRatio: 0.18,
+    supportedPressureReductionRatio: 0.10,
+    minimumGroupCountReductionRatio: 0.35
+  });
+
   window.NcNestingConfig = Object.freeze({
     solveUrl: querySolveUrl || (isLocalPreview ? localSolveUrl : productionSolveUrl),
     productionSolveUrl,
     localSolveUrl,
-    requestTimeoutMs: 120000,
+    methodologyUrl,
+    contactUrl,
+    featureFlags,
+    requestTimeoutMs: 150000,
     termsVersion: "2026-04-01",
-    solvePreflightLimits
+    solvePreflightLimits,
+    bestKnownRetry
   });
 })();

@@ -153,14 +153,14 @@
     const layouts = [...map.values()].sort((left, right) => {
       const sourceOrder = (left.stockSource === "StorageStock" ? 0 : 1) - (right.stockSource === "StorageStock" ? 0 : 1);
       if (sourceOrder) return sourceOrder;
+      const lengthOrder = left.stockLength - right.stockLength;
+      if (lengthOrder) return lengthOrder;
       const offcutOrder = right.offcut - left.offcut;
       if (offcutOrder) return offcutOrder;
       if (left.stockSource === "StorageStock") {
         const areaOrder = left.storageAreaKey.localeCompare(right.storageAreaKey, undefined, { sensitivity: "base", numeric: true });
         if (areaOrder) return areaOrder;
       }
-      const lengthOrder = right.stockLength - left.stockLength;
-      if (lengthOrder) return lengthOrder;
       const signatureOrder = left.signature.localeCompare(right.signature, undefined, { numeric: true });
       return signatureOrder || left.firstIndex - right.firstIndex;
     });

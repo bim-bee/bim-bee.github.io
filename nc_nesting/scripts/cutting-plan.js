@@ -3,11 +3,21 @@
 
   const I18N = window.NCNestingI18n;
   const Layouts = window.NcNestingLayouts;
+  const Optimization = window.NcNestingOptimization;
+  const Geometry = window.NcNestingCuttingGeometry;
   const t = (key, params = {}, language) => I18N.t(key, params, language);
   const rich = (key, params = {}, language) => I18N.richText(key, params, language);
   const pageParams = new URLSearchParams(location.search);
   const batchId = pageParams.get("batchId");
   const groupId = pageParams.get("groupId");
+  const greedyComparisonView = pageParams.get("view") === "greedy";
+  const greedyComparisonEnabled = Boolean(window.NcNestingConfig?.featureFlags?.greedyCutPlanComparison);
+  const validationDiagnosticsEnabled = Boolean(window.NcNestingConfig?.featureFlags?.cutPlanValidationDiagnostics);
+  const backLink = document.getElementById("backLink");
+  if (backLink && greedyComparisonView) {
+    backLink.hidden = true;
+    document.querySelector("site-navbar")?.syncPageBack?.();
+  }
   const SEGMENT = Object.freeze({
     START_TRIM: "StartTrim",
     TOOL_CUT: "ToolCut",
@@ -38,6 +48,100 @@
     error.i18nKey = key;
     error.i18nParams = params;
     return error;
+  }
+
+  function buildValidationDiagnostic(piece, failure) {
+    if (!validationDiagnosticsEnabled || !piece) return null;
+
+    const segments = Array.isArray(piece.segments) ? piece.segments : [];
+    const partSegments = segments.filter(segment => segment?.type === SEGMENT.PART);
+    const totalPartLength = partSegments.reduce((sum, segment) => sum + finiteNumber(segment?.length), 0);
+    const stockLength = realNumber(piece.stockLength);
+    const measurement = stockLength != null && partSegments.length > 0
+      ? Geometry?.measureLayout(stockLength, totalPartLength, partSegments.length, data?.settings)
+      : null;
+    const segmentTotal = segments.reduce((sum, segment) => sum + finiteNumber(segment?.length), 0);
+    const expectedCount = partSegments.length > 0 ? (2 * partSegments.length) + 3 : null;
+    const acceptedSegmentCounts = expectedCount == null
+      ? []
+      : measurement?.terminalKerfCharge === 0
+        ? [expectedCount, expectedCount - 1]
+        : [expectedCount];
+
+    return {
+      failure: String(failure || "validation failed"),
+      view: greedyComparisonView ? "greedy DEV comparison" : "regular optimized plan",
+      pieceNumber: piece.pieceNumber ?? null,
+      stockSource: piece.stockSource ?? null,
+      stockLength,
+      stockOrderId: piece.stockOrderId ?? null,
+      storageStockId: piece.storageStockId ?? null,
+      segmentCount: segments.length,
+      expectedCount,
+      acceptedSegmentCounts,
+      segmentTotal,
+      partCount: partSegments.length,
+      totalPartLength,
+      settings: {
+        trimStart: realNumber(data?.settings?.trimStart),
+        trimEnd: realNumber(data?.settings?.trimEnd),
+        toolWidth: realNumber(data?.settings?.toolWidth),
+        reusableMinimumLength: realNumber(data?.settings?.reusableMinimumLength)
+      },
+      measurement: measurement ? {
+        fits: measurement.fits,
+        fitRequirement: measurement.fitRequirement,
+        rawRemainder: measurement.rawRemainder,
+        terminalKerfCharge: measurement.terminalKerfCharge,
+        netOffcut: measurement.netOffcut,
+        actualConsumedLength: measurement.actualConsumedLength,
+        reusable: measurement.reusable
+      } : null,
+      segments: segments.map((segment, index) => ({
+        index,
+        type: segment?.type ?? null,
+        length: realNumber(segment?.length),
+        rawLength: segment?.length ?? null,
+        partId: segment?.partId ?? null
+      }))
+    };
+  }
+
+  function pieceValidationError(key, piece, failure) {
+    const error = localizedError(key, { number: I18N.isolate(piece?.pieceNumber ?? "?") });
+    error.validationDiagnostic = buildValidationDiagnostic(piece, failure);
+    return error;
+  }
+
+  function validationDiagnosticText(diagnostic) {
+    if (!diagnostic) return "";
+    const value = item => item == null ? "—" : String(item);
+    const lines = [
+      `View: ${diagnostic.view}`,
+      `Failure: ${diagnostic.failure}`,
+      `Piece: ${value(diagnostic.pieceNumber)}`,
+      `Stock source: ${value(diagnostic.stockSource)}`,
+      `Stock length: ${value(diagnostic.stockLength)} mm`,
+      `Stock order ID: ${value(diagnostic.stockOrderId)}`,
+      `Storage stock ID: ${value(diagnostic.storageStockId)}`,
+      `Segment count: ${diagnostic.segmentCount}${diagnostic.expectedCount == null ? "" : ` (accepted ${diagnostic.acceptedSegmentCounts?.join(" or ") || diagnostic.expectedCount} for ${diagnostic.partCount} part(s))`}`,
+      `Segment total: ${value(diagnostic.segmentTotal)} mm`,
+      `Part total: ${value(diagnostic.totalPartLength)} mm`,
+      `Settings: start trim ${value(diagnostic.settings?.trimStart)} mm; end trim ${value(diagnostic.settings?.trimEnd)} mm; tool width ${value(diagnostic.settings?.toolWidth)} mm; reusable minimum ${value(diagnostic.settings?.reusableMinimumLength)} mm`,
+      "Expected structure: StartTrim -> Part -> [ToolCut -> Part]... -> [terminal ToolCut when required] -> Offcut -> EndTrim"
+    ];
+    if (diagnostic.measurement) {
+      lines.push(
+        `Expected geometry: fits=${diagnostic.measurement.fits}; fit requirement=${value(diagnostic.measurement.fitRequirement)} mm; raw remainder=${value(diagnostic.measurement.rawRemainder)} mm; terminal cut=${value(diagnostic.measurement.terminalKerfCharge)} mm; net offcut=${value(diagnostic.measurement.netOffcut)} mm; consumed=${value(diagnostic.measurement.actualConsumedLength)} mm; reusable=${diagnostic.measurement.reusable}`
+      );
+    }
+    lines.push("Segments:");
+    diagnostic.segments.forEach(segment => {
+      const part = segment.partId ? `; partId=${segment.partId}` : "";
+      const raw = segment.length == null && segment.rawLength != null ? `; rawLength=${String(segment.rawLength)}` : "";
+      lines.push(`  [${segment.index}] ${value(segment.type)}; length=${value(segment.length)} mm${part}${raw}`);
+    });
+    return lines.join("\n");
   }
 
   function realNumber(value) {
@@ -81,18 +185,29 @@
     };
   }
 
+  function canonicalizeLegacySegments(segments, stockLength, settings) {
+    if (!segments.length || segments[0]?.type !== SEGMENT.START_TRIM || segments.at(-1)?.type !== SEGMENT.END_TRIM) return segments;
+    if (segments[1]?.type !== SEGMENT.TOOL_CUT) return segments;
+    const parts = segments.filter(segment => segment.type === SEGMENT.PART);
+    const rebuilt = Geometry?.buildSegments(parts, stockLength, settings);
+    return rebuilt?.segments || segments;
+  }
+
   function normalizePlan(source) {
     const plan = structuredClone(source);
-    plan.settings = { unit: "mm", ...(plan.settings || {}) };
+    plan.settings = { unit: "mm", ...(plan.settings || {}), ...(plan.cuttingSettings || {}) };
     plan.projectName = String(plan.projectName || "").trim();
     plan.batchName = String(plan.batchName || "").trim();
     plan.currency = String(plan.currency || "").trim() || null;
     plan.stockOrderOptions = plan.stockOrderOptions || plan.regularStockOptions || [];
-    plan.stockPieces = (plan.stockPieces || []).map(piece => ({
-      ...piece,
-      stockSource: piece.stockSource === "RegularStock" ? "StockOrder" : piece.stockSource,
-      segments: (piece.segments || piece.layoutSegments || []).map(normalizeSegment)
-    }));
+    plan.stockPieces = (plan.stockPieces || []).map(piece => {
+      const normalizedSegments = (piece.segments || piece.layoutSegments || []).map(normalizeSegment);
+      return {
+        ...piece,
+        stockSource: piece.stockSource === "RegularStock" ? "StockOrder" : piece.stockSource,
+        segments: canonicalizeLegacySegments(normalizedSegments, finiteNumber(piece.stockLength), plan.settings)
+      };
+    });
     plan.storageRetrievals = plan.storageRetrievals || [];
     plan.requestedParts = plan.requestedParts || [];
     plan.totals = plan.totals || {};
@@ -103,6 +218,14 @@
 
   async function loadPlan() {
     if (!batchId || !groupId) throw localizedError("error.returnBatch");
+    if (greedyComparisonView) {
+      if (!greedyComparisonEnabled || typeof NcNesting.getGreedyPlan !== "function") {
+        throw localizedError("error.greedyPlanUnavailable");
+      }
+      const greedy = await NcNesting.getGreedyPlan(batchId, groupId);
+      if (!greedy) throw localizedError("error.greedyPlanUnavailable");
+      return normalizePlan(greedy);
+    }
     const stored = await NcNesting.getPlan(batchId, groupId);
     if (!stored) throw localizedError("error.planUnavailable");
     return normalizePlan(stored);
@@ -121,23 +244,97 @@
 
   function validateExplicitSequence(piece) {
     const segments = piece.segments;
-    const number = I18N.isolate(piece.pieceNumber ?? "?");
-    if (segments.length < 7 || segments.length % 2 === 0) throw localizedError("planError.sequence", { number });
-    if (segments[0].type !== SEGMENT.START_TRIM || segments.at(-1).type !== SEGMENT.END_TRIM) throw localizedError("planError.trim", { number });
-    for (let index = 1; index < segments.length; index += 2) {
-      if (segments[index].type !== SEGMENT.TOOL_CUT) throw localizedError("planError.cut", { number });
+    if (segments.length < 4) {
+      throw pieceValidationError("planError.sequence", piece, `segment count ${segments.length} is below the minimum valid count of 4`);
     }
-    const offcutIndex = segments.length - 3;
-    if (!isOffcut(segments[offcutIndex].type)) throw localizedError("planError.offcut", { number });
-    for (let index = 2; index < offcutIndex; index += 2) {
-      if (segments[index].type !== SEGMENT.PART) throw localizedError("planError.part", { number });
+    if (segments[0].type !== SEGMENT.START_TRIM || segments.at(-1).type !== SEGMENT.END_TRIM) {
+      throw pieceValidationError("planError.trim", piece, `first/last segment types are ${segments[0]?.type || "missing"} / ${segments.at(-1)?.type || "missing"}`);
     }
-    segments.forEach(segment => {
-      if (!Number.isFinite(segment.length) || segment.length < 0) throw localizedError("planError.length", { number });
-      if (segment.type === SEGMENT.PART && !segment.partId) throw localizedError("planError.unnamed", { number });
+
+    segments.forEach((segment, index) => {
+      if (!Number.isFinite(segment.length) || segment.length < 0) {
+        throw pieceValidationError("planError.length", piece, `segment ${index} (${segment.type || "unknown"}) has invalid length ${String(segment.length)}`);
+      }
+      if (segment.type === SEGMENT.PART && !segment.partId) {
+        throw pieceValidationError("planError.unnamed", piece, `part segment ${index} has no partId`);
+      }
     });
+
+    const partSegments = segments.filter(segment => segment.type === SEGMENT.PART);
+    const partLength = partSegments.reduce((sum, segment) => sum + segment.length, 0);
+    const measurement = Geometry?.measureLayout(piece.stockLength, partLength, partSegments.length, data.settings);
+    if (!measurement?.fits) {
+      throw pieceValidationError("planError.total", piece, `parts do not fit stock according to cutting geometry; raw remainder=${measurement?.rawRemainder ?? "unavailable"}`);
+    }
+
+    const offcutIndex = segments.length - 2;
+    if (!isOffcut(segments[offcutIndex]?.type)) {
+      throw pieceValidationError("planError.offcut", piece, `segment ${offcutIndex} should be an offcut but is ${segments[offcutIndex]?.type || "missing"}`);
+    }
+
+    // A terminal ToolCut is normally present before the offcut. For an exact-fit bar,
+    // the terminal kerf charge is 0 mm and solver output may legitimately omit that
+    // zero-length segment entirely. Accept both representations, but only when the
+    // geometry itself proves that no terminal cut is required.
+    const candidateTerminalCutIndex = offcutIndex - 1;
+    const hasExplicitTerminalCut = segments[candidateTerminalCutIndex]?.type === SEGMENT.TOOL_CUT;
+    const terminalCutOmittedForExactFit = !hasExplicitTerminalCut
+      && measurement.terminalKerfCharge === 0
+      && segments[candidateTerminalCutIndex]?.type === SEGMENT.PART;
+
+    if (!hasExplicitTerminalCut && !terminalCutOmittedForExactFit) {
+      throw pieceValidationError(
+        "planError.cut",
+        piece,
+        `segment ${candidateTerminalCutIndex} should be terminal ToolCut; omission is only valid when expected terminal kerf is 0 mm`
+      );
+    }
+
+    const finalPartIndex = hasExplicitTerminalCut ? candidateTerminalCutIndex - 1 : candidateTerminalCutIndex;
+    for (let index = 1; index <= finalPartIndex; index++) {
+      const expected = index % 2 === 1 ? SEGMENT.PART : SEGMENT.TOOL_CUT;
+      if (segments[index].type !== expected) {
+        throw pieceValidationError(
+          expected === SEGMENT.PART ? "planError.part" : "planError.cut",
+          piece,
+          `segment ${index} should be ${expected} but is ${segments[index]?.type || "missing"}`
+        );
+      }
+    }
+
+    const expectedPartCount = Math.ceil(finalPartIndex / 2);
+    if (partSegments.length !== expectedPartCount) {
+      throw pieceValidationError(
+        "planError.sequence",
+        piece,
+        `sequence contains ${partSegments.length} part segment(s); structure implies ${expectedPartCount}`
+      );
+    }
+
+    const same = (left, right) => Math.abs(Number(left) - Number(right)) <= 0.001;
+    if (!same(segments[0].length, measurement.trimStart) || !same(segments.at(-1).length, measurement.trimEnd)) {
+      throw pieceValidationError("planError.trim", piece, `trim lengths are ${segments[0].length}/${segments.at(-1).length} mm; expected ${measurement.trimStart}/${measurement.trimEnd} mm`);
+    }
+    for (let index = 2; index < finalPartIndex; index += 2) {
+      if (!same(segments[index].length, measurement.toolWidth)) {
+        throw pieceValidationError("planError.cut", piece, `internal cut at segment ${index} is ${segments[index].length} mm; expected ${measurement.toolWidth} mm`);
+      }
+    }
+    if (hasExplicitTerminalCut && !same(segments[candidateTerminalCutIndex].length, measurement.terminalKerfCharge)) {
+      throw pieceValidationError("planError.cut", piece, `terminal cut is ${segments[candidateTerminalCutIndex].length} mm; expected ${measurement.terminalKerfCharge} mm`);
+    }
+    if (!same(segments[offcutIndex].length, measurement.netOffcut)) {
+      throw pieceValidationError("planError.offcut", piece, `offcut is ${segments[offcutIndex].length} mm; expected ${measurement.netOffcut} mm`);
+    }
+    const expectedOffcutType = measurement.reusable ? SEGMENT.REUSABLE_OFFCUT : SEGMENT.NON_REUSABLE_OFFCUT;
+    if (segments[offcutIndex].type !== expectedOffcutType) {
+      throw pieceValidationError("planError.offcut", piece, `offcut type is ${segments[offcutIndex].type}; expected ${expectedOffcutType}`);
+    }
+
     const segmentTotal = segments.reduce((sum, segment) => sum + segment.length, 0);
-    if (Math.abs(segmentTotal - piece.stockLength) > 0.001) throw localizedError("planError.total", { number });
+    if (!same(segmentTotal, piece.stockLength)) {
+      throw pieceValidationError("planError.total", piece, `segment total is ${segmentTotal} mm; stock length is ${piece.stockLength} mm`);
+    }
   }
 
   function calculatePiece(piece) {
@@ -150,7 +347,8 @@
     const cutLength = cutSegments.reduce((sum, segment) => sum + segment.length, 0);
     const trimLength = trimSegments.reduce((sum, segment) => sum + segment.length, 0);
     const offcut = offcutSegment.length;
-    const consumed = partLength + cutLength + trimLength;
+    const measurement = Geometry.measureLayout(piece.stockLength, partLength, partSegments.length, data.settings);
+    const consumed = measurement.actualConsumedLength;
     return {
       ...piece,
       parts: partSegments.map(segment => ({ partId: segment.partId, length: segment.length })),
@@ -170,8 +368,9 @@
   }
 
   function renderIdentity() {
-    document.getElementById("pageHeading").innerHTML = `${bdi(data.profileName)} · ${bdi(data.steelGrade)} · ${escapeHtml(t("common.cutPlan"))}`;
-    document.title = `${data.profileName} · ${data.steelGrade} · ${t("page.plan.main")} — ${t("common.ncNesting")}`;
+    const comparisonLabel = greedyComparisonView ? ` · ${escapeHtml(t("plan.greedyComparisonLabel"))}` : "";
+    document.getElementById("pageHeading").innerHTML = `${bdi(data.profileName)} · ${bdi(data.steelGrade)} · ${escapeHtml(t("common.cutPlan"))}${comparisonLabel}`;
+    document.title = `${data.profileName} · ${data.steelGrade} · ${greedyComparisonView ? `${t("plan.greedyComparisonLabel")} · ` : ""}${t("page.plan.main")} — ${t("common.ncNesting")}`;
     document.getElementById("jobNames").innerHTML = [
       data.projectName ? `<span>${escapeHtml(t("common.project"))}: <strong dir="auto">${escapeHtml(data.projectName)}</strong></span>` : "",
       data.batchName ? `<span>${escapeHtml(t("common.batchName"))}: <strong dir="auto">${escapeHtml(data.batchName)}</strong></span>` : ""
@@ -189,6 +388,7 @@
     updateBackArrow();
     renderIdentity();
     renderSummary();
+    renderOptimizationComparison();
     renderPieces();
     renderStockOrders();
     renderStorageRetrieval();
@@ -202,22 +402,100 @@
     layouts = Layouts.groupPieces(pieces);
     document.getElementById("loadError").hidden = true;
     ["downloadCsv", "printPage", "printFullSet"].forEach(id => { document.getElementById(id).disabled = false; });
+    document.getElementById("backLink").hidden = greedyComparisonView;
+    document.querySelector("site-navbar")?.syncPageBack?.();
+    document.getElementById("printFullSet").hidden = greedyComparisonView;
     renderAll();
   }
 
   function renderLoadError() {
     if (!loadErrorDescriptor) return;
     const errorPanel = document.getElementById("loadError");
-    errorPanel.textContent = t(loadErrorDescriptor.key, loadErrorDescriptor.params);
+    const message = t(loadErrorDescriptor.key, loadErrorDescriptor.params);
+    const diagnostic = loadErrorDescriptor.validationDiagnostic;
+    if (validationDiagnosticsEnabled && diagnostic) {
+      errorPanel.innerHTML = `
+        <div>${escapeHtml(message)}</div>
+        <details class="validation-diagnostic" open>
+          <summary>${escapeHtml(t("planError.devDetails"))}</summary>
+          <pre dir="ltr">${escapeHtml(validationDiagnosticText(diagnostic))}</pre>
+        </details>
+      `;
+    } else {
+      errorPanel.textContent = message;
+    }
     errorPanel.hidden = false;
   }
 
   function showLoadError(error) {
     loadErrorDescriptor = {
       key: error?.i18nKey || "error.planProcess",
-      params: error?.i18nParams || {}
+      params: error?.i18nParams || {},
+      validationDiagnostic: error?.validationDiagnostic || null
     };
     renderLoadError();
+  }
+
+  function greedyComparisonGateway(message) {
+    const hasExactGreedySnapshot = Array.isArray(data?.greedyBaseline?.pieces)
+      && data.greedyBaseline.pieces.length > 0;
+    const genuinelyImproved = Number.isInteger(message?.improvementIndex)
+      && message.improvementIndex >= 0;
+
+    if (!greedyComparisonEnabled
+      || greedyComparisonView
+      || !genuinelyImproved
+      || !hasExactGreedySnapshot
+      || !batchId
+      || !groupId) {
+      return null;
+    }
+
+    return `cutting-plan.html?batchId=${encodeURIComponent(batchId)}&groupId=${encodeURIComponent(groupId)}&view=greedy`;
+  }
+
+  function optimizationDetailHtml(text, comparisonUrl = null) {
+    return Optimization?.methodologyLinkedHtml?.(
+      text,
+      comparisonUrl ? { href: comparisonUrl, forceNewTab: true } : {}
+    ) || escapeHtml(text);
+  }
+
+  function renderOptimizationComparison() {
+    const panel = document.getElementById("optimizationPanel");
+    const container = document.getElementById("optimizationComparison");
+    const heading = document.getElementById("optimizationHeading");
+    const message = Optimization?.resultMessage?.(data, data?.greedyBaseline);
+    const comparisonUrl = greedyComparisonGateway(message);
+
+    heading.textContent = greedyComparisonView ? t("plan.greedyComparisonHeading") : t("optimization.comparison");
+    if (greedyComparisonView) {
+      container.innerHTML = `<div class="optimization-result-message"><div class="optimization-message-header"><span class="optimization-status optimization-status-greedyonly">DEV</span><span class="optimization-message-title">${escapeHtml(t("plan.greedyComparisonTitle"))}</span></div><div class="optimization-message-detail">${escapeHtml(t("plan.greedyComparisonDetail"))}</div></div>`;
+      panel.hidden = false;
+      return;
+    }
+    if (!message) {
+      panel.hidden = true;
+      container.innerHTML = "";
+      return;
+    }
+
+    const tone = String(message.tone || "bestknown").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+    const stackedHeader = message.status === "Optimal" || message.status === "BestKnown";
+    const detailLead = message.detailLead || message.detail;
+    const detailContinuation = message.detailContinuation || "";
+    container.innerHTML = `
+      <div class="optimization-result-message">
+        ${stackedHeader
+          ? `<div class="optimization-message-header"><span class="optimization-status optimization-status-${escapeHtml(tone)}">${escapeHtml(message.statusLabel || message.status)}</span><span class="optimization-message-title">${escapeHtml(message.headline)}</span></div>
+        <div class="optimization-message-detail">${optimizationDetailHtml(detailLead, comparisonUrl)}</div>${detailContinuation ? `
+        <div class="optimization-message-detail">${optimizationDetailHtml(detailContinuation, comparisonUrl)}</div>` : ""}`
+          : `<span class="optimization-status optimization-status-${escapeHtml(tone)}">${escapeHtml(message.statusLabel || message.status)}</span>
+        <div class="optimization-message-title">${escapeHtml(message.headline)}</div>
+        <div class="optimization-message-detail">${optimizationDetailHtml(message.detail, comparisonUrl)}</div>`}
+      </div>
+    `;
+    panel.hidden = false;
   }
 
   function renderSummary() {
@@ -250,11 +528,61 @@
     }
   }
 
+  function trimSegmentContent(segment) {
+    return `<div class="segment-label segment-label--trim"><span class="segment-measurement">${mm(segment.length)}</span></div>`;
+  }
+
+  function offcutSegmentContent(segment, presentation) {
+    if (!(segment.length > 0)) return "";
+    const reusable = segment.type === SEGMENT.REUSABLE_OFFCUT;
+    const labelClass = reusable ? "offcut-label--reusable" : "offcut-label--non-reusable";
+    return `<div class="segment-label offcut-label ${labelClass}">
+      <strong class="offcut-full-label">${escapeHtml(presentation.label)}</strong>
+      <span class="offcut-measurement">${mm(segment.length)}</span>
+    </div>`;
+  }
+
   function segmentMarkup(segment) {
+    if (segment.type === SEGMENT.TOOL_CUT && !(segment.length > 0)) return "";
     const presentation = segmentPresentation(segment);
     const title = `${presentation.title}: ${mmText(segment.length)}`;
-    const content = segment.type === SEGMENT.TOOL_CUT ? "" : `<div class="segment-label"><strong>${segment.type === SEGMENT.PART ? bdi(presentation.label) : escapeHtml(presentation.label)}</strong><span>${mm(segment.length)}</span></div>`;
-    return `<div class="segment ${presentation.className}" style="--segment-length:${segment.length}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${content}</div>`;
+    let content = "";
+    if ([SEGMENT.START_TRIM, SEGMENT.END_TRIM].includes(segment.type)) {
+      content = trimSegmentContent(segment);
+    } else if (segment.type === SEGMENT.PART) {
+      content = `<div class="segment-label"><strong>${bdi(presentation.label)}</strong><span>${mm(segment.length)}</span></div>`;
+    } else if (isOffcut(segment.type)) {
+      content = offcutSegmentContent(segment, presentation);
+    }
+    const boundaryKerf = [SEGMENT.START_TRIM, SEGMENT.END_TRIM].includes(segment.type) && Number(data?.settings?.toolWidth) > 0 ? " has-boundary-kerf" : "";
+    return `<div class="segment ${presentation.className}${boundaryKerf}" style="--segment-length:${segment.length}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${content}</div>`;
+  }
+
+  function kerfDisplayWidthPx(segments) {
+    const visibleKerfs = Math.max(1, segments.filter(segment => segment.type === SEGMENT.TOOL_CUT && segment.length > 0).length);
+    return Math.min(5, 220 / visibleKerfs);
+  }
+
+  function barSegmentsMarkup(segments) {
+    const markup = [];
+    for (let index = 0; index < segments.length; index++) {
+      const segment = segments[index];
+      const offcut = segments[index + 1];
+      if (segment.type === SEGMENT.TOOL_CUT && isOffcut(offcut?.type)) {
+        const presentation = segmentPresentation(offcut);
+        const rawRemainder = segment.length + offcut.length;
+        if (rawRemainder > 0) {
+          const title = `${presentation.title}: ${mmText(offcut.length)}; ${t("common.toolWidthCut")}: ${mmText(segment.length)}`;
+          const content = offcutSegmentContent(offcut, presentation);
+          const kerf = segment.length > 0 ? `<span class="terminal-kerf" aria-hidden="true"></span>` : "";
+          markup.push(`<div class="segment trailing-remainder ${presentation.className}" style="--segment-length:${rawRemainder}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${kerf}${content}</div>`);
+        }
+        index++;
+        continue;
+      }
+      markup.push(segmentMarkup(segment));
+    }
+    return markup.join("");
   }
 
   function layoutDisplayName(layout) {
@@ -280,7 +608,7 @@
       return `
         <article class="piece">
           <div class="piece-heading"><div class="piece-title"><strong>${bdi(layoutDisplayName(layout))}</strong><span class="source-chip ${sourceClass}">${escapeHtml(sourceLabel)}</span><span>${mm(layout.stockLength)}</span></div><div class="utilization"><strong dir="ltr">${pct(layout.partUtilization)}</strong><span>${escapeHtml(t("common.utilization"))} · ${mm(layout.partLength)}</span></div></div>
-          <div class="bar-wrap" dir="ltr"><div class="bar" dir="ltr">${layout.segments.map(segmentMarkup).join("")}</div></div>
+          <div class="bar-wrap" dir="ltr"><div class="bar" dir="ltr" style="--kerf-display-width:${kerfDisplayWidthPx(layout.segments).toFixed(3)}px">${barSegmentsMarkup(layout.segments)}</div></div>
           <div class="piece-details">${retrieval}<span>${description}</span></div>
         </article>`;
     }).join("") : `<p>${escapeHtml(t("plan.noPieces"))}</p>`;
@@ -501,6 +829,7 @@
     if (data) renderAll();
     else renderLoadError();
   }
+
 
   I18N.apply();
   updateBackArrow();

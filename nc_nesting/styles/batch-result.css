@@ -504,3 +504,119 @@ td.profile {
   outline: 3px solid rgba(162, 32, 32, .22);
   outline-offset: 1px;
 }
+
+.optimization-compare {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 4px;
+  text-align: start;
+}
+
+.profile .optimization-status {
+  display: inline-block;
+  justify-self: start;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.profile .optimization-status-optimal {
+  color: #176b3a;
+  background: #eaf7ef;
+}
+
+.profile .optimization-status-bestknown {
+  color: #5f6875;
+  background: #f1f3f5;
+}
+
+.profile .optimization-status-greedyonly {
+  color: #684900;
+  background: #fff4d6;
+}
+
+
+.profile .optimization-status-failed {
+  color: var(--red);
+  background: #fff0f0;
+}
+
+.profile .optimization-message-title {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.profile .optimization-message-detail {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.profile .optimization-demo-message {
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border);
+}
+
+.profile .greedy-algorithm-link,
+.profile .greedy-algorithm-link:visited {
+    color: inherit;
+    font-weight: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: rgba(102, 112, 133, .38);
+    text-underline-offset: 2px;
+    transition: text-decoration-color .18s ease, text-decoration-thickness .18s ease, font-weight .18s ease;
+}
+
+.profile .greedy-algorithm-link:hover,
+.profile .greedy-algorithm-link:focus-visible {
+    font-weight: 500;
+    text-decoration-color: rgba(102, 112, 133, .62);
+    text-decoration-thickness: 1.5px;
+}
+
+.profile .greedy-algorithm-link:focus-visible {
+    outline: none;
+}
+
+.profile .optimization-message-header {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.profile .optimization-message-header .optimization-message-title {
+    margin-top: 0;
+}
+
+td.profile { min-width: 235px; }
+
+.greedy-fallback-notice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #e4c56b;
+  border-radius: 9px;
+  background: #fff8df;
+  color: #684900;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+
+
+/* DEV-only greedy comparison action. Hidden completely when the feature flag is off. */
+.cut-plan-actions {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}

@@ -20,9 +20,8 @@
     output = output.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, target) => {
       const decodedTarget = target.replaceAll("&amp;", "&");
       const safe = /^(https?:|mailto:)/i.test(decodedTarget) ? decodedTarget : "#";
-      const external = /^https?:/i.test(safe) ? ' target="_blank" rel="noopener noreferrer"' : "";
       const direction = /@|^https?:|^www\./i.test(label) ? ' dir="ltr"' : ' dir="auto"';
-      return `<a href="${escapeHtml(safe)}"${external}${direction}>${label}</a>`;
+      return `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer"${direction}>${label}</a>`;
     });
     output = output.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     return output;

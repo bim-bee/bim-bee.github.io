@@ -6,9 +6,12 @@
   const STORE_NAME = "solved-batches";
   const GROUP_CACHE_STORE_NAME = "group-solve-cache";
   const GROUP_CACHE_PROJECT_INDEX = "projectId";
-  const SOLVE_CACHE_VERSION = "1";
+  const SOLVE_CACHE_VERSION = "2";
+  const GREEDY_CACHE_VERSION = "greedy-bfd-v3";
   const ACTIVE_PROJECT_KEY = `${DB_NAME}:active-project`;
   const ORDER_QUANTITIES_KEY = batchId => `${DB_NAME}:order-quantities:${batchId}`;
+  const PROFILE_WEIGHT_SOURCE = "profile-catalogue";
+  let profileCataloguePromise = null;
 
   function config() {
     return window.NcNestingConfig || {};
@@ -51,9 +54,87 @@
     return null;
   }
 
+  function profileCatalogueModuleUrl() {
+    return new URL("../profile-catalogue/profile-api.js", document.baseURI).href;
+  }
+
+  function getProfileCatalogue() {
+    if (globalThis.NcNestingProfileCatalogueReady) {
+      return globalThis.NcNestingProfileCatalogueReady;
+    }
+    if (!profileCataloguePromise) {
+      profileCataloguePromise = import(profileCatalogueModuleUrl())
+        .then(api => api.loadCatalogue())
+        .catch(() => null);
+    }
+    return profileCataloguePromise;
+  }
+
+  async function catalogueMassKgM(profileName) {
+    const name = cleanName(profileName);
+    if (!name) return null;
+    const catalogue = await getProfileCatalogue();
+    const value = catalogue?.getMassKgM?.(name);
+    const number = Number(value);
+    return value != null && Number.isFinite(number) && number >= 0 ? number : null;
+  }
+
+  async function attachCatalogueWeightToGroup(group, fallbackProfileName = "") {
+    const normalized = { ...group };
+    const profileName = cleanName(normalized.profileName || fallbackProfileName);
+    const profileKeilogramPerMeter = await catalogueMassKgM(profileName);
+    const totalStockLengthConsumed = pickFirstNumber(normalized.totalStockLengthConsumed, normalized.totalStockLength) || 0;
+    const totalStorageStockLengthConsumed = pickFirstNumber(normalized.totalStorageStockLengthConsumed, normalized.storageStockLengthConsumed) || 0;
+
+    normalized.profileKeilogramPerMeter = profileKeilogramPerMeter;
+    normalized.profileWeightSource = profileKeilogramPerMeter == null ? null : PROFILE_WEIGHT_SOURCE;
+    normalized.weightTon = profileKeilogramPerMeter == null
+      ? null
+      : totalStockLengthConsumed / 1000000 * profileKeilogramPerMeter;
+    normalized.storageStockWeightTon = profileKeilogramPerMeter == null
+      ? null
+      : totalStorageStockLengthConsumed / 1000000 * profileKeilogramPerMeter;
+    return normalized;
+  }
+
+  async function attachCatalogueWeights(batchResult, project = null) {
+    if (!batchResult) return batchResult;
+    const weighted = clone(batchResult);
+    weighted.groups = await Promise.all(asArray(weighted.groups).map(group => {
+      const frontendGroup = projectGroup(project, group?.groupId);
+      return attachCatalogueWeightToGroup(group, frontendGroup?.profileName || "");
+    }));
+    return weighted;
+  }
+
+  function isGreedyOnlyResult(source) {
+    const status = String(source?.status || source?.optimization?.status || "").replace(/[\s_-]/g, "").toLowerCase();
+    const resultSource = String(source?.resultSource || "").replace(/[\s_-]/g, "").toLowerCase();
+    return status === "greedyonly" || resultSource === "frontendgreedy";
+  }
+
+  function normalizeOptimizationMetadata(source) {
+    if (isGreedyOnlyResult(source)) return null;
+    const reader = globalThis.NcNestingOptimization?.readOptimization;
+    if (typeof reader !== "function") return source?.optimization ? clone(source.optimization) : null;
+    const normalized = reader(source);
+    if (!normalized) return null;
+    return {
+      ...(source?.optimization && typeof source.optimization === "object" ? clone(source.optimization) : {}),
+      ...(normalized.status ? { status: normalized.status } : {}),
+      ...(normalized.bestFeasibleObjective ? { bestFeasibleObjective: normalized.bestFeasibleObjective } : {}),
+      ...(normalized.bestProvenBound ? { bestProvenBound: normalized.bestProvenBound } : {}),
+      ...(normalized.provenOptimum ? { provenOptimum: normalized.provenOptimum } : {}),
+      ...(normalized.stopReason ? { stopReason: normalized.stopReason } : {}),
+      ...(normalized.provenObjectiveCount != null ? { provenObjectiveCount: normalized.provenObjectiveCount } : {}),
+      ...(normalized.objectiveProgress ? { objectiveProgress: clone(normalized.objectiveProgress) } : {})
+    };
+  }
+
   function normalizeBatchGroup(group) {
-    const mappedWeight = pickFirstNumber(group.profileKeilogramPerMeter);
-    const profileKeilogramPerMeter = mappedWeight != null && mappedWeight >= 0 ? mappedWeight : null;
+    // Backend profileKeilogramPerMeter is intentionally ignored. Weight is attached
+    // later from the frontend Profile Catalogue only.
+    const profileKeilogramPerMeter = null;
     const totalStockLengthConsumed = pickFirstNumber(group.totalStockLengthConsumed, group.totalStockLength) || 0;
     const totalStorageStockLengthConsumed = pickFirstNumber(group.totalStorageStockLengthConsumed, group.storageStockLengthConsumed) || 0;
     const stockOrders = asArray(group.stockOrders).map(order => {
@@ -69,10 +150,13 @@
       };
     });
 
+    const optimization = normalizeOptimizationMetadata(group);
     return {
       ...group,
       status: group.status || "Completed",
+      ...(optimization ? { optimization } : {}),
       profileKeilogramPerMeter,
+      profileWeightSource: null,
       totalStockLengthConsumed,
       totalConsumedLength: pickFirstNumber(group.totalConsumedLength, group.actualConsumedLength) || 0,
       totalPartLength: pickFirstNumber(group.totalPartLength, group.finishedPartLength, group.selectedPartLength),
@@ -117,6 +201,7 @@
       totalOffcutLength: pickFirstNumber(source.totalOffcutLength) || 0,
       totalStorageStockLengthConsumed: pickFirstNumber(source.totalStorageStockLengthConsumed, source.storageStockLengthConsumed) || 0,
       totalReusableOffcutLength: pickFirstNumber(source.totalReusableOffcutLength, source.reusableOffcutLength) || 0,
+      reusableOffcutCount: pickFirstNumber(source.reusableOffcutCount, source.totalReusableOffcutCount),
       totalStockOrderLengthOrdered: pickFirstNumber(source.totalStockOrderLengthOrdered, source.stockOrderLength) || 0,
       stockOrderPieceCount: pickFirstNumber(source.stockOrderPieceCount, source.stockOrderQuantity) || 0,
       storageStockPieceCount: pickFirstNumber(source.storageStockPieceCount, source.storageStockQuantityUsed) || 0,
@@ -154,8 +239,10 @@
         wasteLength: pickFirstNumber(stock.wasteLength, stock.offcutLength, stock.totalWasteLength, stock.totalOffcutLength)
       }));
 
+    const optimization = normalizeOptimizationMetadata(plan);
     return {
       ...plan,
+      ...(optimization ? { optimization } : {}),
       settings: { ...(plan.settings || {}), ...(plan.cuttingSettings || {}) },
       stockOrderOptions,
       storageRetrievals,
@@ -185,17 +272,41 @@
     return plans?.[groupId] || null;
   }
 
-  function attachPlanPartLengths(batchResult, plans) {
+  function attachPlanMetadataToBatch(batchResult, plans) {
     const result = clone(batchResult);
     const normalizedPlans = normalizePlansShape(plans || {});
     result.groups = asArray(result?.groups).map(group => {
-      const explicit = pickFirstNumber(group.totalPartLength);
-      if (explicit != null && explicit >= 0) return group;
       const plan = planFromNormalizedCollection(normalizedPlans, group.groupId);
-      const totalPartLength = globalThis.NcNestingUtilization?.totalPartLengthFromPlan?.(plan);
-      return Number.isFinite(totalPartLength) && totalPartLength >= 0
-        ? { ...group, totalPartLength }
-        : group;
+      let enriched = group;
+      const explicit = pickFirstNumber(group.totalPartLength);
+      if ((explicit == null || explicit < 0) && plan) {
+        const totalPartLength = globalThis.NcNestingUtilization?.totalPartLengthFromPlan?.(plan);
+        if (Number.isFinite(totalPartLength) && totalPartLength >= 0) enriched = { ...enriched, totalPartLength };
+      }
+      const groupOptimization = normalizeOptimizationMetadata(enriched);
+      const planOptimization = normalizeOptimizationMetadata(plan);
+      if (groupOptimization || planOptimization) {
+        enriched = {
+          ...enriched,
+          optimization: {
+            ...(groupOptimization || {}),
+            ...(planOptimization || {}),
+            bestFeasibleObjective: planOptimization?.bestFeasibleObjective
+              || groupOptimization?.bestFeasibleObjective
+              || globalThis.NcNestingOptimization?.normalizeObjective?.(enriched)
+          }
+        };
+      }
+      return enriched;
+    });
+    return result;
+  }
+
+  function attachGreedyBaselinesToBatch(batchResult, greedyBaselines) {
+    const result = clone(batchResult);
+    result.groups = asArray(result?.groups).map(group => {
+      const baseline = greedyBaselines?.[group.groupId];
+      return baseline ? { ...group, greedyBaseline: clone(baseline) } : group;
     });
     return result;
   }
@@ -292,16 +403,156 @@
     return plans?.[groupId] || null;
   }
 
+  const CacheDisposition = Object.freeze({
+    REUSE: "Reuse",
+    RETRY_BEST_KNOWN: "RetryBestKnown",
+    SOLVE_REQUIRED: "SolveRequired"
+  });
+
   function validCachedGroupEntry(entry, projectId, groupId, fingerprint) {
     return Boolean(
       entry
       && (!projectId || entry.projectId === projectId)
       && entry.groupId === groupId
       && entry.cacheVersion === SOLVE_CACHE_VERSION
+      && entry.greedyCacheVersion === GREEDY_CACHE_VERSION
       && entry.fingerprint === fingerprint
       && entry.batchResultGroup?.groupId === groupId
       && entry.cuttingPlan?.groupId === groupId
     );
+  }
+
+  function cachedResultStatus(entry) {
+    if (isGreedyOnlyResult(entry?.batchResultGroup) || isGreedyOnlyResult(entry?.cuttingPlan)) return "GreedyOnly";
+    const reader = globalThis.NcNestingOptimization?.readOptimization;
+    const batchStatus = typeof reader === "function" ? reader(entry?.batchResultGroup)?.status : null;
+    const planStatus = typeof reader === "function" ? reader(entry?.cuttingPlan)?.status : null;
+    return batchStatus || planStatus || null;
+  }
+
+  function finiteNonNegative(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? number : null;
+  }
+
+  function solveContextPressure(context) {
+    return finiteNonNegative(context?.batchPressureScore ?? context?.pressure);
+  }
+
+  function solveContextGroupCount(context) {
+    const number = Number(context?.backendRequestedGroupCount ?? context?.groupCount);
+    return Number.isInteger(number) && number >= 0 ? number : null;
+  }
+
+  function pressureReductionRatio(previousContext, currentContext) {
+    const previous = solveContextPressure(previousContext);
+    const current = solveContextPressure(currentContext);
+    if (!(previous > 0) || current == null || current >= previous) return 0;
+    return (previous - current) / previous;
+  }
+
+  function groupCountReductionRatio(previousContext, currentContext) {
+    const previous = solveContextGroupCount(previousContext);
+    const current = solveContextGroupCount(currentContext);
+    if (!(previous > 0) || current == null || current >= previous) return 0;
+    return (previous - current) / previous;
+  }
+
+  function retryPolicy() {
+    const configured = globalThis.NcNestingConfig?.bestKnownRetry || {};
+    return {
+      enabled: configured.enabled !== false,
+      minimumPressureReductionRatio: Math.max(0, Number(configured.minimumPressureReductionRatio) || 0.18),
+      supportedPressureReductionRatio: Math.max(0, Number(configured.supportedPressureReductionRatio) || 0.10),
+      minimumGroupCountReductionRatio: Math.max(0, Number(configured.minimumGroupCountReductionRatio) || 0.35)
+    };
+  }
+
+  function materiallyBetterSolveContext(previousContext, currentContext, policy) {
+    if (!previousContext || !currentContext) return false;
+    if (previousContext.complexityReliable !== true || currentContext.complexityReliable !== true) return false;
+    const pressureReduction = pressureReductionRatio(previousContext, currentContext);
+    if (pressureReduction >= policy.minimumPressureReductionRatio) return true;
+    const countReduction = groupCountReductionRatio(previousContext, currentContext);
+    return pressureReduction >= policy.supportedPressureReductionRatio
+      && countReduction >= policy.minimumGroupCountReductionRatio;
+  }
+
+  function stopReasonRetryability(stopReason) {
+    const normalize = globalThis.NcNestingOptimization?.normalizeStopReason;
+    const reason = typeof normalize === "function" ? normalize(stopReason) : String(stopReason || "").trim().toLowerCase();
+    if (!reason) return null;
+    const nonRetryable = ["representation", "safety", "unsupported", "hard_limit", "hardlimit", "model_size", "size_limit"];
+    if (nonRetryable.some(token => reason.includes(token))) return false;
+    const retryable = ["batch_deadline", "shared_batch", "deadline", "time_limit", "timelimit", "work_limit", "worklimit", "effort", "time_slice", "timeslice", "solver_time", "solver_work", "optimization_budget", "budget_exhausted"];
+    if (retryable.some(token => reason.includes(token))) return true;
+    return null;
+  }
+
+  function combinedOptimizationMetadata(...sources) {
+    const reader = globalThis.NcNestingOptimization?.readOptimization;
+    if (typeof reader !== "function") return null;
+    const metadata = sources.map(source => reader(source)).filter(Boolean);
+    if (!metadata.length) return null;
+    const firstValue = key => metadata.map(item => item?.[key]).find(value => value != null) ?? null;
+    const provenCounts = metadata.map(item => item?.provenObjectiveCount).filter(value => Number.isInteger(value));
+    return {
+      status: firstValue("status"),
+      bestFeasibleObjective: firstValue("bestFeasibleObjective"),
+      bestProvenBound: firstValue("bestProvenBound"),
+      provenOptimum: firstValue("provenOptimum"),
+      stopReason: firstValue("stopReason"),
+      provenObjectiveCount: provenCounts.length ? Math.max(...provenCounts) : null,
+      objectiveProgress: firstValue("objectiveProgress")
+    };
+  }
+
+  function optimizationOpportunity(entry) {
+    const helper = globalThis.NcNestingOptimization?.optimizationOpportunity;
+    if (typeof helper !== "function") {
+      return {
+        status: cachedResultStatus(entry),
+        fullOptimumProven: cachedResultStatus(entry) === "Optimal",
+        firstUnresolvedObjectiveIndex: null,
+        primaryGap: null,
+        hasExplicitUnresolvedEvidence: false,
+        stopReason: null
+      };
+    }
+    const combined = combinedOptimizationMetadata(entry?.batchResultGroup, entry?.cuttingPlan);
+    return combined ? helper({ optimization: combined }) : helper(entry?.batchResultGroup) || helper(entry?.cuttingPlan);
+  }
+
+  function createSolveContextForGroups(groups, complexityResults) {
+    const helper = globalThis.NcNestingSolvePreflight?.createSolveContext;
+    if (typeof helper !== "function") return null;
+    try {
+      return helper(groups, complexityResults, { limits: globalThis.NcNestingConfig?.solvePreflightLimits });
+    } catch {
+      return null;
+    }
+  }
+
+  function solveContextForCachedResult(baseContext, resultGroup, groupId, timestamp, resultPlan = null) {
+    if (!baseContext) return null;
+    const optimization = combinedOptimizationMetadata(resultGroup, resultPlan);
+    return {
+      ...clone(baseContext),
+      solvedAtUtc: timestamp || new Date().toISOString(),
+      groupComplexity: clone(baseContext?.perGroup?.[groupId] || null),
+      ...(optimization?.stopReason ? { backendStopReason: optimization.stopReason } : {}),
+      ...(optimization?.provenObjectiveCount != null ? { provenObjectiveCount: optimization.provenObjectiveCount } : {})
+    };
+  }
+
+  function bestKnownRetryDecision(entry, currentContext, policy) {
+    const opportunity = optimizationOpportunity(entry);
+    if (opportunity.status !== "BestKnown" || opportunity.fullOptimumProven) return false;
+    if (!materiallyBetterSolveContext(entry?.solveContext, currentContext, policy)) return false;
+    const reasonRetryability = stopReasonRetryability(opportunity.stopReason || entry?.solveContext?.backendStopReason);
+    if (reasonRetryability === false) return false;
+    if (reasonRetryability === true) return true;
+    return opportunity.hasExplicitUnresolvedEvidence === true;
   }
 
   function openDatabase() {
@@ -425,82 +676,170 @@
     }
   }
 
-  async function prepareIncrementalSolve(request, projectId) {
+  async function prepareIncrementalSolve(request, projectId, options = {}) {
     const groups = asArray(request?.groups);
+    const complexityResults = options?.complexityResults || [];
     const fingerprints = new Map();
+    const noCacheResult = () => {
+      const problemChangedGroups = clone(groups);
+      const solveContext = createSolveContextForGroups(groups, complexityResults);
+      return {
+        cacheAvailable: false,
+        fingerprints,
+        cachedEntries: new Map(),
+        dispositions: new Map(groups.map(group => [group.groupId, CacheDisposition.SOLVE_REQUIRED])),
+        problemChangedGroups,
+        solveRequiredCachedGroups: [],
+        retryGroups: [],
+        groupsToSolve: clone(groups),
+        changedGroups: clone(groups),
+        unchangedGroupIds: [],
+        reusableGroupIds: [],
+        solveContext
+      };
+    };
+
     try {
       await Promise.all(groups.map(async group => {
         fingerprints.set(group.groupId, await createGroupFingerprint(group, request?.cuttingSettings || {}));
       }));
     } catch {
-      return {
-        cacheAvailable: false,
-        fingerprints,
-        cachedEntries: new Map(),
-        changedGroups: clone(groups),
-        unchangedGroupIds: []
-      };
+      return noCacheResult();
     }
 
-    if (!projectId || groups.some(group => !cleanName(group?.groupId))) {
-      return {
-        cacheAvailable: false,
-        fingerprints,
-        cachedEntries: new Map(),
-        changedGroups: clone(groups),
-        unchangedGroupIds: []
-      };
-    }
+    if (!projectId || groups.some(group => !cleanName(group?.groupId))) return noCacheResult();
 
     try {
       const groupIds = groups.map(group => group.groupId);
       const records = await readGroupCacheEntries(projectId, groupIds);
+      await Promise.all(groups.map(async group => {
+        const entry = records.get(group.groupId);
+        if (!entry?.batchResultGroup) return;
+        entry.batchResultGroup = await attachCatalogueWeightToGroup(entry.batchResultGroup, group.profileName);
+      }));
       const cachedEntries = new Map();
-      const changedGroups = [];
+      const dispositions = new Map();
+      const problemChangedGroups = [];
+      const solveRequiredCachedGroups = [];
+      const bestKnownCandidates = [];
       const unchangedGroupIds = [];
 
       groups.forEach(group => {
         const fingerprint = fingerprints.get(group.groupId);
         const entry = records.get(group.groupId);
-        if (validCachedGroupEntry(entry, projectId, group.groupId, fingerprint)) {
-          cachedEntries.set(group.groupId, entry);
-          unchangedGroupIds.push(group.groupId);
+        if (!validCachedGroupEntry(entry, projectId, group.groupId, fingerprint)) {
+          dispositions.set(group.groupId, CacheDisposition.SOLVE_REQUIRED);
+          problemChangedGroups.push(clone(group));
+          return;
+        }
+
+        cachedEntries.set(group.groupId, entry);
+        unchangedGroupIds.push(group.groupId);
+        const status = cachedResultStatus(entry);
+        if (status === "Optimal") {
+          dispositions.set(group.groupId, CacheDisposition.REUSE);
+        } else if (status === "BestKnown") {
+          dispositions.set(group.groupId, CacheDisposition.REUSE);
+          bestKnownCandidates.push({ group: clone(group), entry, opportunity: optimizationOpportunity(entry) });
+        } else if (status === "GreedyOnly" || status === "Failed") {
+          dispositions.set(group.groupId, CacheDisposition.SOLVE_REQUIRED);
+          solveRequiredCachedGroups.push(clone(group));
         } else {
-          changedGroups.push(clone(group));
+          // Preserve legacy backend cache entries that predate explicit optimization status.
+          dispositions.set(group.groupId, CacheDisposition.REUSE);
         }
       });
+
+      const mandatoryGroups = [...problemChangedGroups, ...solveRequiredCachedGroups];
+      const policy = retryPolicy();
+      const retryGroups = [];
+      if (policy.enabled && bestKnownCandidates.length) {
+        bestKnownCandidates.forEach(candidate => {
+          const context = createSolveContextForGroups([...mandatoryGroups, candidate.group], complexityResults);
+          candidate.preliminaryContext = context;
+          candidate.pressureReduction = pressureReductionRatio(candidate.entry?.solveContext, context);
+          candidate.currentCost = finiteNonNegative(context?.perGroup?.[candidate.group.groupId]?.cost);
+        });
+
+        bestKnownCandidates.sort((left, right) => {
+          const leftHasPrimaryGap = Number(left.opportunity?.primaryGap) > 0 ? 1 : 0;
+          const rightHasPrimaryGap = Number(right.opportunity?.primaryGap) > 0 ? 1 : 0;
+          if (leftHasPrimaryGap !== rightHasPrimaryGap) return rightHasPrimaryGap - leftHasPrimaryGap;
+          const gapDifference = (Number(right.opportunity?.primaryGap) || 0) - (Number(left.opportunity?.primaryGap) || 0);
+          if (gapDifference) return gapDifference;
+          const pressureDifference = (right.pressureReduction || 0) - (left.pressureReduction || 0);
+          if (pressureDifference) return pressureDifference;
+          const leftCost = left.currentCost == null ? Number.POSITIVE_INFINITY : left.currentCost;
+          const rightCost = right.currentCost == null ? Number.POSITIVE_INFINITY : right.currentCost;
+          if (leftCost !== rightCost) return leftCost - rightCost;
+          return String(left.group.groupId).localeCompare(String(right.group.groupId));
+        });
+
+        bestKnownCandidates.forEach(candidate => {
+          const proposedGroups = [...mandatoryGroups, ...retryGroups, candidate.group];
+          const currentContext = createSolveContextForGroups(proposedGroups, complexityResults);
+          if (!bestKnownRetryDecision(candidate.entry, currentContext, policy)) return;
+          retryGroups.push(clone(candidate.group));
+          dispositions.set(candidate.group.groupId, CacheDisposition.RETRY_BEST_KNOWN);
+        });
+      }
+
+      const solveGroupIds = new Set([
+        ...mandatoryGroups.map(group => group.groupId),
+        ...retryGroups.map(group => group.groupId)
+      ]);
+      const groupsToSolve = groups.filter(group => solveGroupIds.has(group.groupId)).map(clone);
+      const reusableGroupIds = groups.filter(group => !solveGroupIds.has(group.groupId)).map(group => group.groupId);
+      const solveContext = createSolveContextForGroups(groupsToSolve, complexityResults);
 
       try {
         await cleanupProjectGroupCache(projectId, groupIds);
       } catch {
         // Cache cleanup must not block solving.
       }
-      return { cacheAvailable: true, fingerprints, cachedEntries, changedGroups, unchangedGroupIds };
-    } catch {
       return {
-        cacheAvailable: false,
+        cacheAvailable: true,
         fingerprints,
-        cachedEntries: new Map(),
-        changedGroups: clone(groups),
-        unchangedGroupIds: []
+        cachedEntries,
+        dispositions,
+        problemChangedGroups,
+        solveRequiredCachedGroups,
+        retryGroups,
+        groupsToSolve,
+        // Backwards-compatible alias: callers that still use changedGroups will
+        // submit every group that now requires backend work, including retries.
+        changedGroups: clone(groupsToSolve),
+        unchangedGroupIds,
+        reusableGroupIds,
+        solveContext
       };
+    } catch {
+      return noCacheResult();
     }
   }
 
-  async function writeGroupSolveCache(projectId, groupIds, fingerprints, normalized) {
+  async function writeGroupSolveCache(projectId, groupIds, fingerprints, normalized, greedyBaselines = {}, solveContext = null) {
     if (!projectId || !groupIds?.length) return;
-    const groupsById = new Map(asArray(normalized?.batchResult?.groups).map(group => [group.groupId, group]));
+    const weightedBatchResult = await attachCatalogueWeights(normalized?.batchResult || null);
+    const groupsById = new Map(asArray(weightedBatchResult?.groups).map(group => [group.groupId, group]));
     const timestamp = new Date().toISOString();
-    const entries = groupIds.map(groupId => ({
-      projectId,
-      groupId,
-      fingerprint: fingerprints.get(groupId),
-      batchResultGroup: clone(groupsById.get(groupId)),
-      cuttingPlan: clone(planFromCollection(normalized?.plans, groupId)),
-      cacheVersion: SOLVE_CACHE_VERSION,
-      successfulSolveTimestamp: timestamp,
-      orderQuantityAdjustments: {}
-    }));
+    const entries = groupIds.map(groupId => {
+      const resultGroup = groupsById.get(groupId);
+      const resultPlan = planFromCollection(normalized?.plans, groupId);
+      return {
+        projectId,
+        groupId,
+        fingerprint: fingerprints.get(groupId),
+        batchResultGroup: clone(resultGroup),
+        cuttingPlan: clone(resultPlan),
+        greedyBaseline: greedyBaselines?.[groupId] ? clone(greedyBaselines[groupId]) : null,
+        cacheVersion: SOLVE_CACHE_VERSION,
+        greedyCacheVersion: GREEDY_CACHE_VERSION,
+        successfulSolveTimestamp: timestamp,
+        solveContext: solveContextForCachedResult(solveContext, resultGroup, groupId, timestamp, resultPlan),
+        orderQuantityAdjustments: {}
+      };
+    });
 
     if (entries.some(entry => !entry.fingerprint || entry.batchResultGroup?.groupId !== entry.groupId || entry.cuttingPlan?.groupId !== entry.groupId)) {
       throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
@@ -753,23 +1092,32 @@
     return rebuilt;
   }
 
-  function mergeIncrementalSolveResult(request, incremental, backendResult) {
-    const changedGroupIds = incremental.changedGroups.map(group => group.groupId);
-    if (backendResult) validateChangedGroupResults(backendResult, changedGroupIds);
-    if (!backendResult && changedGroupIds.length) {
+  function mergeIncrementalSolveResult(request, incremental, backendResult, solvedGreedyBaselines = {}, solveContext = null) {
+    const groupsToSolve = incremental.groupsToSolve || incremental.changedGroups || [];
+    const solvedGroupIds = groupsToSolve.map(group => group.groupId);
+    if (backendResult) validateChangedGroupResults(backendResult, solvedGroupIds);
+    if (!backendResult && solvedGroupIds.length) {
       throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
     }
 
-    const changedGroupsById = new Map(asArray(backendResult?.batchResult?.groups).map(group => [group.groupId, group]));
+    const solvedGroupsById = new Map(asArray(backendResult?.batchResult?.groups).map(group => [group.groupId, group]));
     const groups = [];
     const plans = {};
     const orderQuantities = {};
+    const greedyBaselines = {};
+    const groupSolveContexts = {};
+    const generatedAt = backendResult?.batchResult?.generatedAt || new Date().toISOString();
 
     asArray(request?.groups).forEach(requestGroup => {
       const groupId = requestGroup.groupId;
-      if (changedGroupsById.has(groupId)) {
-        groups.push(clone(changedGroupsById.get(groupId)));
-        plans[groupId] = clone(planFromCollection(backendResult.plans, groupId));
+      if (solvedGroupsById.has(groupId)) {
+        const solvedGroup = solvedGroupsById.get(groupId);
+        groups.push(clone(solvedGroup));
+        const solvedPlan = planFromCollection(backendResult.plans, groupId);
+        plans[groupId] = clone(solvedPlan);
+        if (solvedGreedyBaselines?.[groupId]) greedyBaselines[groupId] = clone(solvedGreedyBaselines[groupId]);
+        const storedContext = solveContextForCachedResult(solveContext, solvedGroup, groupId, generatedAt, solvedPlan);
+        if (storedContext) groupSolveContexts[groupId] = storedContext;
         return;
       }
 
@@ -780,10 +1128,11 @@
       groups.push(applyCachedOrderQuantityAdjustments(entry.batchResultGroup, entry.orderQuantityAdjustments || {}));
       Object.assign(orderQuantities, entry.orderQuantityAdjustments || {});
       plans[groupId] = clone(entry.cuttingPlan);
+      if (entry.greedyBaseline) greedyBaselines[groupId] = clone(entry.greedyBaseline);
+      if (entry.solveContext) groupSolveContexts[groupId] = clone(entry.solveContext);
     });
 
     const batchId = backendResult?.batchId || request?.requestId || createRequestId();
-    const generatedAt = backendResult?.batchResult?.generatedAt || new Date().toISOString();
     const template = backendResult?.batchResult || {};
     const batchResult = rebuildBatchTotals(template, groups);
     batchResult.status = batchResult.status || "Completed";
@@ -797,15 +1146,32 @@
       batchId,
       batchResult,
       plans,
+      greedyBaselines,
+      groupSolveContexts,
       orderQuantities,
       groupFingerprints: Object.fromEntries(incremental.fingerprints || [])
     };
   }
 
-  function serviceError(message, code) {
+  function serviceError(message, code, details = {}) {
     const error = new Error(message);
     error.code = code;
+    Object.assign(error, details);
     return error;
+  }
+
+  function responseErrors(body) {
+    const container = body?.result || body || {};
+    const errors = body?.errors || container?.errors;
+    return Array.isArray(errors) ? errors : [];
+  }
+
+  function responseErrorMessage(body) {
+    const errors = responseErrors(body);
+    const firstMessage = errors.map(error => String(error?.message || "").trim()).find(Boolean);
+    if (firstMessage) return firstMessage;
+    const container = body?.result || body || {};
+    return String(container?.message || body?.message || "").trim();
   }
 
   async function postSolve(payload) {
@@ -815,7 +1181,11 @@
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Number(config().requestTimeoutMs) || 120000);
+    let safetyTimeoutReached = false;
+    const timeout = setTimeout(() => {
+      safetyTimeoutReached = true;
+      controller.abort();
+    }, Number(config().requestTimeoutMs) || 150000);
     try {
       const response = await fetch(solveUrl, {
         method: "POST",
@@ -828,16 +1198,26 @@
 
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        throw serviceError("The job could not be solved. Please try again.", "JOB_FAILED");
+        throw serviceError(
+          responseErrorMessage(body) || "The job could not be solved. Please try again.",
+          "BACKEND_HTTP_ERROR",
+          { httpStatus: response.status, backendErrors: responseErrors(body) }
+        );
       }
 
       const normalized = normalizeSolveResponse(body);
       if (!normalized.succeeded && (!Array.isArray(normalized.errors) || !normalized.errors.length)) {
         throw serviceError("The returned result could not be processed.", "INVALID_RESULT");
       }
+      if (normalized.succeeded) {
+        normalized.batchResult = await attachCatalogueWeights(normalized.batchResult);
+      }
       return normalized;
     } catch (error) {
-      if (error?.code) throw error;
+      if (error?.name === "AbortError" && safetyTimeoutReached) {
+        throw serviceError("The calculation service stopped responding.", "SAFETY_TIMEOUT");
+      }
+      if (typeof error?.code === "string" && error.code) throw error;
       if (error?.name === "AbortError" || error instanceof TypeError) {
         throw serviceError("The calculation service is currently unavailable.", "SERVICE_UNAVAILABLE");
       }
@@ -1027,18 +1407,24 @@
 
   async function saveSolveResponse(normalized, project) {
     const projectSnapshot = clone(project || getActiveProject());
+    normalized.batchResult = await attachCatalogueWeights(normalized.batchResult, projectSnapshot);
     if (projectSnapshot) {
       projectSnapshot.batchId = normalized.batchId;
       projectSnapshot.solveResponse = {
         batchId: normalized.batchId,
         batchResult: clone(normalized.batchResult),
-        plans: clone(normalized.plans || {})
+        plans: clone(normalized.plans || {}),
+        greedyBaselines: clone(normalized.greedyBaselines || {}),
+        groupSolveContexts: clone(normalized.groupSolveContexts || {})
       };
       if (hasOwn(normalized, "orderQuantities")) {
         projectSnapshot.orderQuantities = clone(normalized.orderQuantities || {});
       }
       if (hasOwn(normalized, "groupFingerprints")) {
         projectSnapshot.groupFingerprints = clone(normalized.groupFingerprints || {});
+      }
+      if (hasOwn(normalized, "groupSolveContexts")) {
+        projectSnapshot.groupSolveContexts = clone(normalized.groupSolveContexts || {});
       }
       saveActiveProject(projectSnapshot);
     }
@@ -1049,6 +1435,8 @@
       batchName,
       batchResult: { ...normalized.batchResult, batchName },
       plans: normalized.plans || {},
+      greedyBaselines: clone(normalized.greedyBaselines || {}),
+      groupSolveContexts: clone(normalized.groupSolveContexts || {}),
       project: projectSnapshot ? { ...projectSnapshot, batchName } : projectSnapshot,
       ...(hasOwn(normalized, "orderQuantities") ? { orderQuantities: clone(normalized.orderQuantities || {}) } : {}),
       ...(hasOwn(normalized, "groupFingerprints") ? { groupFingerprints: clone(normalized.groupFingerprints || {}) } : {}),
@@ -1061,14 +1449,15 @@
   async function getBatchResult(batchId) {
     const record = await getRecord(batchId);
     if (!record?.batchResult) return null;
-    const normalizedBatch = attachPlanPartLengths(normalizeBatchResultShape(record.batchResult, {
+    const normalizedBatch = attachGreedyBaselinesToBatch(attachPlanMetadataToBatch(normalizeBatchResultShape(record.batchResult, {
       batchId: record.batchId,
       currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
       generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
       status: record.batchResult?.status || "Completed"
-    }), record.plans || {});
+    }), record.plans || {}), record.greedyBaselines || {});
     const enriched = applyRecordMetadataToBatch(enrichBatchResult(normalizedBatch, record.project), record);
-    return applyOrderQuantities(enriched, batchId, record);
+    const weighted = await attachCatalogueWeights(enriched, record.project);
+    return applyOrderQuantities(weighted, batchId, record);
   }
 
   async function getPlan(batchId, groupId) {
@@ -1081,7 +1470,68 @@
     } else {
       plan = normalizedPlans?.[groupId] || null;
     }
-    return plan ? applyRecordMetadataToPlan(enrichPlan(plan, record.project, groupId), record) : null;
+    if (!plan) return null;
+    const enrichedPlan = applyRecordMetadataToPlan(enrichPlan(plan, record.project, groupId), record);
+    const normalizedBatch = normalizeBatchResultShape(record.batchResult || {}, { batchId: record.batchId });
+    const group = asArray(normalizedBatch.groups).find(item => item.groupId === groupId);
+    const groupOptimization = normalizeOptimizationMetadata(group);
+    const planOptimization = normalizeOptimizationMetadata(enrichedPlan);
+    const optimization = groupOptimization || planOptimization
+      ? {
+        ...(groupOptimization || {}),
+        ...(planOptimization || {}),
+        status: planOptimization?.status || groupOptimization?.status || null,
+        bestFeasibleObjective: planOptimization?.bestFeasibleObjective || groupOptimization?.bestFeasibleObjective || null,
+        bestProvenBound: planOptimization?.bestProvenBound || groupOptimization?.bestProvenBound || null,
+        provenOptimum: planOptimization?.provenOptimum || groupOptimization?.provenOptimum || null,
+        stopReason: planOptimization?.stopReason || groupOptimization?.stopReason || null,
+        provenObjectiveCount: planOptimization?.provenObjectiveCount ?? groupOptimization?.provenObjectiveCount ?? null,
+        objectiveProgress: clone(planOptimization?.objectiveProgress || groupOptimization?.objectiveProgress || null)
+      }
+      : null;
+    return {
+      ...enrichedPlan,
+      ...(optimization ? { optimization } : {}),
+      ...(record.greedyBaselines?.[groupId] ? { greedyBaseline: clone(record.greedyBaselines[groupId]) } : {})
+    };
+  }
+
+
+  function greedyCutPlanComparisonEnabled() {
+    return Boolean(config()?.featureFlags?.greedyCutPlanComparison);
+  }
+
+  async function getGreedyPlan(batchId, groupId) {
+    if (!greedyCutPlanComparisonEnabled() || !batchId || !groupId) return null;
+    const record = await getRecord(batchId);
+    if (!record?.project) return null;
+
+    const baseline = record.greedyBaselines?.[groupId] || null;
+    const frontendGroup = projectGroup(record.project, groupId);
+    const builder = globalThis.NcNestingGreedyPlanBuilder;
+    // DEV comparison must use the exact piece snapshot captured by the greedy solver.
+    // Older aggregated baselines are still valid for objective comparison, but are not
+    // sufficient to reproduce the original greedy cut plan faithfully.
+    if (!baseline || !asArray(baseline.pieces).length || !frontendGroup || typeof builder?.buildGroup !== "function") return null;
+
+    const normalizedPlans = normalizePlansShape(record.plans || {});
+    const storedPlan = Array.isArray(normalizedPlans)
+      ? normalizedPlans.find(item => item?.groupId === groupId || item?.id === groupId) || null
+      : normalizedPlans?.[groupId] || null;
+    const cuttingSettings = record.project?.cuttingSettings
+      || storedPlan?.settings
+      || storedPlan?.cuttingSettings
+      || {};
+
+    const built = builder.buildGroup(frontendGroup, baseline, cuttingSettings);
+    if (!built?.plan) return null;
+
+    const enriched = applyRecordMetadataToPlan(enrichPlan(built.plan, record.project, groupId), record);
+    return {
+      ...enriched,
+      comparisonView: "greedy-baseline",
+      greedyBaseline: clone(baseline)
+    };
   }
 
 
@@ -1089,14 +1539,16 @@
     const record = await getRecord(batchId);
     if (!record?.batchResult) return null;
 
-    const normalizedBatch = attachPlanPartLengths(normalizeBatchResultShape(record.batchResult, {
+    const normalizedBatch = attachGreedyBaselinesToBatch(attachPlanMetadataToBatch(normalizeBatchResultShape(record.batchResult, {
       batchId: record.batchId,
       currency: hasOwn(record.project, "currency") ? record.project.currency : (record.batchResult?.currency || null),
       generatedAt: record.batchResult?.generatedAt || record.storedAtUtc || null,
       status: record.batchResult?.status || "Completed"
-    }), record.plans || {});
+    }), record.plans || {}), record.greedyBaselines || {});
+    const enrichedBatchResult = applyRecordMetadataToBatch(enrichBatchResult(normalizedBatch, record.project), record);
+    const weightedBatchResult = await attachCatalogueWeights(enrichedBatchResult, record.project);
     const batchResult = applyOrderQuantities(
-      applyRecordMetadataToBatch(enrichBatchResult(normalizedBatch, record.project), record),
+      weightedBatchResult,
       batchId,
       record
     );
@@ -1107,14 +1559,23 @@
       const rawPlan = Array.isArray(normalizedPlans)
         ? normalizedPlans.find(item => item.groupId === group.groupId || item.id === group.groupId)
         : normalizedPlans[group.groupId];
-      if (rawPlan) plans[group.groupId] = applyRecordMetadataToPlan(enrichPlan(rawPlan, record.project, group.groupId), record);
+      if (rawPlan) {
+        const enrichedPlan = applyRecordMetadataToPlan(enrichPlan(rawPlan, record.project, group.groupId), record);
+        plans[group.groupId] = {
+          ...enrichedPlan,
+          ...(group.optimization ? { optimization: clone(group.optimization) } : {}),
+          ...(record.greedyBaselines?.[group.groupId] ? { greedyBaseline: clone(record.greedyBaselines[group.groupId]) } : {})
+        };
+      }
     });
 
     return {
       batchId,
       project: record.project ? { ...clone(record.project), batchName: cleanName(record.batchName || record.project.batchName) } : null,
       batchResult,
-      plans
+      plans,
+      greedyBaselines: clone(record.greedyBaselines || {}),
+      groupSolveContexts: clone(record.groupSolveContexts || record.project?.solveResponse?.groupSolveContexts || {})
     };
   }
 
@@ -1147,14 +1608,22 @@
 
     const rebuilt = rebuildBatchTotals({ ...normalized, groups }, groups);
     rebuilt.groups = groups;
-    record.batchResult = rebuilt;
+    record.batchResult = await attachCatalogueWeights(rebuilt, record.project);
     record.plans = removePlanFromCollection(record.plans, groupId);
+    record.greedyBaselines = { ...(record.greedyBaselines || {}) };
+    delete record.greedyBaselines[groupId];
+    record.groupSolveContexts = { ...(record.groupSolveContexts || {}) };
+    delete record.groupSolveContexts[groupId];
     record.orderQuantities = removeGroupOrderQuantities(record.orderQuantities, groupId);
     if (record.project) {
       record.project.orderQuantities = removeGroupOrderQuantities(record.project.orderQuantities, groupId);
+      record.project.groupSolveContexts = { ...(record.project.groupSolveContexts || {}) };
+      delete record.project.groupSolveContexts[groupId];
       if (record.project.solveResponse) {
-        record.project.solveResponse.batchResult = clone(rebuilt);
+        record.project.solveResponse.batchResult = clone(record.batchResult);
         record.project.solveResponse.plans = clone(record.plans);
+        record.project.solveResponse.greedyBaselines = clone(record.greedyBaselines);
+        record.project.solveResponse.groupSolveContexts = clone(record.groupSolveContexts);
       }
     }
     await putRecord(record);
@@ -1164,9 +1633,12 @@
       const activeProject = getActiveProject();
       if (activeProject?.batchId === batchId) {
         activeProject.orderQuantities = clone(record.orderQuantities || {});
+        activeProject.groupSolveContexts = clone(record.groupSolveContexts || {});
         if (activeProject.solveResponse) {
-          activeProject.solveResponse.batchResult = clone(rebuilt);
+          activeProject.solveResponse.batchResult = clone(record.batchResult);
           activeProject.solveResponse.plans = clone(record.plans);
+          activeProject.solveResponse.greedyBaselines = clone(record.greedyBaselines);
+          activeProject.solveResponse.groupSolveContexts = clone(record.groupSolveContexts);
         }
         saveActiveProject(activeProject);
       }
@@ -1241,6 +1713,7 @@
     applyStoredOrderQuantities,
     getBatchResult,
     getPlan,
+    getGreedyPlan,
     getSolvedBatch,
     getProject
   });
