@@ -17,9 +17,9 @@ window.BIM_POSTS = {
       excerpt:
         "A practical look at nesting for cutting stock: how the standard approach works, whether it is enough, and how the result can be improved and even proven optimal.",
       excerpt_en:
-        "A practical look at nesting for cutting stock: how the standard approach works, whether it is enough, and how the result can be improved and even proven optimal.",
+        "A practical look at nesting for cutting stock. how the standard approach works, whether it is enough, and how the result can be improved and even proven optimal.",
       excerpt_he:
-        "מבט פרקטי על נסטינג להזמנת חומר לחיתוך: איך השיטה המקובלת עובדת, האם כדאי להסתפק בה, ואיך אפשר לשפר את התוצאה ואף להוכיח שהגענו לאופטימום.",
+        "מבט על נסטינג להזמנת חומר לחיתוך. איך השיטה המקובלת עובדת, האם כדאי להסתפק בה, ואיך אפשר לשפר את התוצאה ואף להוכיח שהגענו לאופטימום.",
 
       tags: ["Optimization", "Fabrication", "Nesting", "Automation"],
       tags_he: ["אופטימיזציה", ltrSpan("Fabrication"), ltrSpan("Nesting"), "אוטומציה"],

@@ -175,7 +175,32 @@ body { padding-top: 3vw; }
 .post-sub { color: var(--muted); margin: 0 0 .5rem; }
 .post-content { padding: 1.25rem; line-height: 1.75; text-align: start; }
 .post-content img { display: block; margin: .5rem 0; max-width: 100%; height: auto; }
+.post-intro {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "visual"
+    "copy";
+  gap: 1rem;
+  align-items: start;
+}
+.post-intro-copy { grid-area: copy; min-width: 0; }
+.post-intro-visual {
+  grid-area: visual;
+  margin: 0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 16px 34px rgba(0,0,0,0.28);
+}
+.post-intro-visual img {
+  margin: 0;
+  width: 100%;
+  height: auto;
+}
 .post-content h2, .post-content h3 {font-size: 1.5rem; text-decoration: underline; margin-top: 1.5rem; }
+.post-intro .post-content h2, .post-intro h2 { margin-top: 0; }
 .post-content h2[id], .post-content h3[id] { scroll-margin-top: clamp(60px, 6vw, 110px); }
 .post-content a { color: var(--brand); }
 .post-content code { background: #0b1220; border: 1px solid var(--border); padding: .12rem .35rem; border-radius: 6px; }
