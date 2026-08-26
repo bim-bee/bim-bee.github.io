@@ -26,7 +26,7 @@
         <a class="post-back lang lang-he" href="../blog.html" dir="rtl" style="display:none;">חזרה לבימבלוג ← </a>
       </div>
 
-      <h1 class="lang lang-en">Material Ordering for Cutting Is Usually Done with a Greedy Algorithm — Is It Worth Stopping There?</h1>
+      <h1 class="lang lang-en">Ordering and Cutting Stock Using Greedy Algorithms — Is That Good Enough?</h1>
       <p class="post-sub lang lang-en">August 10, 2026 • 8 min read</p>
 
       <h1 class="lang lang-he" dir="rtl" style="display:none;">הזמנת חומר לחיתוך נעשית לרוב בעזרת אלגוריתם חמדן — האם כדאי להסתפק בכך?</h1>
@@ -189,13 +189,13 @@
 
       <h2 class="lang lang-en">Sometimes the greedy solution is already good</h2>
       <p class="lang lang-en">
-        In many normal jobs, a good greedy solution is already hard to improve. So we should not expect meaningful savings every time. The goal is to keep finding opportunities that the fast greedy method sometimes misses.
+        In many normal jobs, a good greedy solution is already hard to improve. So we should not expect meaningful savings every time. The goal is to keep finding opportunities that the fast greedy method misses.
       </p>
       <p class="lang lang-en">
         Suppose the greedy solution uses 20 bars. Then the calculator also proves that 20 is the minimum. The cutting plan does not change, but now we know there is no hidden better solution.
       </p>
       <p class="lang lang-en">
-        The calculator can quickly find a better plan, but it may need more time to prove that there is no even better solution. If the calculation stops before the proof is complete, the best plan found is still valid and ready for production. More calculation time only gives it more time to return the plan with full certainty that it is optimal.
+        The calculator can also quickly find a better plan, but it may need more time to prove that there is no even better solution. If the calculation stops before the proof is complete, the best plan found is still valid and ready for production. More calculation time only gives it more time to return the plan with full certainty that it is optimal.
       </p>
 
       <h2 class="lang lang-he" dir="rtl" style="display:none;">לפעמים הפתרון החמדן כבר טוב</h2>
@@ -211,7 +211,7 @@
 
       <h2 class="lang lang-en">That is why we start with a greedy solution</h2>
       <p class="lang lang-en">
-        That is why our principle is not: either prove the perfect solution, or return nothing.
+        Our principle is not: either prove the perfect solution, or return nothing.
       </p>
       <p class="lang lang-en">
         First, we create a complete greedy cutting plan. Then we look for better complete plans and continue working toward proof of the best result until the available calculation time ends.
