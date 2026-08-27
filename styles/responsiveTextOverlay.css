@@ -46,5 +46,4 @@
 #contact {
 top: 340vw; /* Adjust as needed */
 width: 35%;
-z-index: 100; /* Keep contact controls above overlapping absolute-positioned sections */
 }
