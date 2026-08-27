@@ -233,6 +233,9 @@
 
     "batch.description": "Global result across all nesting groups.",
     "batch.required": "{quantity} required",
+      "batch.totalBarsToCut": "Total bars to cut",
+    "batch.requiredShort": "{quantity} required",
+    "batch.requiredMissing": "{required} required · {missing} missing",
     "batch.groupCount": "{count} nesting groups",
     "batch.consumedLength": "{length} of finished parts",
     "batch.offcutLength": "{length} offcut",
@@ -246,12 +249,14 @@
 
     "processing.title": "Optimizing your cutting plan",
     "processing.timeRemaining": "{time} of optimization time remaining.",
-    "processing.waitPrefix": "While you wait, you can read ",
+    "processing.timePrefix": "",
+    "processing.timeSuffix": "of optimization time remaining.",
+    "processing.waitPrefix": "Why wait? Read about ",
     "processing.methodologyLink": "how our nesting method works",
-    "processing.waitMiddle": " or re-review the ",
+    "processing.waitMiddle": ", or review the ",
     "processing.termsLink": "Terms of Use",
-    "processing.waitSuffix": ".",
-    "processing.limitPrefix": "We can only provide two minutes of optimization per batch in this free version. For longer runs to fully prove all nesting groups, or for full Tekla Structures integration, you can ",
+    "processing.waitSuffix": " again.",
+    "processing.limitPrefix": "We can only provide two minutes of optimization in this free version. For longer runs, or for full Tekla Structures integration, ",
     "processing.contactLink": "contact us",
     "processing.limitSuffix": ".",
     "processing.finishing": "Finishing calculation…",
@@ -270,6 +275,7 @@
     "optimization.optimalRange": "Optimal range",
     "optimization.optimal": "Optimal",
     "optimization.readyToUse": "Ready to use",
+    "optimization.improved": "Improved",
     "optimization.bestKnown": "Best Known",
     "optimization.optimalProven": "Best possible solution proven.",
     "optimization.bestKnownComplete": "A complete validated cutting plan was returned. Further optimization/proof was not completed.",
@@ -403,8 +409,10 @@
 
     "terms.agreementTitle": "Agreement to Terms of Use",
     "terms.before": "Before using this calculator, please read the Terms of Use.",
-    "terms.confirm": "By checking the box below and selecting Agree and Proceed, you confirm that you have read, understood, and agree to be bound by the Terms of Use governing your use of this calculator.",
-    "terms.checkbox": "I have read and agree to the Terms of Use.",
+    "terms.beforePrefix": "Before using this calculator, please read the ",
+    "terms.beforeSuffix": ".",
+    "terms.confirm": "Use of this calculator is subject to the Terms of Use. If you do not agree to them, do not use the calculator.",
+    "terms.checkbox": "I agree to the Terms of Use.",
     "terms.agree": "Agree and Proceed",
     "terms.loading": "Loading Terms of Use…",
     "terms.lastUpdated": "Last updated: {date}",
@@ -671,6 +679,9 @@
 
     "batch.description": "סיכום כולל של כל קבוצות החיתוך.",
     "batch.required": "סך מוטות לחיתוך {quantity}",
+      "batch.totalBarsToCut": "סה״כ לעבודת החיתוך",
+    "batch.requiredShort": "נדרשים {quantity}",
+    "batch.requiredMissing": "נדרשים {required} · חסרים {missing}",
     "batch.groupCount": "{count} קבוצות חיתוך",
     "batch.consumedLength": "אורך חלקים מוגמרים {length}",
     "batch.offcutLength": "שארית {length}",
@@ -684,12 +695,14 @@
 
     "processing.title": "מחשבים את תכנית החיתוך שלך",
     "processing.timeRemaining": "נותרו {time} דקות לחישוב.",
-    "processing.waitPrefix": "בזמן ההמתנה, אפשר לקרוא ",
+    "processing.timePrefix": "נותרו",
+    "processing.timeSuffix": "דקות לחישוב.",
+    "processing.waitPrefix": "למה לחכות? אפשר לקרוא ",
     "processing.methodologyLink": "איך שיטת הנסטינג שלנו עובדת",
-    "processing.waitMiddle": " או לעיין שוב ב־",
+    "processing.waitMiddle": ", או לעיין שוב ב־",
     "processing.termsLink": "תנאי השימוש",
     "processing.waitSuffix": ".",
-    "processing.limitPrefix": "אנו יכולים להקדיש רק עד שתי דקות לחישוב עבודת החיתוך בגרסה חינמית זו. להרצות ארוכות יותר לצורך הוכחה מלאה של כל קבוצות החיתוך, או לאינטגרציה מלאה עם Tekla Structures, אפשר ",
+    "processing.limitPrefix": "אנו יכולים להקדיש עד שתי דקות לחישוב עבודת החיתוך בגרסה החינמית. לחישובים ארוכים יותר, או לאינטגרציה מלאה עם Tekla Structures, אפשר ",
     "processing.contactLink": "ליצור איתנו קשר",
     "processing.limitSuffix": ".",
     "processing.finishing": "מסיימים את החישוב…",
@@ -708,6 +721,7 @@
     "optimization.optimalRange": "טווח האופטימום",
     "optimization.optimal": "אופטימלי",
     "optimization.readyToUse": "מוכן לשימוש",
+    "optimization.improved": "נמצא שיפור",
     "optimization.bestKnown": "הפתרון הטוב ביותר שנמצא",
     "optimization.optimalProven": "הפתרון הטוב ביותר האפשרי הוכח.",
     "optimization.bestKnownComplete": "התקבלה תוכנית חיתוך מלאה ומאומתת. אופטימיזציה או הוכחה נוספת לא הושלמו.",
@@ -841,9 +855,11 @@
 
     "terms.agreementTitle": "הסכמה לתנאי השימוש",
     "terms.before": "לפני השימוש במחשבון, יש לקרוא את תנאי השימוש.",
-    "terms.confirm": "בסימון התיבה שלהלן ובלחיצה על אישור והמשך, אתם מאשרים שקראתם והבנתם את תנאי השימוש ושאתם מסכימים להיות כפופים להם בעת השימוש במחשבון.",
-    "terms.checkbox": "קראתי את תנאי השימוש ואני מסכים להם.",
-    "terms.agree": "אישור והמשך",
+    "terms.beforePrefix": "לפני השימוש במחשבון, יש לקרוא את ",
+    "terms.beforeSuffix": ".",
+    "terms.confirm": "השימוש במחשבון כפוף לתנאי השימוש. אם אינכם מסכימים להם, אין להשתמש במחשבון.",
+    "terms.checkbox": "אני מסכים לתנאי השימוש.",
+    "terms.agree": "הסכמה והמשך",
     "terms.loading": "טוען את תנאי השימוש…",
     "terms.lastUpdated": "עודכן לאחרונה: {date}",
     "terms.loadFailed": "לא ניתן לטעון את תנאי השימוש.",
@@ -1045,6 +1061,48 @@
     return `<span class="inline-number" dir="ltr">${escapeHtml(formatNumber(value, options, language))}</span>`;
   }
 
+  function summaryPercentageText(value, language = getLanguage()) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "—";
+    return `${formatNumber(Math.round(number), { maximumFractionDigits: 0 }, language)}%`;
+  }
+
+  function summaryLengthHtml(millimetres, language = getLanguage()) {
+    const raw = Number(millimetres);
+    if (!Number.isFinite(raw)) return "—";
+    const metres = Math.max(0, raw) / 1000;
+    if (metres < 100) {
+      return measurementHtml(metres, "m", { minimumFractionDigits: 2, maximumFractionDigits: 2 }, language);
+    }
+    if (metres < 1000) {
+      const rounded = Math.ceil((metres * 2) - 1e-9) / 2;
+      const whole = Number.isInteger(rounded);
+      return measurementHtml(rounded, "m", {
+        minimumFractionDigits: whole ? 0 : 1,
+        maximumFractionDigits: 1
+      }, language);
+    }
+    return measurementHtml(Math.round(metres), "m", { maximumFractionDigits: 0 }, language);
+  }
+
+  function summaryWeightHtml(tons, language = getLanguage()) {
+    const value = Number(tons);
+    if (!Number.isFinite(value)) return "—";
+    return measurementHtml(Math.round(value), "ton", { maximumFractionDigits: 0 }, language);
+  }
+
+  function summaryOrderSupportHtml(requiredValue, orderedValue, language = getLanguage()) {
+    const required = Math.max(0, Math.trunc(Number(requiredValue) || 0));
+    const ordered = Math.max(0, Math.trunc(Number(orderedValue) || 0));
+    if (required === ordered) return supportingTextHtml("batch.totalBarsToCut", {}, language);
+    const requiredHtml = inlineNumberHtml(required, { maximumFractionDigits: 0 }, language);
+    if (ordered > required) {
+      return supportingTextHtml("batch.requiredShort", { quantity: requiredHtml }, language);
+    }
+    const missingHtml = inlineNumberHtml(required - ordered, { maximumFractionDigits: 0 }, language);
+    return supportingTextHtml("batch.requiredMissing", { required: requiredHtml, missing: missingHtml }, language);
+  }
+
   function inlineValuesHtml(values, options = {}) {
     const items = (Array.isArray(values) ? values : [values]).filter(value => value != null && String(value).trim() !== "");
     const separator = options.separator == null ? "·" : String(options.separator);
@@ -1142,6 +1200,10 @@
     quantityText,
     quantityHtml,
     inlineNumberHtml,
+    summaryPercentageText,
+    summaryLengthHtml,
+    summaryWeightHtml,
+    summaryOrderSupportHtml,
     inlineValuesHtml,
     richText,
     supportingTextHtml,

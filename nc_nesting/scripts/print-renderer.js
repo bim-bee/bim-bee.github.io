@@ -288,7 +288,7 @@
   }
 
   function renderMetricCards(cards) {
-    return `<div class="print-metrics">${cards.map(([label, value, note]) => `<div class="print-metric"><small>${esc(label)}</small><strong>${value}</strong><span class="metric-support">${note}</span></div>`).join("")}</div>`;
+    return `<div class="print-metrics">${cards.map(([label, value, note]) => `<div class="print-metric"><small>${esc(label)}</small><strong>${value}</strong>${note ? `<span class="metric-support">${note}</span>` : ""}</div>`).join("")}</div>`;
   }
 
   function orderQuantityBreakdown(requiredValue, orderedValue) {
@@ -308,14 +308,14 @@
     const totals = batchTotals(batchResult, hasCost);
     const completeWeight = groups.length > 0 && groups.every(group => group.weightTon != null && Number.isFinite(Number(group.weightTon)));
     const cards = [
-      [t("common.stockOrderQuantity"), I18N.inlineNumberHtml(totals.ordered, { maximumFractionDigits: 0 }, printLanguage), I18N.supportingTextHtml("batch.required", { quantity: I18N.inlineNumberHtml(totals.required, { maximumFractionDigits: 0 }, printLanguage) }, printLanguage)],
-      [t("common.utilization"), bdi(percentText(NcNestingUtilization.optimisticPercentage(totals.part, totals.waste))), I18N.supportingTextHtml("batch.consumedLength", { length: metres(totals.part) }, printLanguage)],
-      [t("common.waste"), bdi(percentText(NcNestingUtilization.optimisticWastePercentage(totals.part, totals.waste))), I18N.supportingTextHtml("batch.offcutLength", { length: metres(totals.waste) }, printLanguage)]
+      [t("common.stockOrderQuantity"), I18N.inlineNumberHtml(totals.ordered, { maximumFractionDigits: 0 }, printLanguage), I18N.summaryOrderSupportHtml(totals.required, totals.ordered, printLanguage)],
+      [t("common.utilization"), bdi(I18N.summaryPercentageText(NcNestingUtilization.optimisticPercentage(totals.part, totals.waste), printLanguage)), I18N.supportingTextHtml("batch.consumedLength", { length: I18N.summaryLengthHtml(totals.part, printLanguage) }, printLanguage)],
+      [t("common.waste"), bdi(I18N.summaryPercentageText(NcNestingUtilization.optimisticWastePercentage(totals.part, totals.waste), printLanguage)), I18N.supportingTextHtml("batch.offcutLength", { length: I18N.summaryLengthHtml(totals.waste, printLanguage) }, printLanguage)]
     ];
-    if (completeWeight) cards.push([t("common.batchWeight"), ton(totals.weight), I18N.supportingTextHtml("batch.groupCount", { count: I18N.inlineNumberHtml(groups.length, { maximumFractionDigits: 0 }, printLanguage) }, printLanguage)]);
+    if (completeWeight) cards.push([t("common.batchWeight"), I18N.summaryWeightHtml(totals.weight, printLanguage), I18N.supportingTextHtml("batch.groupCount", { count: I18N.inlineNumberHtml(groups.length, { maximumFractionDigits: 0 }, printLanguage) }, printLanguage)]);
     cards.push(
-      [t("common.storageStockShare"), bdi(percentText(percent(totals.storage, totals.stock))), I18N.supportingTextHtml("batch.storageLength", { length: metres(totals.storage) }, printLanguage)],
-      [t("common.reusableReturned"), bdi(percentText(percent(totals.reusable, totals.stock))), I18N.supportingTextHtml("batch.reusableLength", { length: metres(totals.reusable) }, printLanguage)]
+      [t("common.storageStockShare"), bdi(I18N.summaryPercentageText(percent(totals.storage, totals.stock), printLanguage)), I18N.supportingTextHtml("batch.storageLength", { length: I18N.summaryLengthHtml(totals.storage, printLanguage) }, printLanguage)],
+      [t("common.reusableReturned"), bdi(I18N.summaryPercentageText(percent(totals.reusable, totals.stock), printLanguage)), I18N.supportingTextHtml("batch.reusableLength", { length: I18N.summaryLengthHtml(totals.reusable, printLanguage) }, printLanguage)]
     );
 
     const headers = [t("common.nestingGroup"), t("common.length"), t("common.utilization"), t("common.waste"), t("common.weight")];
@@ -462,11 +462,7 @@
       case "StartTrim":
       case "EndTrim": return 1;
       case "ReusableOffcut":
-      case "NonReusableOffcut": {
-        const minimumVisibleWeight = 180;
-        const partPriorityCap = partVisualTotal > 0 ? Math.max(minimumVisibleWeight, partVisualTotal * .8) : length;
-        return Math.min(Math.max(length, minimumVisibleWeight), partPriorityCap);
-      }
+      case "NonReusableOffcut": return length;
       case "Part": return Math.max(length, 1100);
       case "ToolCut": return 1;
       default: return length;
@@ -497,24 +493,10 @@
       .filter(segment => segment.type === "Part")
       .reduce((sum, segment) => sum + printSegmentWeight(segment), 0);
     const markup = [];
-    for (let index = 0; index < segments.length; index++) {
-      const segment = segments[index];
-      const next = segments[index + 1];
-      if (segment.type === "ToolCut" && ["ReusableOffcut", "NonReusableOffcut"].includes(next?.type)) {
-        const [label, className] = segmentLabel(next);
-        const rawRemainder = Math.max(0, finite(segment.length)) + Math.max(0, finite(next.length));
-        if (rawRemainder > 0) {
-          const flexWeight = printSegmentWeight(next, partVisualTotal);
-          const title = `${label} ${mmText(next.length)}; ${t("common.toolCut")} ${mmText(segment.length)}`;
-          const text = printOffcutContent(next, label);
-          const kerf = finite(segment.length) > 0 ? `<i class="print-terminal-kerf" aria-hidden="true"></i>` : "";
-          markup.push(`<div class="print-segment trailing-remainder ${className}" style="flex-grow:${flexWeight};flex-basis:0" title="${esc(title)}" aria-label="${esc(title)}">${kerf}${text}</div>`);
-        }
-        index++;
-        continue;
-      }
-
+    for (const segment of segments) {
       if (segment.type === "ToolCut" && !(finite(segment.length) > 0)) continue;
+      if (["ReusableOffcut", "NonReusableOffcut"].includes(segment.type) && !(finite(segment.length) > 0)) continue;
+
       const [label, className] = segmentLabel(segment);
       const flexWeight = printSegmentWeight(segment, partVisualTotal);
       const title = `${label || t("common.toolCut")} ${mmText(segment.length)}`;
@@ -647,10 +629,10 @@
     const summaryHeading = `${profileName} · ${steelGrade} · ${t("page.cutPlanSummary")}`;
     const diagramHeading = `${profileName} · ${steelGrade} · ${t("page.cuttingPlanDiagram")}`;
     const metrics = [
-      [t("common.utilization"), bdi(percentText(NcNestingUtilization.optimisticPercentage(totals.part, totals.offcut))), I18N.supportingTextHtml("plan.includesParts", { length: mm(totals.part) }, printLanguage)],
-      [t("common.totalOffcut"), bdi(percentText(NcNestingUtilization.optimisticWastePercentage(totals.part, totals.offcut))), I18N.supportingTextHtml("plan.totalOffcutNote", { length: mm(totals.offcut) }, printLanguage)],
-      [t("common.storageStockShare"), bdi(percentText(percent(totals.storage, totals.stock))), I18N.supportingTextHtml("plan.consumedStorageNote", { length: mm(totals.storage) }, printLanguage)],
-      [t("common.reusableReturned"), bdi(percentText(percent(totals.reusable, totals.stock))), I18N.supportingTextHtml("plan.reusableNote", { length: mm(totals.reusable) }, printLanguage)]
+      [t("common.utilization"), bdi(I18N.summaryPercentageText(NcNestingUtilization.optimisticPercentage(totals.part, totals.offcut), printLanguage)), I18N.supportingTextHtml("plan.includesParts", { length: I18N.summaryLengthHtml(totals.part, printLanguage) }, printLanguage)],
+      [t("common.totalOffcut"), bdi(I18N.summaryPercentageText(NcNestingUtilization.optimisticWastePercentage(totals.part, totals.offcut), printLanguage)), I18N.supportingTextHtml("plan.totalOffcutNote", { length: I18N.summaryLengthHtml(totals.offcut, printLanguage) }, printLanguage)],
+      [t("common.storageStockShare"), bdi(I18N.summaryPercentageText(percent(totals.storage, totals.stock), printLanguage)), I18N.supportingTextHtml("plan.consumedStorageNote", { length: I18N.summaryLengthHtml(totals.storage, printLanguage) }, printLanguage)],
+      [t("common.reusableReturned"), bdi(I18N.summaryPercentageText(percent(totals.reusable, totals.stock), printLanguage)), I18N.supportingTextHtml("plan.reusableNote", { length: I18N.summaryLengthHtml(totals.reusable, printLanguage) }, printLanguage)]
     ];
     const wasteRows = Layouts.aggregateWasteRows(layouts).map(row => [
       `<span dir="auto">${esc(wasteSourceText(row))}</span>`,

@@ -506,10 +506,10 @@
     const storageLength = finiteNumber(data.totals.totalStorageStockLengthConsumed);
     const reusableReturned = finiteNumber(data.totals.totalReusableOffcutLength);
     const metrics = [
-      [t("common.utilization"), pct(NcNestingUtilization.optimisticPercentage(totalPart, totalOffcut)), I18N.supportingTextHtml("plan.includesParts", { length: mm(totalPart) })],
-      [t("common.totalOffcut"), pct(NcNestingUtilization.optimisticWastePercentage(totalPart, totalOffcut)), I18N.supportingTextHtml("plan.totalOffcutNote", { length: mm(totalOffcut) })],
-      [t("common.storageStockShare"), pct(percentage(storageLength, totalStock)), I18N.supportingTextHtml("plan.consumedStorageNote", { length: mm(storageLength) })],
-      [t("common.reusableReturnedToStorage"), pct(percentage(reusableReturned, totalStock)), I18N.supportingTextHtml("plan.reusableNote", { length: mm(reusableReturned) })]
+      [t("common.utilization"), I18N.summaryPercentageText(NcNestingUtilization.optimisticPercentage(totalPart, totalOffcut)), I18N.supportingTextHtml("plan.includesParts", { length: I18N.summaryLengthHtml(totalPart) })],
+      [t("common.totalOffcut"), I18N.summaryPercentageText(NcNestingUtilization.optimisticWastePercentage(totalPart, totalOffcut)), I18N.supportingTextHtml("plan.totalOffcutNote", { length: I18N.summaryLengthHtml(totalOffcut) })],
+      [t("common.storageStockShare"), I18N.summaryPercentageText(percentage(storageLength, totalStock)), I18N.supportingTextHtml("plan.consumedStorageNote", { length: I18N.summaryLengthHtml(storageLength) })],
+      [t("common.reusableReturnedToStorage"), I18N.summaryPercentageText(percentage(reusableReturned, totalStock)), I18N.supportingTextHtml("plan.reusableNote", { length: I18N.summaryLengthHtml(reusableReturned) })]
     ];
     document.getElementById("summary").innerHTML = metrics.map(([label, percentValue, note]) => `
       <div class="metric"><div class="metric-label">${escapeHtml(label)}</div><div class="metric-percent" dir="ltr">${escapeHtml(percentValue)}</div><div class="metric-length">${note}</div></div>
@@ -544,6 +544,7 @@
 
   function segmentMarkup(segment) {
     if (segment.type === SEGMENT.TOOL_CUT && !(segment.length > 0)) return "";
+    if (isOffcut(segment.type) && !(segment.length > 0)) return "";
     const presentation = segmentPresentation(segment);
     const title = `${presentation.title}: ${mmText(segment.length)}`;
     let content = "";
@@ -564,25 +565,7 @@
   }
 
   function barSegmentsMarkup(segments) {
-    const markup = [];
-    for (let index = 0; index < segments.length; index++) {
-      const segment = segments[index];
-      const offcut = segments[index + 1];
-      if (segment.type === SEGMENT.TOOL_CUT && isOffcut(offcut?.type)) {
-        const presentation = segmentPresentation(offcut);
-        const rawRemainder = segment.length + offcut.length;
-        if (rawRemainder > 0) {
-          const title = `${presentation.title}: ${mmText(offcut.length)}; ${t("common.toolWidthCut")}: ${mmText(segment.length)}`;
-          const content = offcutSegmentContent(offcut, presentation);
-          const kerf = segment.length > 0 ? `<span class="terminal-kerf" aria-hidden="true"></span>` : "";
-          markup.push(`<div class="segment trailing-remainder ${presentation.className}" style="--segment-length:${rawRemainder}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}">${kerf}${content}</div>`);
-        }
-        index++;
-        continue;
-      }
-      markup.push(segmentMarkup(segment));
-    }
-    return markup.join("");
+    return segments.map(segmentMarkup).join("");
   }
 
   function layoutDisplayName(layout) {

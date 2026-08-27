@@ -659,10 +659,25 @@
 
 .solve-processing-status {
     margin: clamp(18px, 3vw, 24px) 0 clamp(20px, 3vw, 26px);
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: .25em;
+    font-size: clamp(16px, 1.65vw, 18px);
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.solve-processing-time {
     font-size: clamp(31px, 4.4vw, 40px);
     font-weight: 850;
     line-height: 1.08;
     letter-spacing: -.02em;
+    white-space: nowrap;
+}
+
+.solve-processing-context:empty {
+    display: none;
 }
 
 .solve-processing-links,
@@ -747,6 +762,10 @@ html[dir="rtl"] .solve-processing-dialog {
 
   .solve-processing-status {
     margin: 16px 0 19px;
+    font-size: 15.5px;
+  }
+
+  .solve-processing-time {
     font-size: clamp(28px, 9vw, 34px);
   }
 

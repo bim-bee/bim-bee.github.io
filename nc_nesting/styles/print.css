@@ -277,7 +277,7 @@ tfoot td {
 
 .print-segment.reusable,
 .print-segment.non-reusable {
-  min-width: 2.5mm;
+  min-width: 0;
 }
 
 .print-segment.tool-cut {
@@ -327,9 +327,14 @@ tfoot td {
   background-color: #fff;
   background-image: repeating-linear-gradient(-45deg, transparent 0, transparent 1.5mm, #666 1.5mm, #666 1.9mm);
 }
-.print-segment.trim > span,
-.print-segment.reusable > span,
-.print-segment.non-reusable > span {
+.print-segment.reusable > .print-offcut-label,
+.print-segment.non-reusable > .print-offcut-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: auto;
+  max-width: calc(100% - 1mm);
+  padding: .35mm .75mm !important;
   background: rgba(255, 255, 255, .88);
   border-radius: .7mm;
 }
@@ -362,7 +367,7 @@ tfoot td {
 }
 
 .print-offcut-label {
-  width: 100%;
+  width: auto;
   padding-inline: .35mm !important;
 }
 
@@ -533,22 +538,4 @@ html[dir="rtl"] .measurement { flex-direction: row-reverse; }
 .print-segment.start-trim.has-boundary-kerf::after { right: 0; }
 .print-segment.end-trim.has-boundary-kerf::before { left: 0; }
 
-/* Keep the terminal kerf visually inside the raw trailing-remainder region.
-   The printed offcut value is still the net surviving offcut only. */
-.print-segment.trailing-remainder { position: relative; }
-.print-segment.trailing-remainder span { position: relative; z-index: 1; }
-.print-terminal-kerf {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: var(--print-kerf-display-width);
-  max-width: 100%;
-  background: #000;
-  z-index: 0;
-}
-.print-segment.trailing-remainder .print-offcut-label {
-  width: calc(100% - var(--print-kerf-display-width));
-  max-width: calc(100% - var(--print-kerf-display-width));
-  margin-left: var(--print-kerf-display-width);
-}
+

@@ -159,8 +159,15 @@
   function writeLanguage(storageKey, language) {
     try {
       window.localStorage.setItem(storageKey, language);
+      // Keep the main BIMbee/BIMblog language preference aligned with NC Nesting.
+      window.localStorage.setItem('preferredLanguage', language);
     } catch {
       // Language still applies for the current page when storage is unavailable.
+    }
+    try {
+      document.cookie = `preferredLanguage=${encodeURIComponent(language)};path=/;max-age=31536000`;
+    } catch {
+      // Cookie persistence is optional; the current page language still applies.
     }
   }
 

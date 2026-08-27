@@ -1,80 +1,83 @@
 # Terms of Use
 
+**Last updated: August 27, 2026**
 
 ## 1. The Service
 
-These Terms of Use apply to the nesting and cutting-stock calculator provided by BIMbee, including its calculations, layouts, recommendations, visual outputs, and related information.
+These Terms of Use apply to the cutting-planning and material-optimization calculator provided by BIMbee, including its calculations, layouts, recommendations, visual outputs, and related information.
 
 ## 2. Acceptance of the Terms
 
-By using the calculator, you confirm that you have read and agree to these Terms of Use.
+Use of the calculator is subject to these Terms. Before using the calculator, you must agree to these Terms of Use.
 
-If you do not agree to these terms, do not use the calculator.
+If you do not agree to these Terms, do not use the calculator.
 
 ## 3. Permitted Use
 
-BIMbee grants you a limited, personal, non-exclusive, and non-transferable right to use the calculator.
+BIMbee grants you a limited, non-exclusive, and non-transferable right to use the calculator.
 
-You may not copy, modify, distribute, reverse engineer, resell, or create derivative works from the calculator or its source code without prior written permission.
+You may not copy, modify, distribute, resell, reverse engineer, or create derivative works from the calculator or its source code without BIMbee's prior written permission.
 
 ## 4. User Responsibility
 
-The calculator is provided as a planning and estimation tool only.
+The calculator is provided as a planning and estimation tool.
 
-You are solely responsible for checking all inputs and outputs, including:
+You are responsible for checking the input data, calculation results, and their suitability for your actual working conditions, including:
 
-* Measurements and dimensions
-* Material sizes and quantities
+* Measurements and quantities
+* Material types and sizes
 * Cutting layouts
-* Waste calculations
+* Waste and offcut calculations
 * Costs
 * Machine limitations
-* Cutting tolerances and kerf
+* Tolerances, cutting width, and saw kerf
 * Safety requirements
 
-You must independently verify the results before purchasing materials, cutting, manufacturing, pricing work, or making any business or technical decision.
+You must independently verify the results before purchasing materials, cutting, manufacturing, pricing work, or making any business or technical decision based on them.
 
-## 5. Accuracy and Results
+## 5. Calculation Results
 
-BIMbee does not guarantee that the calculator’s results will be accurate, complete, error-free, or optimal.
+You are responsible for checking the calculator's results and for any reliance on them.
 
-Different settings, machines, materials, tolerances, or calculation methods may produce different results.
+The calculator produces results based on the data and settings entered into it and on calculation assumptions that may not suit every working method.
 
-Information explaining the calculator’s method and assumptions may be available through linked articles or documentation.
+Changes in measurements, materials, tolerances, cutting width, machinery, or working conditions may affect the actual result.
 
 ## 6. No Professional Advice
 
 The calculator does not provide engineering, manufacturing, safety, financial, or other professional advice.
 
-Use of the calculator does not create a professional, consulting, or contractual relationship between you and BIMbee.
+Use of the calculator does not create a consulting or other professional relationship between you and BIMbee.
 
-## 7. Disclaimer of Warranties
+## 7. Availability and Suitability
 
-The calculator is provided free of charge and **“as is”** and **“as available,”** without warranties of any kind, whether express or implied.
+The calculator is provided in its current form and subject to availability.
 
-BIMbee does not guarantee that the calculator will always be available, secure, compatible with your equipment, or suitable for a particular purpose.
+BIMbee does not guarantee continuous availability of the calculator or its suitability for any particular equipment, machine, material, or purpose.
 
 ## 8. Limitation of Liability
 
-To the maximum extent permitted by Israeli law, BIMbee will not be responsible for any direct or indirect loss, damage, cost, material waste, production error, loss of profit, business interruption, or other claim resulting from the use of, or reliance on, the calculator.
+Subject to applicable law, use of the calculator and its results, including the decision of how to apply those results in practice, is the user's responsibility.
 
-Nothing in these Terms excludes liability that cannot legally be excluded under applicable law.
+BIMbee will not be liable for damage, loss, or expense arising from use of the calculator or reliance on its results, including material waste, production errors, loss of profit, or business interruption.
 
 ## 9. Intellectual Property
 
-All intellectual-property rights relating to the calculator, including its source code, design, branding, text, and original content, belong to BIMbee unless stated otherwise.
+All intellectual-property rights in the calculator and its original content, including its source code, design, branding, and text, belong to BIMbee unless stated otherwise.
 
-## 10. Changes and Availability
+Nothing in this section limits the user's use, in the course of their work, of results and layouts generated for them by the calculator.
 
-BIMbee may modify, suspend, restrict, or discontinue the calculator at any time.
+## 10. Changes and Service Availability
 
-These Terms may also be updated from time to time. The updated version will be published on this page with a revised update date.
+BIMbee may modify, update, restrict, suspend, or discontinue the calculator from time to time.
+
+These Terms may be updated from time to time. The updated version will be published with a new revision date, and after the Terms are updated you will be required to accept the updated Terms before continuing to use the calculator.
 
 ## 11. Governing Law and Jurisdiction
 
-These Terms are governed by the laws of the State of Israel.
+These Terms and use of the calculator are governed by the laws of the State of Israel.
 
-The courts with jurisdiction in the Tel Aviv–Jaffa District will have exclusive jurisdiction over disputes relating to these Terms or the calculator.
+Any dispute relating to these Terms or the calculator will be heard by a court of competent jurisdiction in accordance with applicable law.
 
 ## 12. Contact
 

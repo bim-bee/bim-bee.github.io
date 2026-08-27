@@ -6,8 +6,28 @@
   const isLocalPreview = currentHostname === "localhost" || currentHostname === "127.0.0.1";
   const searchParams = new URLSearchParams(window.location.search);
   const querySolveUrl = String(searchParams.get("solveUrl") || "").trim();
-  const methodologyUrl = "https://bim-bee.github.io/BIMBlog/posts/nesting-optimization.html";
+  const methodologyUrls = Object.freeze({
+    en: "https://bim-bee.github.io/BIMBlog/posts/nesting-optimization.html",
+    he: "https://bim-bee.github.io/BIMBlog/posts/nesting-optimization.html"
+  });
+  const methodologyLanguage = language => String(language || "").toLowerCase() === "he" ? "he" : "en";
+  const methodologyUrlForLanguage = language => methodologyUrls[methodologyLanguage(language)];
+  const prepareMethodologyLanguage = language => {
+    const normalized = methodologyLanguage(language);
+    // The BIMblog article is bilingual and uses this shared same-origin preference.
+    // Setting it before navigation opens the article in the calculator's language.
+    try { localStorage.setItem("preferredLanguage", normalized); } catch {}
+    try { document.cookie = `preferredLanguage=${encodeURIComponent(normalized)};path=/;max-age=31536000`; } catch {}
+    return normalized;
+  };
+  const methodologyUrl = methodologyUrlForLanguage("en");
   const contactUrl = new URL("../index.html#contact", window.location.href).href;
+
+  document.addEventListener("click", event => {
+    const link = event.target?.closest?.("a[data-nc-methodology-link]");
+    if (!link) return;
+    prepareMethodologyLanguage(link.dataset.methodologyLanguage || window.NCNestingI18n?.getLanguage?.() || document.documentElement.lang);
+  });
 
   // DEV/QA feature. Set to false for the production UI.
   // When enabled, only genuinely improved cut plans redirect the existing greedy-methodology link
@@ -68,6 +88,9 @@
     productionSolveUrl,
     localSolveUrl,
     methodologyUrl,
+    methodologyUrls,
+    methodologyUrlForLanguage,
+    prepareMethodologyLanguage,
     contactUrl,
     featureFlags,
     requestTimeoutMs: 150000,

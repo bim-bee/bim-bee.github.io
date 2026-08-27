@@ -98,9 +98,13 @@
   <dialog id="solveProcessingDialog" class="solve-processing-dialog" aria-labelledby="solveProcessingTitle">
     <div class="solve-processing-content">
       <h2 id="solveProcessingTitle" data-i18n="processing.title">Optimizing your cutting plan</h2>
-      <div id="solveProcessingStatus" class="solve-processing-status" aria-live="polite"></div>
-      <p class="solve-processing-links"><span data-i18n="processing.waitPrefix">While you wait, you can read </span><a id="solveMethodologyLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="processing.methodologyLink">how our nesting method works</a><span data-i18n="processing.waitMiddle"> or re-review the </span><a id="solveTermsLink" href="terms.html" target="_blank" rel="noopener noreferrer" data-i18n="processing.termsLink">Terms of Use</a><span data-i18n="processing.waitSuffix">.</span></p>
-      <p class="solve-processing-limit"><span data-i18n="processing.limitPrefix">We can only provide two minutes of optimization per batch in this free version. For longer runs to fully prove all nesting groups, or for full Tekla Structures integration, you can </span><a id="solveContactLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="processing.contactLink">contact us</a><span data-i18n="processing.limitSuffix">.</span></p>
+      <div id="solveProcessingStatus" class="solve-processing-status" aria-live="polite">
+        <span id="solveProcessingTimePrefix" class="solve-processing-context"></span>
+        <bdi id="solveProcessingTime" class="solve-processing-time" dir="ltr"></bdi>
+        <span id="solveProcessingTimeSuffix" class="solve-processing-context"></span>
+      </div>
+      <p class="solve-processing-links"><span data-i18n="processing.waitPrefix">Why wait? Read about </span><a id="solveMethodologyLink" href="#" target="_blank" rel="noopener noreferrer" data-nc-methodology-link data-i18n="processing.methodologyLink">how our nesting method works</a><span data-i18n="processing.waitMiddle">, or review the </span><a id="solveTermsLink" href="terms.html" target="_blank" rel="noopener noreferrer" data-i18n="processing.termsLink">Terms of Use</a><span data-i18n="processing.waitSuffix"> again.</span></p>
+      <p class="solve-processing-limit"><span data-i18n="processing.limitPrefix">We can only provide two minutes of optimization in this free version. For longer runs, or for full Tekla Structures integration, </span><a id="solveContactLink" href="#" target="_blank" rel="noopener noreferrer" data-i18n="processing.contactLink">contact us</a><span data-i18n="processing.limitSuffix">.</span></p>
     </div>
   </dialog>
 
@@ -115,7 +119,7 @@
   <dialog id="termsDialog" class="terms-dialog" aria-labelledby="termsDialogTitle">
     <div class="dialog-head"><strong id="termsDialogTitle" data-i18n="terms.agreementTitle">Agreement to Terms of Use</strong><button id="termsCloseButton" type="button" data-i18n="action.close">Close</button></div>
     <div class="dialog-body terms-dialog-body">
-      <p><span data-i18n="terms.before">Before using this calculator, please read the Terms of Use.</span> <a href="terms.html" target="_blank" rel="noopener noreferrer" data-open-terms data-i18n="action.terms">Terms of Use</a></p>
+      <p><span data-i18n="terms.beforePrefix">Before using this calculator, please read the </span><a href="terms.html" target="_blank" rel="noopener noreferrer" data-open-terms data-i18n="action.terms">Terms of Use</a><span data-i18n="terms.beforeSuffix">.</span></p>
       <p data-i18n="terms.confirm">By checking the box below and selecting Agree and Proceed, you confirm that you have read, understood, and agree to be bound by the Terms of Use governing your use of this calculator.</p>
       <label class="terms-agreement" for="termsAgreementCheckbox"><input id="termsAgreementCheckbox" type="checkbox"><span data-i18n="terms.checkbox">I have read and agree to the Terms of Use.</span></label>
       <div class="terms-dialog-actions"><button id="termsAgreeButton" class="primary" type="button" disabled data-i18n="terms.agree">Agree and Proceed</button></div>

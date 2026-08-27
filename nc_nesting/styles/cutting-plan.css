@@ -208,6 +208,10 @@
       container-type: inline-size;
     }
 
+    .segment.offcut {
+      min-width: 0;
+    }
+
     .segment:last-child { border-right: 0; }
 
     .segment-label {
@@ -660,6 +664,11 @@ main table input {
   background: #eaf7ef;
 }
 
+.optimization-status-improved {
+  color: #6b2f91;
+  background: #f3e8ff;
+}
+
 .optimization-status-bestknown {
   color: #5f6875;
   background: #f1f3f5;
@@ -738,28 +747,4 @@ main table input {
 .segment.start-trim.has-boundary-kerf::after { right: 0; }
 .segment.end-trim.has-boundary-kerf::before { left: 0; }
 
-/* The final separation kerf is drawn inside the raw trailing remainder. Its
-   visual thickness is fixed by the same bar-level variable as every other cut;
-   the displayed offcut measurement remains the net surviving offcut. */
-.segment.trailing-remainder {
-  position: relative;
-  min-width: 38px;
-}
-.segment.trailing-remainder .terminal-kerf {
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  width: var(--kerf-display-width);
-  max-width: 100%;
-  background: var(--tool-cut);
-  z-index: 0;
-}
-.segment.trailing-remainder .segment-label {
-  position: relative;
-  z-index: 1;
-}
-.segment.trailing-remainder .offcut-label {
-  width: calc(100% - var(--kerf-display-width));
-  max-width: calc(100% - var(--kerf-display-width));
-  margin-left: var(--kerf-display-width);
-}
+

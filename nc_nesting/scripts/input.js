@@ -1908,13 +1908,20 @@
   function updateSolveProcessingPopup() {
     const dialog = document.getElementById("solveProcessingDialog");
     const status = document.getElementById("solveProcessingStatus");
-    if (!dialog || !status) return;
+    const timePrefix = document.getElementById("solveProcessingTimePrefix");
+    const timeValue = document.getElementById("solveProcessingTime");
+    const timeSuffix = document.getElementById("solveProcessingTimeSuffix");
+    if (!dialog || !status || !timePrefix || !timeValue || !timeSuffix) return;
 
     I18N.apply(dialog);
+    const language = I18N.getLanguage();
     const methodologyLink = document.getElementById("solveMethodologyLink");
     const termsLink = document.getElementById("solveTermsLink");
     const contactLink = document.getElementById("solveContactLink");
-    if (methodologyLink) methodologyLink.href = String(NcNestingConfig?.methodologyUrl || "#");
+    if (methodologyLink) {
+      methodologyLink.href = String(NcNestingConfig?.methodologyUrlForLanguage?.(language) || NcNestingConfig?.methodologyUrl || "#");
+      methodologyLink.dataset.methodologyLanguage = language;
+    }
     if (termsLink) termsLink.href = NcNestingTerms?.termsUrl?.() || "terms.html";
     if (contactLink) contactLink.href = String(NcNestingConfig?.contactUrl || "#");
 
@@ -1922,9 +1929,22 @@
       ? 0
       : Math.floor(Math.max(0, Date.now() - solveProcessingStartedAt) / 1000);
     const remainingSeconds = Math.max(0, SOLVE_PROCESSING_SECONDS - elapsedSeconds);
-    status.textContent = remainingSeconds > 0
-      ? t("processing.timeRemaining", { time: solveProcessingClock(remainingSeconds) })
-      : t("processing.finishing");
+
+    if (remainingSeconds > 0) {
+      timePrefix.textContent = t("processing.timePrefix");
+      timeValue.textContent = solveProcessingClock(remainingSeconds);
+      timeSuffix.textContent = t("processing.timeSuffix");
+      timePrefix.hidden = false;
+      timeValue.hidden = false;
+      timeSuffix.hidden = false;
+    } else {
+      timePrefix.textContent = t("processing.finishing");
+      timeValue.textContent = "";
+      timeSuffix.textContent = "";
+      timePrefix.hidden = false;
+      timeValue.hidden = true;
+      timeSuffix.hidden = true;
+    }
 
     if (remainingSeconds === 0 && solveProcessingTimer != null) {
       clearInterval(solveProcessingTimer);

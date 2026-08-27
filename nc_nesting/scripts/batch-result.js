@@ -221,18 +221,19 @@
 
   function renderSummary() {
     const total = totals();
+    const orderSupport = I18N.summaryOrderSupportHtml(total.quantity, total.order);
     const cards = [
-      [t("common.stockOrderQuantity"), I18N.inlineNumberHtml(total.order, { maximumFractionDigits: 0 }), I18N.supportingTextHtml("batch.required", { quantity: I18N.inlineNumberHtml(total.quantity, { maximumFractionDigits: 0 }) })],
-      [t("common.utilization"), `<bdi dir="ltr">${esc(d(NcNestingUtilization.optimisticPercentage(total.part, total.waste)))}%</bdi>`, I18N.supportingTextHtml("batch.consumedLength", { length: len(total.part) })],
-      [t("common.waste"), `<bdi dir="ltr">${esc(d(NcNestingUtilization.optimisticWastePercentage(total.part, total.waste)))}%</bdi>`, I18N.supportingTextHtml("batch.offcutLength", { length: len(total.waste) })]
+      [t("common.stockOrderQuantity"), I18N.inlineNumberHtml(total.order, { maximumFractionDigits: 0 }), orderSupport],
+      [t("common.utilization"), `<bdi dir="ltr">${esc(I18N.summaryPercentageText(NcNestingUtilization.optimisticPercentage(total.part, total.waste)))}</bdi>`, I18N.supportingTextHtml("batch.consumedLength", { length: I18N.summaryLengthHtml(total.part) })],
+      [t("common.waste"), `<bdi dir="ltr">${esc(I18N.summaryPercentageText(NcNestingUtilization.optimisticWastePercentage(total.part, total.waste)))}</bdi>`, I18N.supportingTextHtml("batch.offcutLength", { length: I18N.summaryLengthHtml(total.waste) })]
     ];
-    if (hasCompleteWeight) cards.push([t("common.batchWeight"), ton(total.weight), I18N.supportingTextHtml("batch.groupCount", { count: I18N.inlineNumberHtml(data.groups.length, { maximumFractionDigits: 0 }) })]);
+    if (hasCompleteWeight) cards.push([t("common.batchWeight"), I18N.summaryWeightHtml(total.weight), I18N.supportingTextHtml("batch.groupCount", { count: I18N.inlineNumberHtml(data.groups.length, { maximumFractionDigits: 0 }) })]);
     cards.push(
-      [t("common.storageStockShare"), `<bdi dir="ltr">${esc(d(pct(total.storageLength, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.storageLength", { length: len(total.storageLength) })],
-      [t("common.reusableReturned"), `<bdi dir="ltr">${esc(d(pct(total.reusable, total.stock)))}%</bdi>`, I18N.supportingTextHtml("batch.reusableLength", { length: len(total.reusable) })]
+      [t("common.storageStockShare"), `<bdi dir="ltr">${esc(I18N.summaryPercentageText(pct(total.storageLength, total.stock)))}</bdi>`, I18N.supportingTextHtml("batch.storageLength", { length: I18N.summaryLengthHtml(total.storageLength) })],
+      [t("common.reusableReturned"), `<bdi dir="ltr">${esc(I18N.summaryPercentageText(pct(total.reusable, total.stock)))}</bdi>`, I18N.supportingTextHtml("batch.reusableLength", { length: I18N.summaryLengthHtml(total.reusable) })]
     );
     document.getElementById("summary").innerHTML = cards.map(card => `
-      <div class="metric"><small>${esc(card[0])}</small><b>${card[1]}</b><span class="metric-support">${card[2]}</span></div>
+      <div class="metric"><small>${esc(card[0])}</small><b>${card[1]}</b>${card[2] ? `<span class="metric-support">${card[2]}</span>` : ""}</div>
     `).join("");
   }
 

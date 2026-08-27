@@ -529,6 +529,11 @@ td.profile {
   background: #eaf7ef;
 }
 
+.profile .optimization-status-improved {
+  color: #6b2f91;
+  background: #f3e8ff;
+}
+
 .profile .optimization-status-bestknown {
   color: #5f6875;
   background: #f1f3f5;

@@ -48,7 +48,13 @@
       }
     );
 
-    const methodologyUrl = String(options?.href || globalThis.NcNestingConfig?.methodologyUrl || "").trim();
+    const language = options?.language || globalThis.NCNestingI18n?.getLanguage?.() || document.documentElement.lang || "en";
+    const methodologyUrl = String(
+      options?.href
+      || globalThis.NcNestingConfig?.methodologyUrlForLanguage?.(language)
+      || globalThis.NcNestingConfig?.methodologyUrl
+      || ""
+    ).trim();
     const escapedLabels = METHODOLOGY_LABELS
       .slice()
       .sort((left, right) => right.length - left.length)
@@ -60,7 +66,10 @@
       if (!isMethodologyLabel || !methodologyUrl) return escapeHtml(part);
       const label = escapeHtml(part);
       const forceNewTab = options?.forceNewTab ? ' data-nc-force-new-tab="true"' : '';
-      return `<a class="greedy-algorithm-link" href="${escapeHtml(methodologyUrl)}" target="_blank" rel="noopener noreferrer"${forceNewTab} title="${label}">${label}</a>`;
+      const methodologyAttributes = options?.href
+        ? ""
+        : ` data-nc-methodology-link data-methodology-language="${escapeHtml(language)}"`;
+      return `<a class="greedy-algorithm-link" href="${escapeHtml(methodologyUrl)}" target="_blank" rel="noopener noreferrer"${methodologyAttributes}${forceNewTab} title="${label}">${label}</a>`;
     }).join("");
 
     fixedMeasurements.forEach(({ value, unit }, index) => {
@@ -348,7 +357,11 @@
     const greedy = objectiveFromGreedy(greedyBaseline);
     const optimized = optimization.bestFeasibleObjective;
     const difference = greedy && optimized ? firstDifference(optimized, greedy) : null;
-    const isOptimal = status === "Optimal";
+    const comparison = greedy && optimized ? compare(optimized, greedy) : null;
+    const isOptimal = status === "Optimal"
+      || Boolean(optimization.provenOptimum)
+      || optimization.provenObjectiveCount === OBJECTIVE_FIELDS.length;
+    const isImproved = !isOptimal && comparison === -1;
     const headline = translate(isOptimal
       ? "optimization.message.optimalHeadline"
       : "optimization.message.bestKnownHeadline");
@@ -400,8 +413,9 @@
 
     return {
       status,
-      tone: isOptimal ? "optimal" : "bestknown",
-      statusLabel: translate(isOptimal ? "optimization.optimal" : "optimization.readyToUse"),
+      resultState: isOptimal ? "Optimal" : (isImproved ? "Improved" : "ReadyToUse"),
+      tone: isOptimal ? "optimal" : (isImproved ? "improved" : "bestknown"),
+      statusLabel: translate(isOptimal ? "optimization.optimal" : (isImproved ? "optimization.improved" : "optimization.readyToUse")),
       headline,
       detail,
       detailLead: detailParts.lead,
