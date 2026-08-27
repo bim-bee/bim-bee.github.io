@@ -1,6 +1,7 @@
 // File: scripts/contact.js
 document.addEventListener('DOMContentLoaded', function() {
     const sendEmailEndpoint = 'http://localhost:7103/api/SendEmailFunction';
+    const SEND_TIMEOUT_MS = 20000;
 
     function initCalendarBookingLink() {
         const bookingLink = document.querySelector('#contact .calendar-booking-button');
@@ -8,15 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return Boolean(bookingLink);
         }
 
+        // Keep this as a normal browser link. Avoid intercepting the click with
+        // window.open(), which can be blocked or behave inconsistently.
         bookingLink.dataset.wired = '1';
-        bookingLink.addEventListener('click', event => {
-            const isDesktop = window.matchMedia('(min-width: 1026px)').matches;
-            if (!isDesktop) return;
-
-            event.preventDefault();
-            window.open(bookingLink.href, '_blank', 'noopener,noreferrer');
-        });
-
         return true;
     }
 
@@ -26,54 +21,65 @@ document.addEventListener('DOMContentLoaded', function() {
         const modalOverlay = document.getElementById('contact-modal-overlay');
         const modalContent = document.querySelector('.contact-modal-content');
         const contactForm = document.getElementById('contact-form');
+        const formHome = document.querySelector('#contact .hero');
 
-        if (!triggerBtn || !closeBtn || !modalOverlay || !contactForm) {
+        if (!triggerBtn || !closeBtn || !modalOverlay || !modalContent || !contactForm || !formHome) {
             return false;
         }
 
-        // NEW: apply data-overlay-bg if present
+        if (modalOverlay.dataset.wired === '1') {
+            return true;
+        }
+        modalOverlay.dataset.wired = '1';
+
+        // The original modal lives inside a transformed/absolutely positioned section.
+        // Move only the overlay container under <body> so it cannot be covered by
+        // another section. Its existing classes/CSS remain unchanged.
+        if (modalOverlay.parentElement !== document.body) {
+            document.body.appendChild(modalOverlay);
+        }
+
         const overlayBg = modalOverlay.getAttribute('data-overlay-bg');
         if (overlayBg) modalOverlay.style.background = overlayBg;
 
-        // OPTIONAL: expose a simple API to toggle background at runtime
         window.contactModalOverlay = {
             setBackground(bg) { modalOverlay.style.background = bg; },
             disableBackground() { modalOverlay.classList.add('no-bg'); },
             enableBackground() { modalOverlay.classList.remove('no-bg'); }
         };
 
+        let previousBodyOverflow = '';
+
         function openModal() {
             const isMobile = window.matchMedia('(max-width: 1025px)').matches;
             if (!isMobile) return;
-            // Ensure overlay is top-most in case of unexpected stacking contexts
+
+            previousBodyOverflow = document.body.style.overflow;
             modalOverlay.style.zIndex = '999999';
             modalContent.appendChild(contactForm);
-            contactForm.classList.add('in-modal'); // add class for modal-specific CSS
+            contactForm.classList.add('in-modal');
             modalOverlay.classList.add('is-open');
             modalOverlay.setAttribute('aria-hidden', 'false');
             document.body.classList.add('contact-modal-open');
             document.body.style.overflow = 'hidden';
-            // Scroll to the modal dialog itself
-            const modalDialog = document.querySelector('.contact-modal-dialog');
-            if (modalDialog) {
-                modalDialog.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+
             const firstInput = contactForm.querySelector('input');
             if (firstInput) setTimeout(() => firstInput.focus(), 100);
-                attachListener(); // Re-attach listeners after moving form
         }
 
         function closeModal() {
-            const isMobile = window.matchMedia('(max-width: 1025px)').matches;
-            if (!isMobile) return;
-            const hero = document.querySelector('#contact .hero');
-            if (hero) hero.appendChild(contactForm);
-            contactForm.classList.remove('in-modal'); // remove class when returning to page
+            if (!modalOverlay.classList.contains('is-open')) return;
+
+            formHome.appendChild(contactForm);
+            contactForm.classList.remove('in-modal');
             modalOverlay.classList.remove('is-open');
             modalOverlay.setAttribute('aria-hidden', 'true');
             document.body.classList.remove('contact-modal-open');
-            document.body.style.overflow = '';
-            triggerBtn && triggerBtn.focus();
+            document.body.style.overflow = previousBodyOverflow;
+
+            if (window.matchMedia('(max-width: 1025px)').matches) {
+                triggerBtn.focus();
+            }
         }
 
         triggerBtn.addEventListener('click', openModal);
@@ -91,21 +97,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         window.addEventListener('resize', () => {
             const isMobile = window.matchMedia('(max-width: 1025px)').matches;
-            if (!isMobile && modalOverlay.classList.contains('is-open')) {
+            if (!isMobile) {
                 closeModal();
             }
         });
-
-        // Mobile-only nav Contact link opens the same modal
-     //   const contactNavLinks = document.querySelectorAll('a[href="#contact"]');
-       // contactNavLinks.forEach(link => {
-         //   link.addEventListener('click', e => {
-           //     const isMobile = window.matchMedia('(max-width: 1025px)').matches;
-             //   if (!isMobile) return; // allow normal scroll on desktop
-               // e.preventDefault();
-              //  openModal();
-          //  });
-       // });
 
         return true;
     }
@@ -212,10 +207,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitButton.disabled = true;
             }
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+
             try {
                 const response = await fetch('https://factoryfunctions.azurewebsites.net/api/SendEmailFunction?code=Bf-jCZu3gse08jleLLz2jgI7Lm1yrY1_z0hhZ_5pPMKLAzFueG16VQ==', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
                 const text = await response.text();
 
@@ -230,10 +229,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (err) {
                 console.error(err);
                 if (messageDiv) {
-                    const errorMessage = err instanceof Error ? err.message : String(err);
+                    const errorMessage = err && err.name === 'AbortError'
+                        ? 'The request timed out. Please try again.'
+                        : (err instanceof Error ? err.message : String(err));
                     messageDiv.textContent = `Unable to send your message. ${errorMessage}`;
                     messageDiv.style.color = 'red';
                 }
+            } finally {
+                clearTimeout(timeoutId);
                 if (submitButton) {
                     submitButton.disabled = false;
                 }

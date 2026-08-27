@@ -114,51 +114,58 @@ window.addEventListener("load", function () {
     }
 
 
-    function loadSections() {
-        let loadedCount = 0;
-        sections.forEach((section) => {
-            fetch(`sections/${section}.html`)
-                .then((response) => {
+    async function loadSections() {
+        // Fetch in parallel, but append only in the order declared above.
+        // This prevents network timing from changing the DOM/stacking order.
+        const loadedSections = await Promise.all(
+            sections.map(async (section) => {
+                try {
+                    const response = await fetch(`sections/${section}.html`);
                     if (!response.ok) throw new Error(`Failed to load ${section}.html`);
-                    return response.text();
-                })
-                .then((data) => {
-                    const wrapper = document.createElement("div");
-                    wrapper.innerHTML = data.trim();
+                    return await response.text();
+                } catch (error) {
+                    console.error(error);
+                    return null;
+                }
+            })
+        );
 
-                    const firstChild = wrapper.firstElementChild;
-                    if (firstChild) {
-                        contentContainer.appendChild(firstChild);
-                    }
-                    loadedCount++;
-                    // When all sections are loaded, set the language and scroll to hash
-                    if (loadedCount === sections.length) {
-                        if (typeof setLanguage === "function") {
-                            const saved =
-                                (typeof getStoredLanguage === 'function' && getStoredLanguage()) ||
-                                window.currentLang ||
-                                window.startLang ||
-                                (function(){ try { return localStorage.getItem('preferredLanguage') || localStorage.getItem('bimbee_lang'); } catch { return null; } })() ||
-                                window.defaultLang ||
-                                'en';
-                            setLanguage(saved);
-                        }
-                        // Layout may change after sections injection; refresh clamp.
-                        setTimeout(function () {
-                            computeMaxScroll();
-                            enforceScrollClamp();
-                        }, 0);
-                        // Scroll to section if hash is present
-                        if (window.location.hash) {
-                            setTimeout(function () {
-                                var el = document.querySelector(window.location.hash);
-                                if (el) el.scrollIntoView({ behavior: 'smooth' });
-                            }, 100);
-                        }
-                    }
-                })
-                .catch((error) => console.error(error));
+        loadedSections.forEach((data) => {
+            if (!data) return;
+
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = data.trim();
+
+            const firstChild = wrapper.firstElementChild;
+            if (firstChild) {
+                contentContainer.appendChild(firstChild);
+            }
         });
+
+        if (typeof setLanguage === "function") {
+            const saved =
+                (typeof getStoredLanguage === 'function' && getStoredLanguage()) ||
+                window.currentLang ||
+                window.startLang ||
+                (function(){ try { return localStorage.getItem('preferredLanguage') || localStorage.getItem('bimbee_lang'); } catch { return null; } })() ||
+                window.defaultLang ||
+                'en';
+            setLanguage(saved);
+        }
+
+        // Layout may change after sections injection; refresh clamp.
+        setTimeout(function () {
+            computeMaxScroll();
+            enforceScrollClamp();
+        }, 0);
+
+        // Scroll to section if hash is present.
+        if (window.location.hash) {
+            setTimeout(function () {
+                var el = document.querySelector(window.location.hash);
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
     }
 
     updateImages();
