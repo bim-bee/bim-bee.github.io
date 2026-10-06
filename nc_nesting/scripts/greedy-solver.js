@@ -1,27 +1,29 @@
 (function () {
   "use strict";
 
-  const ALGORITHM_VERSION = "greedy-knapsack-repair-v5";
+  const ALGORITHM_VERSION = "greedy-combo-repair-v4";
   const Geometry = window.NcNestingCuttingGeometry;
   const PASS_MODES = Object.freeze(["storage-first", "best-fit", "shortest-first", "large-stock"]);
+  const MAX_COMBINATION_TYPES = 12;
+  const MAX_COMBINATION_POOL = 20;
   const MAX_REPAIR_TARGETS = 40;
   const MAX_REPAIR_DONORS = 3;
   const MAX_REPACK_ITEMS_FOR_SEARCH = 18;
   const MAX_REPACK_STATES = 1200;
 
   const BASE_CANDIDATES = Object.freeze([
-    Object.freeze({ mode: "storage-first", partStrategy: "longest", anchoredCombo: false, storageMinFill: 0, repairBudget: 22 }),
-    Object.freeze({ mode: "best-fit", partStrategy: "best-fit", anchoredCombo: true, storageMinFill: 0.78, repairBudget: 24 }),
-    Object.freeze({ mode: "shortest-first", partStrategy: "difficult", anchoredCombo: true, storageMinFill: 0.82, repairBudget: 24 }),
-    Object.freeze({ mode: "large-stock", partStrategy: "alternate-longest", anchoredCombo: false, storageMinFill: 0.68, repairBudget: 22 }),
-    Object.freeze({ mode: "ordered-first", partStrategy: "difficult", anchoredCombo: true, storageMinFill: 0.86, repairBudget: 26 }),
-    Object.freeze({ mode: "best-fit", partStrategy: "storage-aware", anchoredCombo: false, storageMinFill: 0.74, repairBudget: 26 })
+    Object.freeze({ mode: "storage-first", partStrategy: "longest", comboDepth: 3, comboBudget: 4200, anchoredCombo: false, storageMinFill: 0, repairBudget: 22 }),
+    Object.freeze({ mode: "best-fit", partStrategy: "best-fit", comboDepth: 3, comboBudget: 4200, anchoredCombo: true, storageMinFill: 0.78, repairBudget: 24 }),
+    Object.freeze({ mode: "shortest-first", partStrategy: "difficult", comboDepth: 3, comboBudget: 4200, anchoredCombo: true, storageMinFill: 0.82, repairBudget: 24 }),
+    Object.freeze({ mode: "large-stock", partStrategy: "alternate-longest", comboDepth: 3, comboBudget: 4200, anchoredCombo: false, storageMinFill: 0.68, repairBudget: 22 }),
+    Object.freeze({ mode: "ordered-first", partStrategy: "difficult", comboDepth: 3, comboBudget: 4200, anchoredCombo: true, storageMinFill: 0.86, repairBudget: 26 }),
+    Object.freeze({ mode: "best-fit", partStrategy: "storage-aware", comboDepth: 3, comboBudget: 4800, anchoredCombo: false, storageMinFill: 0.74, repairBudget: 26 })
   ]);
 
   const GAP_CANDIDATES = Object.freeze([
-    Object.freeze({ mode: "ordered-first", partStrategy: "best-fit", anchoredCombo: false, storageMinFill: 0.72, repairBudget: 34 }),
-    Object.freeze({ mode: "best-fit", partStrategy: "difficult", anchoredCombo: false, storageMinFill: 0.66, repairBudget: 34 }),
-    Object.freeze({ mode: "shortest-first", partStrategy: "storage-aware", anchoredCombo: false, storageMinFill: 0.62, repairBudget: 34 })
+    Object.freeze({ mode: "ordered-first", partStrategy: "best-fit", comboDepth: 4, comboBudget: 7000, anchoredCombo: false, storageMinFill: 0.72, repairBudget: 34 }),
+    Object.freeze({ mode: "best-fit", partStrategy: "difficult", comboDepth: 4, comboBudget: 7000, anchoredCombo: false, storageMinFill: 0.66, repairBudget: 34 }),
+    Object.freeze({ mode: "shortest-first", partStrategy: "storage-aware", comboDepth: 4, comboBudget: 7000, anchoredCombo: false, storageMinFill: 0.62, repairBudget: 34 })
   ]);
 
   function finiteInteger(value, minimum = 0) {
@@ -254,166 +256,90 @@
     return true;
   }
 
-  function greatestCommonDivisor(left, right) {
-    let a = Math.abs(left);
-    let b = Math.abs(right);
-    while (b) {
-      const next = a % b;
-      a = b;
-      b = next;
-    }
-    return a || 1;
-  }
-
-  function findBestPatterns(parts, remaining, capacities, config, pieces, options, usage, requiredPart = null) {
-    const uniqueCapacities = [...new Set(capacities.filter(capacity => capacity > 0))].sort((left, right) => left - right);
-    const patterns = new Map();
-    if (!uniqueCapacities.length) return patterns;
-
-    const maxCapacity = uniqueCapacities[uniqueCapacities.length - 1];
-    if (requiredPart
-      && (remainingQuantity(remaining, requiredPart) <= 0 || requiredPart.effectiveSize > maxCapacity)) return patterns;
-
+  function combinationPool(parts, remaining, capacity, config, pieces, options, usage) {
     const ranked = activeParts(parts, remaining, config.partStrategy, pieces, options, usage)
-      .filter(part => part.effectiveSize <= maxCapacity);
-    if (!ranked.length) return patterns;
+      .filter(part => part.effectiveSize <= capacity);
+    if (ranked.length <= MAX_COMBINATION_TYPES) return ranked;
 
-    const requiredPartId = requiredPart?.partId || null;
-    const baseUsed = requiredPart ? requiredPart.effectiveSize : 0;
-    const maxResidualCapacity = maxCapacity - baseUsed;
-    const demand = ranked.map(part => ({
-      part,
-      quantity: Math.max(0, remainingQuantity(remaining, part) - (part.partId === requiredPartId ? 1 : 0))
-    }));
-    const usable = demand.filter(entry => entry.quantity > 0 && entry.part.effectiveSize <= maxResidualCapacity);
-    let maximumUsefulResidual = 0;
-    for (const entry of usable) {
-      const remainingCapacity = maxResidualCapacity - maximumUsefulResidual;
-      if (remainingCapacity <= 0) break;
-      const copiesToFillRemaining = Math.ceil(remainingCapacity / entry.part.effectiveSize);
-      if (entry.quantity >= copiesToFillRemaining) {
-        maximumUsefulResidual = maxResidualCapacity;
-        break;
+    const pool = new Map();
+    ranked.slice(0, 8).forEach(part => pool.set(part.partId, part));
+    ranked.slice().sort((a, b) => b.effectiveSize - a.effectiveSize || compareText(a.partId, b.partId)).slice(0, 6)
+      .forEach(part => pool.set(part.partId, part));
+    ranked.slice().sort((a, b) => a.effectiveSize - b.effectiveSize || compareText(a.partId, b.partId)).slice(0, 6)
+      .forEach(part => pool.set(part.partId, part));
+
+    const candidates = [...pool.values()].slice(0, MAX_COMBINATION_POOL);
+    function pairSlack(part) {
+      let best = capacity - part.effectiveSize;
+      for (const other of candidates) {
+        if (other.partId === part.partId && remainingQuantity(remaining, part) < 2) continue;
+        const used = part.effectiveSize + other.effectiveSize;
+        if (used <= capacity) best = Math.min(best, capacity - used);
       }
-      maximumUsefulResidual += entry.quantity * entry.part.effectiveSize;
+      return best;
     }
-
-    let divisor = 1;
-    let normalizedCapacity = 0;
-    let finalCounts = null;
-    let decisions = [];
-    let types = [];
-
-    if (maxResidualCapacity > 0 && usable.length) {
-      divisor = 0;
-      for (const entry of usable) {
-        divisor = divisor ? greatestCommonDivisor(divisor, entry.part.effectiveSize) : entry.part.effectiveSize;
-      }
-      divisor = Math.max(1, divisor);
-      normalizedCapacity = Math.floor(maximumUsefulResidual / divisor);
-
-      // Process lower-priority types first. On equal fill and part count, the
-      // transition prefers more copies of the current higher-priority type.
-      types = usable.slice().reverse().map(entry => ({
-        ...entry,
-        weight: entry.part.effectiveSize / divisor
-      }));
-      let previous = new Int32Array(normalizedCapacity + 1);
-      previous.fill(-1);
-      previous[0] = 0;
-      const queue = new Int32Array(normalizedCapacity + 1);
-
-      for (const type of types) {
-        const maxQuantity = Math.min(type.quantity, Math.floor(normalizedCapacity / type.weight));
-        const next = new Int32Array(normalizedCapacity + 1);
-        next.fill(-1);
-        const take = new Uint32Array(normalizedCapacity + 1);
-
-        for (let residue = 0; residue < type.weight && residue <= normalizedCapacity; residue++) {
-          const maxStep = Math.floor((normalizedCapacity - residue) / type.weight);
-          let head = 0;
-          let tail = 0;
-          for (let step = 0; step <= maxStep; step++) {
-            const state = residue + step * type.weight;
-            const minimumStep = step - maxQuantity;
-            while (head < tail && queue[head] < minimumStep) head += 1;
-
-            const previousCount = previous[state];
-            if (previousCount >= 0) {
-              const score = previousCount - step;
-              while (head < tail) {
-                const queuedStep = queue[tail - 1];
-                const queuedState = residue + queuedStep * type.weight;
-                const queuedScore = previous[queuedState] - queuedStep;
-                if (queuedScore >= score) break;
-                tail -= 1;
-              }
-              queue[tail++] = step;
-            }
-
-            if (head < tail) {
-              const sourceStep = queue[head];
-              const sourceState = residue + sourceStep * type.weight;
-              const quantity = step - sourceStep;
-              next[state] = previous[sourceState] + quantity;
-              take[state] = quantity;
-            }
-          }
-        }
-        decisions.push(take);
-        previous = next;
-      }
-      finalCounts = previous;
-    }
-
-    function patternForCapacity(capacity) {
-      if (requiredPart && capacity < baseUsed) return null;
-      const residualCapacity = capacity - baseUsed;
-      const counts = new Map();
-      if (requiredPart) counts.set(requiredPart.partId, 1);
-
-      let residualUsed = 0;
-      let residualPartCount = 0;
-      if (finalCounts && residualCapacity > 0) {
-        let state = Math.min(normalizedCapacity, Math.floor(residualCapacity / divisor));
-        while (state > 0 && finalCounts[state] < 0) state -= 1;
-        if (finalCounts[state] >= 0) {
-          residualUsed = state * divisor;
-          residualPartCount = finalCounts[state];
-          for (let index = types.length - 1; index >= 0; index--) {
-            const type = types[index];
-            const quantity = decisions[index][state];
-            if (quantity > 0) {
-              counts.set(type.part.partId, (counts.get(type.part.partId) || 0) + quantity);
-              state -= quantity * type.weight;
-            }
-          }
-        }
-      }
-
-      if (!requiredPart && residualPartCount <= 0) return null;
-      const patternParts = [];
-      for (const part of ranked) {
-        const quantity = counts.get(part.partId) || 0;
-        for (let index = 0; index < quantity; index++) patternParts.push(part);
-      }
-      if (!patternParts.length) return null;
-
-      const used = baseUsed + residualUsed;
-      return {
-        used,
-        leftover: capacity - used,
-        parts: patternParts,
-        signature: combinationSignature(patternParts)
-      };
-    }
-
-    for (const capacity of uniqueCapacities) patterns.set(capacity, patternForCapacity(capacity));
-    return patterns;
+    return candidates
+      .sort((left, right) => pairSlack(left) - pairSlack(right)
+        || comparePartsForStrategy(left, right, config.partStrategy, pieces, options, usage))
+      .slice(0, MAX_COMBINATION_TYPES);
   }
 
   function combinationSignature(parts) {
     return parts.map(part => part.partId).sort(compareText).join("\u0001");
+  }
+
+  function findBestCombination(parts, remaining, capacity, config, pieces, options, usage, budget, requiredPart = null) {
+    const pool = combinationPool(parts, remaining, capacity, config, pieces, options, usage);
+    if (!pool.length) return null;
+    const currentCounts = new Map();
+    const picks = [];
+    let best = null;
+    const maxDepth = Math.max(1, config.comboDepth || 3);
+
+    function evaluate(used) {
+      if (!picks.length) return;
+      if (requiredPart && !currentCounts.get(requiredPart.partId)) return;
+      const signature = combinationSignature(picks);
+      const candidate = { used, leftover: capacity - used, parts: [...picks], signature };
+      if (!best
+        || candidate.used > best.used
+        || (candidate.used === best.used && candidate.parts.length > best.parts.length)
+        || (candidate.used === best.used && candidate.parts.length === best.parts.length && compareText(candidate.signature, best.signature) < 0)) {
+        best = candidate;
+      }
+    }
+
+    function visit(startIndex, depth, used) {
+      if (depth >= maxDepth || budget.comboStates >= budget.maxComboStates) return;
+      for (let index = startIndex; index < pool.length; index++) {
+        if (budget.comboStates >= budget.maxComboStates) break;
+        const part = pool[index];
+        const already = currentCounts.get(part.partId) || 0;
+        if (already >= remainingQuantity(remaining, part)) continue;
+        if (used + part.effectiveSize > capacity) continue;
+        budget.comboStates += 1;
+        currentCounts.set(part.partId, already + 1);
+        picks.push(part);
+        const nextUsed = used + part.effectiveSize;
+        evaluate(nextUsed);
+        visit(index, depth + 1, nextUsed);
+        picks.pop();
+        if (already) currentCounts.set(part.partId, already);
+        else currentCounts.delete(part.partId);
+      }
+    }
+
+    if (requiredPart && remainingQuantity(remaining, requiredPart) > 0 && requiredPart.effectiveSize <= capacity) {
+      currentCounts.set(requiredPart.partId, 1);
+      picks.push(requiredPart);
+      evaluate(requiredPart.effectiveSize);
+      visit(0, 1, requiredPart.effectiveSize);
+      picks.pop();
+      currentCounts.clear();
+    } else if (!requiredPart) {
+      visit(0, 0, 0);
+    }
+    return best;
   }
 
   function choiceComparator(mode) {
@@ -449,25 +375,13 @@
     };
   }
 
-  function chooseNewPiece(options, usage, parts, remaining, nextPart, config, pieces) {
-    const availableOptions = options.filter(option => {
-      const usedQuantity = usage.get(option) || 0;
-      return option.availableQuantity == null || usedQuantity < option.availableQuantity;
-    });
-    const requiredPart = config.anchoredCombo ? nextPart : null;
-    const patterns = findBestPatterns(
-      parts,
-      remaining,
-      availableOptions.map(option => option.capacity),
-      config,
-      pieces,
-      options,
-      usage,
-      requiredPart
-    );
+  function chooseNewPiece(options, usage, parts, remaining, nextPart, config, pieces, budget) {
     const choices = [];
-    for (const option of availableOptions) {
-      const combo = patterns.get(option.capacity) || null;
+    for (const option of options) {
+      const usedQuantity = usage.get(option) || 0;
+      if (option.availableQuantity != null && usedQuantity >= option.availableQuantity) continue;
+      const requiredPart = config.anchoredCombo ? nextPart : null;
+      const combo = findBestCombination(parts, remaining, option.capacity, config, pieces, options, usage, budget, requiredPart);
       if (!combo) continue;
       choices.push({ option, combo, fill: combo.used / Math.max(1, option.capacity) });
     }
@@ -825,6 +739,7 @@
     const usage = new Map();
     const remaining = new Map(parts.map(part => [part.partId, part.quantity]));
     const pieces = [];
+    const budget = { comboStates: 0, maxComboStates: config.comboBudget || 4000 };
     let serial = 1;
     let remainingTotal = parts.reduce((sum, part) => sum + part.quantity, 0);
 
@@ -839,7 +754,7 @@
         continue;
       }
 
-      const choice = chooseNewPiece(options, usage, parts, remaining, nextPart, config, pieces);
+      const choice = chooseNewPiece(options, usage, parts, remaining, nextPart, config, pieces, budget);
       if (!choice) return null;
       usage.set(choice.option, (usage.get(choice.option) || 0) + 1);
       const piece = createEmptyPiece(choice.option, usage.get(choice.option), serial++);
