@@ -128,6 +128,13 @@
     return normalized;
   }
 
+  function logFrontendTiming(frontendTiming) {
+    const greedyBaselineMs = Number(frontendTiming?.greedyBaselinePreparationMs);
+    const totalFrontendMs = Number(frontendTiming?.totalFrontendBeforeBackendDispatchMs);
+    if (!Number.isFinite(greedyBaselineMs) || !Number.isFinite(totalFrontendMs)) return;
+    console.log(`Greedy baseline: ${greedyBaselineMs.toFixed(1)} ms | Total frontend time before backend dispatch: ${totalFrontendMs.toFixed(1)} ms`);
+  }
+
   async function load() {
     const params = new URLSearchParams(location.search);
     const batchId = params.get("batchId");
@@ -136,6 +143,7 @@
     const stored = await NcNesting.getBatchResult(batchId);
     if (!stored) throw localizedError("error.batchUnavailable");
     const normalized = normalize(stored);
+    logFrontendTiming(normalized.frontendTiming);
     normalized.groups.forEach(group => {
       group.detailedPlanUrl = `cutting-plan.html?batchId=${encodeURIComponent(batchId)}&groupId=${encodeURIComponent(group.groupId)}`;
     });

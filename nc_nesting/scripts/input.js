@@ -2093,6 +2093,7 @@
 
   async function executePreparedSolve(request, isDemoRequest) {
     const frontendSolvePreparationStartedAt = nowMilliseconds();
+    let frontendTiming = null;
     state.solveRequest = clone(request);
     state.solveResponse = null;
     const projectBeforeSolve = persistProject(state.projectGroups) || projectSnapshot();
@@ -2146,6 +2147,10 @@
           };
           try {
             const totalFrontendBeforeDispatchMs = nowMilliseconds() - frontendSolvePreparationStartedAt;
+            frontendTiming = {
+              greedyBaselinePreparationMs: greedyBaselineDurationMs,
+              totalFrontendBeforeBackendDispatchMs: totalFrontendBeforeDispatchMs
+            };
             console.log(`Greedy baseline: ${greedyBaselineDurationMs.toFixed(1)} ms | Total frontend time before backend dispatch: ${totalFrontendBeforeDispatchMs.toFixed(1)} ms`);
             backendResult = await postSolveWithProcessing({
               batch: backendRequest,
@@ -2211,10 +2216,11 @@
         batchResult: clone(result.batchResult),
         plans: clone(result.plans || {}),
         greedyBaselines: clone(result.greedyBaselines || {}),
-        groupSolveContexts: clone(result.groupSolveContexts || {})
+        groupSolveContexts: clone(result.groupSolveContexts || {}),
+        frontendTiming: clone(frontendTiming)
       };
       const solvedProject = persistProject(state.projectGroups) || projectSnapshot();
-      await NcNesting.saveSolveResponse(result, solvedProject || projectBeforeSolve);
+      await NcNesting.saveSolveResponse({ ...result, frontendTiming: clone(frontendTiming) }, solvedProject || projectBeforeSolve);
       location.href = `batch-result.html?batchId=${encodeURIComponent(result.batchId)}`;
     } catch (error) {
       backendErrors = solveFailureMessages(error);

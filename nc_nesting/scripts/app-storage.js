@@ -7,7 +7,7 @@
   const GROUP_CACHE_STORE_NAME = "group-solve-cache";
   const GROUP_CACHE_PROJECT_INDEX = "projectId";
   const SOLVE_CACHE_VERSION = "2";
-  const GREEDY_CACHE_VERSION = "greedy-bfd-v3";
+  const GREEDY_CACHE_VERSION = "greedy-combo-repair-v4";
   const ACTIVE_PROJECT_KEY = `${DB_NAME}:active-project`;
   const ORDER_QUANTITIES_KEY = batchId => `${DB_NAME}:order-quantities:${batchId}`;
   const PROFILE_WEIGHT_SOURCE = "profile-catalogue";
@@ -1415,7 +1415,8 @@
         batchResult: clone(normalized.batchResult),
         plans: clone(normalized.plans || {}),
         greedyBaselines: clone(normalized.greedyBaselines || {}),
-        groupSolveContexts: clone(normalized.groupSolveContexts || {})
+        groupSolveContexts: clone(normalized.groupSolveContexts || {}),
+        frontendTiming: clone(normalized.frontendTiming || null)
       };
       if (hasOwn(normalized, "orderQuantities")) {
         projectSnapshot.orderQuantities = clone(normalized.orderQuantities || {});
@@ -1437,6 +1438,7 @@
       plans: normalized.plans || {},
       greedyBaselines: clone(normalized.greedyBaselines || {}),
       groupSolveContexts: clone(normalized.groupSolveContexts || {}),
+      frontendTiming: clone(normalized.frontendTiming || null),
       project: projectSnapshot ? { ...projectSnapshot, batchName } : projectSnapshot,
       ...(hasOwn(normalized, "orderQuantities") ? { orderQuantities: clone(normalized.orderQuantities || {}) } : {}),
       ...(hasOwn(normalized, "groupFingerprints") ? { groupFingerprints: clone(normalized.groupFingerprints || {}) } : {}),
@@ -1457,7 +1459,10 @@
     }), record.plans || {}), record.greedyBaselines || {});
     const enriched = applyRecordMetadataToBatch(enrichBatchResult(normalizedBatch, record.project), record);
     const weighted = await attachCatalogueWeights(enriched, record.project);
-    return applyOrderQuantities(weighted, batchId, record);
+    return {
+      ...applyOrderQuantities(weighted, batchId, record),
+      frontendTiming: clone(record.frontendTiming || record.project?.solveResponse?.frontendTiming || null)
+    };
   }
 
   async function getPlan(batchId, groupId) {
