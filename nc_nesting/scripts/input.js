@@ -223,6 +223,47 @@
     return source;
   }
 
+  function normalizedPartMergeText(value) {
+    return String(value ?? "").trim();
+  }
+
+  function normalizedPartMergeLength(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.ceil(number) : NaN;
+  }
+
+  function matchingPartIndex(candidate) {
+    const position = normalizedPartMergeText(candidate.position);
+    const steelGrade = normalizedPartMergeText(candidate.steelGrade);
+    const profile = normalizedPartMergeText(candidate.profile);
+    const length = normalizedPartMergeLength(candidate.length);
+    return state.parts.findIndex(existing => normalizedPartMergeText(existing.position) === position
+      && normalizedPartMergeText(existing.steelGrade) === steelGrade
+      && normalizedPartMergeText(existing.profile) === profile
+      && normalizedPartMergeLength(existing.length) === length);
+  }
+
+  function mergePartSource(existingSource, incomingSource) {
+    const existing = normalizedPartMergeText(existingSource) || "Manual";
+    const incoming = normalizedPartMergeText(incomingSource) || "Manual";
+    return existing === incoming ? existing : "Varies";
+  }
+
+  function addOrMergePart(part) {
+    const matchIndex = matchingPartIndex(part);
+    if (matchIndex < 0) {
+      state.parts.push(part);
+      return;
+    }
+    const existing = state.parts[matchIndex];
+    existing.quantity = (positiveWholeNumber(existing.quantity) || 0) + (positiveWholeNumber(part.quantity) || 0);
+    existing.source = mergePartSource(existing.source, part.source);
+  }
+
+  function addOrMergeParts(parts) {
+    parts.forEach(addOrMergePart);
+  }
+
   function translateCurrencyOptions() {
     document.querySelectorAll("#currency option[data-currency-label]").forEach(option => {
       option.textContent = I18N.currencyLabel(option.dataset.currencyLabel);
@@ -562,6 +603,7 @@
     });
     const hasHeader = Object.keys(map).length >= 2;
     const rows = hasHeader ? lines.slice(1) : lines;
+    const importedRows = [];
     rows.forEach(line => {
       const cells = parseLine(line, delimiter);
       const row = blank(type);
@@ -579,8 +621,10 @@
         row.allSteelGrades = !grade;
       }
       if (type === "parts") row.source = "CSV";
-      state[type].push(row);
+      importedRows.push(row);
     });
+    if (type === "parts") addOrMergeParts(importedRows);
+    else state[type].push(...importedRows);
     render(type);
     afterDataChange(type);
   }
@@ -727,6 +771,7 @@
     ncImportErrors = [];
     ncImportNotices = [];
     let plateDetected = false;
+    const importedParts = [];
     for (const file of files) {
       if (!isNc1File(file)) {
         ncImportErrors.push({ fileName: file.name, key: "nc.unsupported" });
@@ -738,12 +783,13 @@
           plateDetected = true;
           continue;
         }
-        state.parts.push(parsed);
+        importedParts.push(parsed);
       } catch (error) {
         ncImportErrors.push({ fileName: error.context || file.name, key: error.key || "nc.invalidFields", params: error.params || {} });
       }
     }
     if (plateDetected) ncImportNotices.push({ key: "nc.plateIgnored" });
+    addOrMergeParts(importedParts);
     renderNcErrors();
     render("parts");
     afterDataChange("parts");
