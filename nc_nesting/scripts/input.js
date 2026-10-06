@@ -1844,6 +1844,10 @@
     return new Promise(resolve => setTimeout(resolve, 0));
   }
 
+  function nowMilliseconds() {
+    return globalThis.performance?.now?.() ?? Date.now();
+  }
+
   function currentComplexityResultsForRequest(request) {
     const byGroupId = new Map();
     groupComplexityResults.forEach(result => {
@@ -2087,6 +2091,7 @@
   }
 
   async function executePreparedSolve(request, isDemoRequest) {
+    const frontendSolvePreparationStartedAt = nowMilliseconds();
     state.solveRequest = clone(request);
     state.solveResponse = null;
     const projectBeforeSolve = persistProject(state.projectGroups) || projectSnapshot();
@@ -2104,6 +2109,7 @@
         let backendResult = null;
         let solvedGreedyBaselines = {};
         let backendSolveContext = incremental.solveContext || null;
+        let greedyBaselineDurationMs = 0;
 
         if (groupsToSolve.length) {
           setSolvePhase("checking");
@@ -2128,7 +2134,9 @@
           if (preflightErrors.length) return;
 
           setSolvePhase("solving");
+          const greedyBaselineStartedAt = nowMilliseconds();
           const greedy = greedyBaselinesForGroups(groupsToSolve, request.cuttingSettings, incremental.cachedEntries);
+          greedyBaselineDurationMs = nowMilliseconds() - greedyBaselineStartedAt;
           solvedGreedyBaselines = greedy.baselines;
           const backendRequest = {
             ...clone(request),
@@ -2136,6 +2144,8 @@
             groups: greedy.requestGroups
           };
           try {
+            const totalFrontendBeforeDispatchMs = nowMilliseconds() - frontendSolvePreparationStartedAt;
+            console.log(`Greedy baseline: ${greedyBaselineDurationMs.toFixed(1)} ms | Total frontend time before backend dispatch: ${totalFrontendBeforeDispatchMs.toFixed(1)} ms`);
             backendResult = await postSolveWithProcessing({
               batch: backendRequest,
               telemetry: NcNestingTelemetry.createSolveTelemetry({
