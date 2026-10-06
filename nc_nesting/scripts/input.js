@@ -1859,9 +1859,10 @@
 
   function greedyBaselinesForGroups(groups, cuttingSettings, cachedEntries = null) {
     const baselines = {};
+    const currentAlgorithmVersion = globalThis.NcNestingGreedy?.ALGORITHM_VERSION;
     const requestGroups = (groups || []).map(group => {
       const cachedBaseline = cachedEntries?.get?.(group.groupId)?.greedyBaseline || null;
-      if (cachedBaseline) {
+      if (cachedBaseline && cachedBaseline.algorithmVersion === currentAlgorithmVersion) {
         baselines[group.groupId] = clone(cachedBaseline);
         return { ...clone(group), greedyBaseline: clone(cachedBaseline) };
       }
